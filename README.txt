@@ -56,7 +56,7 @@ LoRa Microprocessor: ATMega 32u4
             SD Card: SPI capable SD Card breakout board
 I2C Logic Converter: BSS138 
             Antenna: 900Mhz (License Free) or 433Mhz 5-element Yagi (Ham Only)
-Case: 
+               Case: https://www.alliedelec.com/hammond-manufacturing-1591xxcgy/70165817/
          BNC to SMA: 6-inch cable
          SMA to uFl: 6-inch cable
             Battery: Standard 9V
