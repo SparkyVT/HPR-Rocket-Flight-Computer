@@ -8,13 +8,14 @@ This flight computer is designed for rockets 2-inches in diameter or greater.
 It has similar functionality as a TeleMega, but without a smart-phone app and
 extra pyro channels.  It has been flown and tested on multiple M-powered
 supersonic flights to 18K feet.  For large projects, a backup computer such 
-as the PerfectFlite StratoLogger is recommended.  
+as the PerfectFlite StratoLogger is strongly recommended.  
 
 --------FEATURES----------
-800Hz 3-axis digital 24G and 200G accelerometer data logging
-800Hz 3-axis digital 2000dps gyroscope data logging
-800Hz of flight event data logging
-800Hz of integrated speed, altitude, rotation data logging
+700Hz 3-axis digital 24G and 200G accelerometer data logging
+700Hz 3-axis digital 2000dps gyroscope data logging
+700Hz of flight event data logging
+700Hz of integrated speed, altitude, rotation data logging
+100Hz of quaternion rotation data logging
 20Hz of digital barometric data logging
 10Hz of magnetic data logging
 8Hz of GPS data logging
@@ -77,7 +78,7 @@ sources for the same components should work, but are untested.
 
 Note: GPS configuration support code is provided for UBLOX Gen 6,7,8 modules
 to achieve 8hz updates and the best accuracy.  If not using UBLOX chipsets, 
-adjust the baud rate to your chipset.  The code is compatible with any GPS 
+adjust the baud rate to your chipset.  The base code is compatible with any GPS 
 chipset that sends GPGGA or GPRMC sentences over serial.  Adafruit Ultimate
 GPS is not recommended due to poor performance during flight testing.
 
@@ -89,7 +90,7 @@ Note: Required mounting space is approximately 32 square inches.  Will fit in
 a 2-inch avionics bay that is at least 1 inch wide and 8 inches long.  
 Components mount on both sides.  See provided pictures for examples.
 
-Note: Estimated Flight Computer Cost = $175
+Note: Estimated Flight Computer Cost = $200
 Note: Estimated Ground Station Cost = $170
 Note: Estimated build time = 10hrs
 Note: Estimated programing & debugging time = 10hrs
