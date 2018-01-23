@@ -97,7 +97,7 @@ void beginMag(){
   #define LSM303_REGISTER_MAG_CRB_REG_M (0x01)
   #define LSM303_REGISTER_MAG_CRA_REG_M (0x00)
   #define LSM303_MAGGAIN_1_3            (0x20)
-  #define LSM303_MAGRATE_15             (0x04)
+  #define LSM303_MAGRATE_15             (0x10)
   
   //enable magnetometer
   write8(LSM303_ADDRESS_MAG, LSM303_REGISTER_MAG_MR_REG_M, 0x00);
@@ -341,7 +341,7 @@ static void writeRegister(uint8_t i2cAddress, uint8_t reg, uint16_t value) {
 
 void beginADC(byte dataRate){
 
-  #define ADS1115_REG_CONFIG_DR_32SPS    (0x40)
+  #define ADS1115_REG_CONFIG_DR_32SPS    (0x0040)
   #define ADS1115_REG_CONFIG_DR_800SPS   (0x00E0)
   #define ADS1115_REG_CONFIG_DR_400SPS   (0x00C0)  
   uint16_t rateSPS;
