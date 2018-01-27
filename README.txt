@@ -30,8 +30,8 @@ Audible Pre-flight main deploy setting and previous flight report
 Audible Pre-flight pyro continuity and battery voltage report
 Audible Post-flight altitude & velocity report
 Separate file for each flight up to 99 stored flights
-Optional test mode for bench testing
-Optional self-calibration mode
+User selectable test mode for bench testing
+User selectable self-calibration mode
 Onboard flight data recorded to SD card
 User flight profile settings read from SD card
 Telemetry data recorded to ground station SD card
