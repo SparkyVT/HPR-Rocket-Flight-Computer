@@ -11,11 +11,10 @@ supersonic flights to 18K feet.  For large projects, a backup computer such
 as the PerfectFlite StratoLogger is strongly recommended.  
 
 --------FEATURES----------
-700Hz 3-axis digital 24G and 200G accelerometer data logging
-700Hz 3-axis digital 2000dps gyroscope data logging
-700Hz of flight event data logging
-700Hz of integrated speed, altitude, rotation data logging
-100Hz of quaternion rotation data logging
+800Hz 3-axis digital 24G and 200G accelerometer data logging
+800Hz 3-axis digital 2000dps gyroscope data logging
+800Hz of flight event data logging
+800Hz of integrated speed, altitude, rotation data logging
 20Hz of digital barometric data logging
 10Hz of magnetic data logging
 8Hz of GPS data logging
@@ -30,8 +29,8 @@ Audible Pre-flight main deploy setting and previous flight report
 Audible Pre-flight pyro continuity and battery voltage report
 Audible Post-flight altitude & velocity report
 Separate file for each flight up to 99 stored flights
-User selectable test mode for bench testing
-User selectable self-calibration mode
+User selectable test mode for bench testing via button
+User selectable self-calibration mode via button
 Onboard flight data recorded to SD card
 User flight profile settings read from SD card
 Telemetry data recorded to ground station SD card
@@ -41,12 +40,12 @@ Telemetry data recorded to ground station SD card
  24G Accelerometer: LSM303
 200G Accelerometer: ADXL377
          Gyroscope: L3GD20
-               ADC: ADS1115
+               ADC: ADS1115 (for ADXL377)
    Pressure Sensor: BMP180
                GPS: UBLOX NEO-6M,7M,or M8N (compatible w/ any GPGGA, GPRMC over serial)
     LoRa Telemetry: RFM95W (License Free - untested) or RFM96W (Ham License Only - tested)
    Tactile Buttons: 0.25 in spacing
-      Firing Board: Create your own or use the provided design file
+      Firing Board: Create your own or use the provided design file for PCBexpress
            Battery: 2-cell 500mAh LiPo recommended
 
 --------GROUND STATION COMPONENTS----------
