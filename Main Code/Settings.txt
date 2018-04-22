@@ -1,0 +1,36 @@
+Rocket Name = DistantThunder;
+callSign = KK4ELF;
+magSwitchEnable = 1;
+startupTime = 10;
+gTrigger = 2.5;
+detectLiftoffTime = 0.5;
+apogeeDelay = 0;
+mainDeployAlt = 500;
+maxRecordTime = 900;
+pyroFiringTime = 0.5;
+2 Stage = 1;
+2stageIgnitionDelay = 0.5;
+boosterSeparateDelay = 0.5;
+2stageAltThreshold = 400;
+maxAngleOffVertical = 45;
+---------------------------------------------
+            valid setting values
+---------------------------------------------
+         Rocket Name: up to 20 characters of text
+           Call Sign: ham radio callsign, 6 characters of text
+     magSwitchEnable: 1 enable, 0 disable, if enabled startup will not proceed until magnet is sensed
+	 startupTime: seconds from power-on until start of pre-flight sequence
+            gTrigger: # of G's required to detect liftoff, between 1.5 and 5.0
+   detectLiftoffTime: seconds of sustained gTrigger to detect liftoff, between 0.1 and 1.0
+        apogee delay: # of seconds after apogee to fire charge, between 0.0 and 5.0
+       mainDeployAlt: altitude to deploy mains, 100ft to 835ft
+       maxRecordTime: if touchdown is not detected, recording will stop after this many seconds, between 300 and 4294
+      pyroFiringTime: total seconds spent sending current to pyro charge, between 0.2 and 1.0
+---------------------------------------------
+            2 stage rocket mode
+---------------------------------------------
+             2 stage: 1 for 2-stage rocket, 0 for single stage rocket
+ 2stageIgnitionDelay: seconds after booster separation to light 2nd stage, between 0.0 and 8.0
+boosterSeparateDelay: seconds after booster burnout to separate 1st stage booster, between 0.0 and 3.0
+  2stageAltThreshold: minimum altitude that must be exceeded before 2nd stage can light, between 100 and 835 ft
+ maxAngleOffVertical: if angle off vertical exceeds this value then 2nd stage won't light, between 0 and 45 degrees
