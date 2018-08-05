@@ -16,9 +16,9 @@ as the PerfectFlite StratoLogger is strongly recommended.
 800Hz of flight event data logging
 800Hz of integrated speed, altitude, rotation data logging
 20Hz of digital barometric data logging
+20Hz of telemetry output
 10Hz of magnetic data logging
 8Hz of GPS data logging
-5Hz of telemetry output
 Mach immune flight events
 Over 100,000ft operational range
 Sensor-fusion apogee sensing logic
@@ -49,17 +49,16 @@ Telemetry data recorded to ground station SD card
            Battery: 2-cell 500mAh LiPo recommended
 
 --------GROUND STATION COMPONENTS----------
-LoRa Microprocessor: ATMega 32u4
- LCD Microprocessor: ATMega 32u4
-                LCD: 20X4 LCD
-     Lora Telemetry: RFM95W (License Free - untested) or RFM96W (Ham License Only - tested)
-            SD Card: SPI capable SD Card breakout board
-I2C Logic Converter: BSS138 
-            Antenna: 900Mhz (License Free) or 433Mhz 5-element Yagi (Ham Only)
-               Case: https://www.alliedelec.com/hammond-manufacturing-1591xxcgy/70165817/
-         BNC to SMA: 6-inch cable
-         SMA to uFl: 6-inch cable
-            Battery: Standard 9V
+Adafruit Feather LoRa: ATMega 32u4 w/ RFM95W (License Free - untested) or RFM96W (Ham License Only - tested)
+                  LCD: 20X4 LCD
+              SD Card: SPI capable SD Card breakout board
+              Antenna: 900Mhz (License Free) or 433Mhz 5-element Yagi (Ham Only)
+                 Case: https://www.alliedelec.com/hammond-manufacturing-1591xxcgy/70165817/
+           BNC to SMA: 6-inch cable
+           SMA to uFl: 6-inch cable
+              Battery: Standard 9V
+      1K Ohm Resistor: 1/8 Watt
+     10K Ohm Resistor: 1/8 Watt
 
 --------ADDITIONAL LIBRARIES REQUIRED----------
 SDFat
