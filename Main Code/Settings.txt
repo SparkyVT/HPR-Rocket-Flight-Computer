@@ -1,7 +1,7 @@
-Rocket Name = DistantThunder;
+Rocket Name = Distant Thunder;
 callSign = KK4ELF;
 magSwitchEnable = 1;
-startupTime = 10;
+startupTime = 5;
 gTrigger = 2.5;
 detectLiftoffTime = 0.5;
 apogeeDelay = 0;
