@@ -84,7 +84,7 @@ Note: TinyGPS++ is only compatible with GPGGA and GPRMC sentences.  If using
 a UBLOX M8N or other GNSS unit, then TinyGPS++ must be modified to accept
 the GNGGA & GNRMC format.  Support available upon request.
 
-Note: Required mounting space is approximately 32 square inches.  Will fit in
+Note: Required mounting space is approximately 16 square inches.  Will fit in
 a 2-inch avionics bay that is at least 1 inch wide and 8 inches long.  
 Components mount on both sides.  See provided pictures for examples.
 
