@@ -88,8 +88,8 @@ Note: Required mounting space is approximately 16 square inches.  Will fit in
 a 2-inch avionics bay that is at least 1 inch wide and 8 inches long.  
 Components mount on both sides.  See provided pictures for examples.
 
-Note: Estimated Flight Computer Cost = $200
-Note: Estimated Ground Station Cost = $170
+Note: Estimated Flight Computer Cost = $175
+Note: Estimated Ground Station Cost = $165
 Note: Estimated build time = 10hrs
 Note: Estimated programing & debugging time = 10hrs
 
