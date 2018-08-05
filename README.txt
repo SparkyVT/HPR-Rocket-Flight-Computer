@@ -25,6 +25,7 @@ Sensor-fusion apogee sensing logic
 Barometric based main deploy logic
 Optional apogee deployment delay
 Optional Two-Stage mode w/ tilt-sensing safety features
+Optional magnetic startup switch
 Audible Pre-flight main deploy setting and previous flight report
 Audible Pre-flight pyro continuity and battery voltage report
 Audible Post-flight altitude & velocity report
