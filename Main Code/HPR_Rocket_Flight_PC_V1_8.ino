@@ -32,7 +32,6 @@
 //Ground-station Adjustable Radio Frequency
 //------KNOWN PROBLEMS------
 //need SD reading error catch
-//something fishy about the radio reset and IRQ setup
 //--------PINOUTS----------
 //COMMUNICATION PINS:
 //I2C Bus: SDA - 18, SCL - 19
@@ -57,7 +56,6 @@
 //8 - 9: accelBiasY
 //10-11: accelBiasZ
 //12-13: analogXbias
-// 14  : resistance factor
 
 //-------CODE START--------
 #include <SdFat.h>
