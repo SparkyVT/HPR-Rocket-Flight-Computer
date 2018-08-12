@@ -11,12 +11,12 @@ supersonic flights to 18K feet.  For large projects, a backup computer such
 as the PerfectFlite StratoLogger is strongly recommended.  
 
 --------FEATURES----------
-800Hz 3-axis digital 24G and 200G accelerometer data logging
-800Hz 3-axis digital 2000dps gyroscope data logging
-800Hz of flight event data logging
-800Hz of integrated speed, altitude, 3D rotation data logging
+950Hz 3-axis digital 24G and 200G accelerometer data logging
+950Hz 3-axis digital 2000dps gyroscope data logging
+950Hz of flight event data logging
+950Hz of integrated speed, altitude, 3D rotation data logging
 20Hz of digital barometric data logging
-20Hz of telemetry output
+20Hz of telemetry output & ground data logging
 10Hz of magnetic data logging
 8Hz of GPS data logging
 Mach immune flight events
@@ -52,7 +52,7 @@ Telemetry data recorded to ground station SD card
 --------GROUND STATION COMPONENTS----------
 Adafruit Feather LoRa: ATMega 32u4 w/ RFM95W (License Free - untested) or RFM96W (Ham License Only - tested)
                   LCD: 20X4 LCD
-              SD Card: SPI capable SD Card breakout board
+              SD Card: SD Card breakout board
               Antenna: 900Mhz (License Free) or 433Mhz 5-element Yagi (Ham Only)
                  Case: https://www.alliedelec.com/hammond-manufacturing-1591xxcgy/70165817/
            BNC to SMA: 6-inch cable
@@ -93,4 +93,3 @@ Note: Estimated Flight Computer Cost = $175
 Note: Estimated Ground Station Cost = $165
 Note: Estimated build time = 10hrs
 Note: Estimated programing & debugging time = 10hrs
-
