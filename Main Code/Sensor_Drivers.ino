@@ -1,5 +1,5 @@
 //Sketch adapted for the Adafruit 10DoF IMU board
-//By Maj Bryan Sparkman
+//By Lt Col Bryan Sparkman, USAF
 //Sensor Package: LSM303DLHC, L3GD20, BMP180, ADS1115, ADXL377
 //-----------Change Log------------
 //26 Nov 17: Version 1 created
