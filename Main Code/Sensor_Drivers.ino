@@ -1,36 +1,73 @@
 //Sketch adapted for the Adafruit 10DoF IMU board
-//By Lt Col Bryan Sparkman, USAF
-//Sensor Package: LSM303DLHC, L3GD20, BMP180, ADS1115, ADXL377
+//By Bryan Sparkman, TRA #12111, NAR #85720, L3
+//Sensor Package 1: LSM303DLHC, L3GD20, BMP180, ADS1115, ADXL377
+//Sensor Package 2: LSM9DS1, BMP280, H3LIS331DL
 //-----------Change Log------------
 //26 Nov 17: Version 1 created
+//10 Nov 18: Version 2 created to support new sensor package
 
 //***************************************************************************
-//Common I2C Communication Functions
+//LSM9DS1 Accelerometer, Gyroscope, & Magnetometer
 //***************************************************************************
-  
-void write8(byte address, byte reg, byte value){
-  Wire.beginTransmission(address);
-  Wire.write(reg);
-  Wire.write(value);
-  Wire.endTransmission();}
 
-static void read16(uint8_t address, byte reg, uint16_t *value){
-  Wire.beginTransmission((uint8_t)address);
-  Wire.write((uint8_t)reg);
-  Wire.endTransmission();
-  Wire.requestFrom((uint8_t)address, (byte)2);
-  *value = (Wire.read() << 8) | Wire.read();
-  Wire.endTransmission();}
+void beginLSM9DS1(){
 
-static void readS16(byte address, byte reg, int16_t *value){
-  uint16_t i;
-  read16(address, reg, &i);
-  *value = (int16_t)i;}
+  //Addresses for the registers
+  #define LSM9DS1_ADDRESS_ACCELGYRO          (0x6B)
+  #define LSM9DS1_ADDRESS_MAG                (0x1E)
+  #define LSM9DS1_XG_ID                      (0b01101000)
+  #define LSM9DS1_MAG_ID                     (0b00111101)
+  #define LSM9DS1_REGISTER_CTRL_REG1_G         (0x10)
+  #define LSM9DS1_REGISTER_CTRL_REG5_XL        (0x1F)
+  #define LSM9DS1_REGISTER_CTRL_REG6_XL        (0x20)
+  #define LSM9DS1_REGISTER_CTRL_REG1_M         (0x20)
+  #define LSM9DS1_REGISTER_CTRL_REG3_M         (0x22)
+  #define LSM9DS1_REGISTER_CTRL_REG4_M         (0x23)
+
+  //----------------------
+  //GET WHO AM I REGISTERS
+  //----------------------
+
   
+  //----------------------
+  //CONFIGURE ACCELEROMETER
+  //----------------------
+  //Set 16G Range, 952 Hz ODR,
+  write8(LSM9DS1_REGISTER_CTRL_REG6_XL, LSM9DS1_ADDRESS_ACCELGYRO,  0b11001000);
+  
+  //----------------------
+  //CONFIGURE GYROSCOPE
+  //----------------------
+  //Set 2000dps Range, 952 Hz ODR
+  write8(LSM9DS1_REGISTER_CTRL_REG1_G, LSM9DS1_ADDRESS_ACCELGYRO, 0b11011000);
+
+  //----------------------
+  //CONFIGURE MAGNETOMETER
+  //----------------------
+  //Mag Temp Compensation, UltraHigh Perf, 10Hz
+  write8(LSM9DS1_REGISTER_CTRL_REG1_M, LSM9DS1_ADDRESS_MAG, 0b11110000);
+  //Mag Continuous Conversion
+  write8(LSM9DS1_REGISTER_CTRL_REG3_M, LSM9DS1_ADDRESS_MAG, 0b000000000);
+  //Mag Reverse Magnetometer MSB / LSB Order, Z-Axis high-perf mode
+  write8(LSM9DS1_REGISTER_CTRL_REG4_M, LSM9DS1_ADDRESS_MAG, 0b000011100);
+  }//end begin
+
+void getAccel(){
+  #define LSM9DS1_REGISTER_OUT_X_L_XL (0x28)
+  readSensor(LSM9DS1_ADDRESS_ACCELGYRO, 0x80 | LSM9DS1_REGISTER_OUT_X_L_XL, (byte)1);}
+
+void getGyro(){
+  #define LSM9DS1_REGISTER_OUT_X_L_G  (0x18)
+  readSensor(LSM9DS1_ADDRESS_ACCELGYRO, 0x80 | LSM9DS1_REGISTER_OUT_X_L_G, (byte)3);}
+
+void getMag(){
+  #define LSM9DS1_REGISTER_OUT_X_L_M  (0x28)
+  readSensor(LSM9DS1_ADDRESS_MAG, 0x80 | LSM9DS1_REGISTER_OUT_X_L_M, (byte)2);}
+
 void readSensor(byte address, byte reg, byte sensor){
   Wire.beginTransmission(address);
   Wire.write(reg);
-  Wire.endTransmission();
+  Wire.endTransmission(I2C_NOSTOP);
   Wire.requestFrom(address, (byte)6);
   while(Wire.available() < 6){};
 
@@ -43,352 +80,314 @@ void readSensor(byte address, byte reg, byte sensor){
 
   switch(sensor){
 
-    case 1://accelerometer
-      accelX = (int16_t)(xLow | (xHigh << 8)) >> 4;
-      accelY = (int16_t)(yLow | (yHigh << 8)) >> 4;
-      accelZ = (int16_t)(zLow | (zHigh << 8)) >> 4;
+    case 1://LSM9DS1 accelerometer
+      accelX = (int16_t)(xLow | (xHigh << 8));
+      accelY = (int16_t)(yLow | (yHigh << 8));
+      accelZ = (int16_t)(zLow | (zHigh << 8));
       break;
 
-    case 2://magnetometer (high & low reversed)
+    case 2://LSM9DS1 magnetometer (high & low reversed)
       magX = (int16_t)(xHigh | ((int16_t)xLow << 8));
       magY = (int16_t)(yHigh | ((int16_t)yLow << 8));
       magZ = (int16_t)(zHigh | ((int16_t)zLow << 8));
       break;
 
-    case 3://gyro
+    case 3://LSM9DS1 gyro
       gyroX = (int16_t)(xLow | (xHigh << 8));
       gyroY = (int16_t)(yLow | (yHigh << 8));
       gyroZ = (int16_t)(zLow | (zHigh << 8));
       break;
+
+    case 4://H3LIS331 high-G accelerometer (potential future use)
+      highGx = -1*(int16_t)(xLow | (xHigh << 8))>> 4;
+      highGy = (int16_t)(yLow | (yHigh << 8))>> 4;
+      highGz = (int16_t)(zLow | (zHigh << 8))>> 4;
+      break; 
   }}//end void
   
 //***************************************************************************
-//LSM303 Accelerometer
+//H3LIS331DL High-G Accelerometer
 //***************************************************************************
 
-void beginAccel(){
-
-  #define LSM303_ADDRESS_ACCEL               (0x32 >> 1)
-  #define LSM303_REGISTER_ACCEL_CTRL_REG4_A  (0x23)
-  #define LSM303_REGISTER_ACCEL_CTRL_REG1_A  (0x20)
+void beginH3LIS331DL(byte DR){
   
-  //set gain to 24G
-  write8(LSM303_ADDRESS_ACCEL, LSM303_REGISTER_ACCEL_CTRL_REG4_A, 0x38);  
+  #define H3LIS331_ADDRESS            (0x19)
+  #define H3LIS331_REGISTER_CTRL_REG1 (0x20)
+  #define H3LIS331_REGISTER_CTRL_REG2 (0x21)
+  #define H3LIS331_REGISTER_CTRL_REG4 (0x23)
+  
+  if(DR == 1){
+    //Normal Mode (001), 1000 Hz data rate (11), Enable axes (111)
+    write8(H3LIS331_REGISTER_CTRL_REG1, H3LIS331_ADDRESS, 0b00111111);}
 
-  //set data rate: 400Hz for Metro, 1600Hz for Teensy
-  #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-    write8(LSM303_ADDRESS_ACCEL, LSM303_REGISTER_ACCEL_CTRL_REG1_A, 0x97);
-  #else
-    write8(LSM303_ADDRESS_ACCEL, LSM303_REGISTER_ACCEL_CTRL_REG1_A, 0x77);
-  #endif
+  if(DR == 2){
+    //Normal Mode (001), 100 Hz data rate (01), Enable axes (111)
+    write8(H3LIS331_REGISTER_CTRL_REG1, H3LIS331_ADDRESS, 0b00101111);
+
+    //Normal Mode (0), High-Pass filter mode (01), Filter Data Select (1), 
+    //HP Interrupt2 (0), HP Interrupt1 (0), HPF Coeff(00)
+    //write8(H3LIS331_REGISTER_CTRL_REG2, H3LIS331_ADDRESS, 0b00110000);
+  
+    //Set 100G scale
+    write8(H3LIS331_REGISTER_CTRL_REG4, H3LIS331_ADDRESS, 0b00000000);}
+
+  if(DR == 3){
+    //Normal Mode (001), 400 Hz data rate (10), Enable axes (111)
+    write8(H3LIS331_REGISTER_CTRL_REG1, H3LIS331_ADDRESS, 0b00110111);}
   }
 
-void getAccel(){
-  #define LSM303_REGISTER_ACCEL_OUT_X_L_A  (0x28)
-  readSensor(LSM303_ADDRESS_ACCEL, (LSM303_REGISTER_ACCEL_OUT_X_L_A | 0x80), (byte)1);}
+void getHighG(){
+
+    #define H3LIS331_REGISTER_OUT_X_L   0b10101000 //(0x28)
+    //readSensor(H3LIS331_ADDRESS, H3LIS331_REGISTER_OUT_X_L, (byte)4);
+
+    Wire.beginTransmission(H3LIS331_ADDRESS);
+    Wire.write(H3LIS331_REGISTER_OUT_X_L);
+    Wire.endTransmission(I2C_NOSTOP);
+    Wire.requestFrom(H3LIS331_ADDRESS, (byte)2);
+    while(Wire.available() < 2){};
+
+    uint8_t xLow  = Wire.read();
+    uint8_t xHigh = Wire.read();
+    //uint8_t yLow  = Wire.read();
+    //uint8_t yHigh = Wire.read();
+    //uint8_t zLow  = Wire.read();
+    //uint8_t zHigh = Wire.read();
+
+    highGx = -1*(int16_t)(xLow | (xHigh << 8))>> 4;
+    //highGy = (int16_t)(yLow | (yHigh << 8))>> 4;
+    //highGz = (int16_t)(zLow | (zHigh << 8))>> 4;
+}
 
 //***************************************************************************
-//LSM303 Magnetometer
-//***************************************************************************
-void beginMag(){
-
-  #define LSM303_ADDRESS_MAG            (0x3C >> 1)
-  #define LSM303_REGISTER_MAG_MR_REG_M  (0x02)
-  #define LSM303_REGISTER_MAG_CRB_REG_M (0x01)
-  #define LSM303_REGISTER_MAG_CRA_REG_M (0x00)
-  #define LSM303_MAGGAIN_1_3            (0x20)
-  #define LSM303_MAGRATE_15             (0x10)
-  
-  //enable magnetometer
-  write8(LSM303_ADDRESS_MAG, LSM303_REGISTER_MAG_MR_REG_M, 0x00);
-
-  //set gain
-  //_lsm303Mag_Gauss_LSB_XY = 1100;
-  //_lsm303Mag_Gauss_LSB_Z  = 980;
-  write8(LSM303_ADDRESS_MAG, LSM303_REGISTER_MAG_CRB_REG_M, LSM303_MAGGAIN_1_3);
-
-  //set data rate
-  write8(LSM303_ADDRESS_MAG, LSM303_REGISTER_MAG_CRA_REG_M, LSM303_MAGRATE_15);
-  
-  //enable the temperature sensor and set data rate
-  /*#define LSM303_REGISTER_CRA_REG_M (0x00)
-  write8(LSM303_ADDRESS_MAG, LSM303_REGISTER_CRA_REG_M, 0b10010000);*/
-  }//end beginMag
-
-void getMag(){
-  #define LSM303_REGISTER_MAG_OUT_X_H_M  (0x03)
-  readSensor(LSM303_ADDRESS_MAG, LSM303_REGISTER_MAG_OUT_X_H_M, (byte)2);}
-
-/*void getBoardTemp(){
-  #define LSM303_REGISTER_MAG_TEMP_OUT_H_M (0x31)
-  Wire.beginTransmission(LSM303_ADDRESS_MAG);
-  Wire.write(LSM303_REGISTER_MAG_TEMP_OUT_H_M);
-  Wire.endTransmission();
-  Wire.requestFrom(LSM303_ADDRESS_MAG, (byte)2);
-  while(Wire.available() < 2){};
-
-  byte boardTempHi = Wire.read();
-  byte boardTempLo = Wire.read();
-  int16_t sensorTemp;
-  float boardTemp;
-  sensorTemp = (int16_t)(boardTempLo | (boardTempHi << 8)) >> 4;}
-  boardTemp = sensorTemp * 0.13762 + 19.54762;*/
-  
-//***************************************************************************
-//L3GD20 Gyroscope
-//***************************************************************************
-void beginGyro(){
-
-  #define L3GD20_ADDRESS           0x6B
-  #define GYRO_REGISTER_CTRL_REG1  0x20
-  #define GYRO_REGISTER_CTRL_REG4  0x23
-  
-  //reset then enable
-  write8(L3GD20_ADDRESS, GYRO_REGISTER_CTRL_REG1, 0x00);
-  write8(L3GD20_ADDRESS, GYRO_REGISTER_CTRL_REG1, 0x0F);
-  
-  //set gain
-  write8(L3GD20_ADDRESS, GYRO_REGISTER_CTRL_REG4, 0x20);
-
-  //set data rate: metro 400Hz, Teensy 800Hz
-  #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-    write8(L3GD20_ADDRESS, GYRO_REGISTER_CTRL_REG1, 0xdf);
-  #else
-    write8(L3GD20_ADDRESS, GYRO_REGISTER_CTRL_REG1, 0xaf);
-  #endif
-  }
-
-void getGyro(){
-  #define GYRO_REGISTER_OUT_X_L (0x28)
-  readSensor(L3GD20_ADDRESS, (GYRO_REGISTER_OUT_X_L | 0x80), (byte)3);}
-
-//***************************************************************************
-//BMP180 Pressure Sensor
+//BMP280 Barometric Pressure Sensor
 //***************************************************************************
 /***************************************************************************
-  This is a library for the BMP085 pressure sensor
+  This is a library for the BMP280 pressure sensor
 
-  Designed specifically to work with the Adafruit BMP085 or BMP180 Breakout 
-  ----> http://www.adafruit.com/products/391
-  ----> http://www.adafruit.com/products/1603
+  Designed specifically to work with the Adafruit BMP280 Breakout
+  ----> http://www.adafruit.com/products/2651
 
-  These displays use I2C to communicate, 2 pins are required to interface.
+  These sensors use I2C to communicate, 2 pins are required to interface.
 
   Adafruit invests time and resources providing this open source code,
   please support Adafruit andopen-source hardware by purchasing products
   from Adafruit!
 
-  Written by Kevin Townsend for Adafruit Industries.  
+  Written by Kevin Townsend for Adafruit Industries.
   BSD license, all text above must be included in any redistribution
-***************************************************************************/
-#define BMP085_ADDRESS  (0x77)
-#define _bmp085Mode     (3)
+ ***************************************************************************/
+#define BMP280_ADDRESS                (0x77)
 
-struct bmp085_calib_data
-{
-      int16_t  ac1;
-      int16_t  ac2;
-      int16_t  ac3;
-      uint16_t ac4;
-      uint16_t ac5;
-      uint16_t ac6;
-      int16_t  b1;
-      int16_t  b2;
-      int32_t  b5;
-      int16_t  mb;
-      int16_t  mc;
-      int16_t  md;
-    } ;
-static bmp085_calib_data _bmp085_coeffs;
+ enum
+    {
+      BMP280_REGISTER_DIG_T1              = 0x88,
+      BMP280_REGISTER_DIG_T2              = 0x8A,
+      BMP280_REGISTER_DIG_T3              = 0x8C,
 
-static void read8(byte reg, uint8_t *value){
-  Wire.beginTransmission((uint8_t)BMP085_ADDRESS);
+      BMP280_REGISTER_DIG_P1              = 0x8E,
+      BMP280_REGISTER_DIG_P2              = 0x90,
+      BMP280_REGISTER_DIG_P3              = 0x92,
+      BMP280_REGISTER_DIG_P4              = 0x94,
+      BMP280_REGISTER_DIG_P5              = 0x96,
+      BMP280_REGISTER_DIG_P6              = 0x98,
+      BMP280_REGISTER_DIG_P7              = 0x9A,
+      BMP280_REGISTER_DIG_P8              = 0x9C,
+      BMP280_REGISTER_DIG_P9              = 0x9E,
+
+      BMP280_REGISTER_CHIPID             = 0xD0,
+      BMP280_REGISTER_VERSION            = 0xD1,
+      BMP280_REGISTER_SOFTRESET          = 0xE0,
+
+      BMP280_REGISTER_CAL26              = 0xE1,  // R calibration stored in 0xE1-0xF0
+
+      BMP280_REGISTER_CONTROL            = 0xF4,
+      BMP280_REGISTER_CONFIG             = 0xF5,
+      BMP280_REGISTER_PRESSUREDATA       = 0xF7,
+      BMP280_REGISTER_TEMPDATA           = 0xFA,
+    };
+
+typedef struct
+    {
+      uint16_t dig_T1;
+      int16_t  dig_T2;
+      int16_t  dig_T3;
+
+      uint16_t dig_P1;
+      int16_t  dig_P2;
+      int16_t  dig_P3;
+      int16_t  dig_P4;
+      int16_t  dig_P5;
+      int16_t  dig_P6;
+      int16_t  dig_P7;
+      int16_t  dig_P8;
+      int16_t  dig_P9;
+
+      uint8_t  dig_H1;
+      int16_t  dig_H2;
+      uint8_t  dig_H3;
+      int16_t  dig_H4;
+      int16_t  dig_H5;
+      int8_t   dig_H6;
+    } bmp280_calib_data;
+
+bmp280_calib_data _bmp280_calib;
+
+boolean beginBMP280(){
+  
+  if (read8(BMP280_REGISTER_CHIPID, BMP280_ADDRESS) != 0x58)
+    return false;
+
+  delay(100);
+  readCoefficients();
+  //put the BMP280 into sleep mode
+  write8(BMP280_REGISTER_CONTROL, BMP280_ADDRESS, 0x00);
+  //Set the config register to 0.5ms standby, 16 IIR coeff, 
+  write8(BMP280_REGISTER_CONFIG,  BMP280_ADDRESS, 0x1C);//16 = 0b00011100 = 0x1C, 8 = 0b00001100 = 0x0C
+  //Set the control register to Ultra high resolution and sleep mode: osrr_t,osrs_p,mode
+  write8(BMP280_REGISTER_CONTROL, BMP280_ADDRESS, 0x54);//0b00111111 = 0x3F, 0b01010100 = 0x54, 0b01011111 = 0x5F
+  
+  return true;
+}
+
+void readCoefficients(){
+  
+    _bmp280_calib.dig_T1 = read16_LE(BMP280_REGISTER_DIG_T1, BMP280_ADDRESS);
+    _bmp280_calib.dig_T2 = readS16_LE(BMP280_REGISTER_DIG_T2, BMP280_ADDRESS);
+    _bmp280_calib.dig_T3 = readS16_LE(BMP280_REGISTER_DIG_T3, BMP280_ADDRESS);
+
+    _bmp280_calib.dig_P1 = read16_LE(BMP280_REGISTER_DIG_P1, BMP280_ADDRESS);
+    _bmp280_calib.dig_P2 = readS16_LE(BMP280_REGISTER_DIG_P2, BMP280_ADDRESS);
+    _bmp280_calib.dig_P3 = readS16_LE(BMP280_REGISTER_DIG_P3, BMP280_ADDRESS);
+    _bmp280_calib.dig_P4 = readS16_LE(BMP280_REGISTER_DIG_P4, BMP280_ADDRESS);
+    _bmp280_calib.dig_P5 = readS16_LE(BMP280_REGISTER_DIG_P5, BMP280_ADDRESS);
+    _bmp280_calib.dig_P6 = readS16_LE(BMP280_REGISTER_DIG_P6, BMP280_ADDRESS);
+    _bmp280_calib.dig_P7 = readS16_LE(BMP280_REGISTER_DIG_P7, BMP280_ADDRESS);
+    _bmp280_calib.dig_P8 = readS16_LE(BMP280_REGISTER_DIG_P8, BMP280_ADDRESS);
+    _bmp280_calib.dig_P9 = readS16_LE(BMP280_REGISTER_DIG_P9, BMP280_ADDRESS);
+}
+
+void bmpGetReading(){
+
+  //---------------------------------------------------------------
+  //burst read from the registers
+  //---------------------------------------------------------------
+
+  Wire.beginTransmission(BMP280_ADDRESS);
+  Wire.write(BMP280_REGISTER_PRESSUREDATA);
+  Wire.endTransmission(I2C_NOSTOP);
+  Wire.requestFrom(BMP280_ADDRESS, (byte)6);
+  while(Wire.available() < 6){};
+
+  int32_t adc_P;
+  adc_P = Wire.read();
+  adc_P <<= 8;
+  adc_P |= Wire.read();
+  adc_P <<= 8;
+  adc_P |= Wire.read();
+  adc_P >>= 4;
+  
+  int32_t adc_T;
+  adc_T = Wire.read();
+  adc_T <<= 8;
+  adc_T |= Wire.read();
+  adc_T <<= 8;
+  adc_T |= Wire.read();
+  adc_T >>= 4;
+
+  //put the BMP280 into forced mode
+  write8(BMP280_REGISTER_CONTROL, BMP280_ADDRESS, 0x56); //0b01010110 = 0x56
+  
+  //---------------------------------------------------------------
+  //compensate and compute temperature
+  //---------------------------------------------------------------
+  
+  int32_t var1, var2, t_fine;
+
+  var1  = ((((adc_T>>3) - ((int32_t)_bmp280_calib.dig_T1 <<1))) *
+     ((int32_t)_bmp280_calib.dig_T2)) >> 11;
+
+  var2  = (((((adc_T>>4) - ((int32_t)_bmp280_calib.dig_T1)) *
+       ((adc_T>>4) - ((int32_t)_bmp280_calib.dig_T1))) >> 12) *
+     ((int32_t)_bmp280_calib.dig_T3)) >> 14;
+
+  t_fine = var1 + var2;
+
+  temperature  = (t_fine * 5 + 128) >> 8;
+  temperature *= .01;
+  //---------------------------------------------------------------
+  //Read pressure and convert
+  //---------------------------------------------------------------
+
+  int64_t var3, var4, p;
+
+  var3 = ((int64_t)t_fine) - 128000;
+  var4 = var3 * var3 * (int64_t)_bmp280_calib.dig_P6;
+  var4 = var4 + ((var3*(int64_t)_bmp280_calib.dig_P5)<<17);
+  var4 = var4 + (((int64_t)_bmp280_calib.dig_P4)<<35);
+  var3 = ((var3 * var3 * (int64_t)_bmp280_calib.dig_P3)>>8) +
+    ((var3 * (int64_t)_bmp280_calib.dig_P2)<<12);
+  var3 = (((((int64_t)1)<<47)+var3))*((int64_t)_bmp280_calib.dig_P1)>>33;
+
+  if (var3 == 0) {
+    pressure = 0;  // avoid exception caused by division by zero
+  }
+  else{
+    p = 1048576 - adc_P;
+    p = (((p<<31) - var4)*3125) / var3;
+    var3 = (((int64_t)_bmp280_calib.dig_P9) * (p>>13) * (p>>13)) >> 25;
+    var4 = (((int64_t)_bmp280_calib.dig_P8) * p) >> 19;
+
+    p = ((p + var3 + var4) >> 8) + (((int64_t)_bmp280_calib.dig_P7)<<4);
+    pressure = (float)p/256;}
+
+  //--------------------------------------------
+  //Calculate Altitude
+  //--------------------------------------------
+  
+  pressure *= 0.01;
+
+  Alt = 44330 * (1.0 - pow(pressure / (seaLevelPressure), 0.1903));
+}
+
+uint16_t read16(byte reg, byte _i2caddr){
+  
+  uint16_t value;
+
+  Wire.beginTransmission((uint8_t)_i2caddr);
   Wire.write((uint8_t)reg);
-  Wire.endTransmission();
-  Wire.requestFrom((uint8_t)BMP085_ADDRESS, (byte)1);
-  *value = Wire.read();
-  Wire.endTransmission();}
+  Wire.endTransmission(I2C_NOSTOP);
+  Wire.requestFrom((uint8_t)_i2caddr, (byte)2);
+  value = (Wire.read() << 8) | Wire.read();
 
-static void beginPressure(void){
+  return value;}
+
+uint16_t read16_LE(byte reg, byte _i2caddr) {
+  uint16_t temp = read16(reg, _i2caddr);
+  return (temp >> 8) | (temp << 8);}
+
+int16_t readS16_LE(byte reg, byte _i2caddr){
+  return (int16_t)read16_LE(reg, _i2caddr);}
+
+int16_t readS16(byte reg, byte _i2caddr){
+  return (int16_t)read16(reg, _i2caddr);}
+
+uint8_t read8(byte reg, byte _i2caddr){
   
-  #define BMP085_REGISTER_CAL_AC1 0xAA
-  #define BMP085_REGISTER_CAL_AC2 0xAC
-  #define BMP085_REGISTER_CAL_AC3 0xAE
-  #define BMP085_REGISTER_CAL_AC4 0xB0
-  #define BMP085_REGISTER_CAL_AC5 0xB2
-  #define BMP085_REGISTER_CAL_AC6 0xB4
-  #define BMP085_REGISTER_CAL_B1  0xB6
-  #define BMP085_REGISTER_CAL_B2  0xB8
-  #define BMP085_REGISTER_CAL_MB  0xBA
-  #define BMP085_REGISTER_CAL_MC  0xBC
-  #define BMP085_REGISTER_CAL_MD  0xBE
+  uint8_t value;
 
-  //Read calibration coefficients
-  readS16(BMP085_ADDRESS, BMP085_REGISTER_CAL_AC1, &_bmp085_coeffs.ac1);
-  readS16(BMP085_ADDRESS, BMP085_REGISTER_CAL_AC2, &_bmp085_coeffs.ac2);
-  readS16(BMP085_ADDRESS, BMP085_REGISTER_CAL_AC3, &_bmp085_coeffs.ac3);
-  read16(BMP085_ADDRESS, BMP085_REGISTER_CAL_AC4, &_bmp085_coeffs.ac4);
-  read16(BMP085_ADDRESS, BMP085_REGISTER_CAL_AC5, &_bmp085_coeffs.ac5);
-  read16(BMP085_ADDRESS, BMP085_REGISTER_CAL_AC6, &_bmp085_coeffs.ac6);
-  readS16(BMP085_ADDRESS, BMP085_REGISTER_CAL_B1, &_bmp085_coeffs.b1);
-  readS16(BMP085_ADDRESS, BMP085_REGISTER_CAL_B2, &_bmp085_coeffs.b2);
-  readS16(BMP085_ADDRESS, BMP085_REGISTER_CAL_MB, &_bmp085_coeffs.mb);
-  readS16(BMP085_ADDRESS, BMP085_REGISTER_CAL_MC, &_bmp085_coeffs.mc);
-  readS16(BMP085_ADDRESS, BMP085_REGISTER_CAL_MD, &_bmp085_coeffs.md);}
-
-void initiateTemp(){
-  #define BMP085_REGISTER_CONTROL         0xF4
-  #define BMP085_REGISTER_READTEMPCMD     0x2E
-  #define BMP085_REGISTER_READPRESSURECMD 0x34
-  
-  write8(BMP085_ADDRESS, BMP085_REGISTER_CONTROL, BMP085_REGISTER_READTEMPCMD);}
-
-void initiatePressure(float *temp){
-  int32_t  ut = 0;
-  int32_t UT, X1, X2, B5;     // following ds convention
-  float t;
-
-  //Read ucompensated temperature
-  #define BMP085_REGISTER_TEMPDATA 0xF6
-  uint16_t rt;
-  read16(BMP085_ADDRESS, BMP085_REGISTER_TEMPDATA, &rt);
-  ut = rt;
-
-  //Calculate true temperature
-  X1 = (ut - (int32_t)_bmp085_coeffs.ac6) * ((int32_t)_bmp085_coeffs.ac5) >> 15;
-  X2 = ((int32_t)_bmp085_coeffs.mc << 11) / (X1+(int32_t)_bmp085_coeffs.md);
-  _bmp085_coeffs.b5 = X1 + X2;
-  t = (_bmp085_coeffs.b5+8) >> 4;
-  t /= 10;
-  *temp = t;
-  
-  //Initiate Pressure
-  write8(BMP085_ADDRESS, BMP085_REGISTER_CONTROL, BMP085_REGISTER_READPRESSURECMD + (_bmp085Mode << 6));}
-
-void getPressure(float *pressure){
-
-  uint8_t  p8;
-  uint16_t p16;
-  int32_t  up = 0, compp = 0;
-  int32_t  x1, x2, b5, b6, x3, b3, p;
-  uint32_t b4, b7;
-
-  //Read uncompensated pressure
-  #define BMP085_REGISTER_PRESSUREDATA 0xF6
-  read16(BMP085_ADDRESS, BMP085_REGISTER_PRESSUREDATA, &p16);
-  up = (uint32_t)p16 << 8;
-  read8(BMP085_REGISTER_PRESSUREDATA+2, &p8);
-  up += p8;
-  up >>= (8 - _bmp085Mode);
-
-  //Calculate true pressure
-  b6 = _bmp085_coeffs.b5 - 4000;
-  x1 = (_bmp085_coeffs.b2 * ((b6 * b6) >> 12)) >> 11;
-  x2 = (_bmp085_coeffs.ac2 * b6) >> 11;
-  x3 = x1 + x2;
-  b3 = (((((int32_t) _bmp085_coeffs.ac1) * 4 + x3) << _bmp085Mode) + 2) >> 2;
-  x1 = (_bmp085_coeffs.ac3 * b6) >> 13;
-  x2 = (_bmp085_coeffs.b1 * ((b6 * b6) >> 12)) >> 16;
-  x3 = ((x1 + x2) + 2) >> 2;
-  b4 = (_bmp085_coeffs.ac4 * (uint32_t) (x3 + 32768)) >> 15;
-  b7 = ((uint32_t) (up - b3) * (50000 >> _bmp085Mode));
-
-  if (b7 < 0x80000000){p = (b7 << 1) / b4;}
-  else {p = (b7 / b4) << 1;}
-
-  x1 = (p >> 8) * (p >> 8);
-  x1 = (x1 * 3038) >> 16;
-  x2 = (-7357 * p) >> 16;
-  compp = p + ((x1 + x2 + 3791) >> 4);
-
-  /* Assign compensated pressure value */
-  *pressure = compp/100.0F;}
-
-float pressureToAltitude(float seaLevel, float atmospheric){return 44330.0 * (1.0 - pow(atmospheric / seaLevel, 0.1903));}
-
-//***************************************************************************
-//ADS1115 ADC interface to ADXL377
-//***************************************************************************
-/**************************************************************************/
-/*!
-    @file     Adafruit_ADS1015.cpp
-    @author   K.Townsend (Adafruit Industries)
-    @license  BSD (see license.txt)
-
-    Driver for the ADS1015/ADS1115 ADC
-
-    This is a library for the Adafruit MPL115A2 breakout
-    ----> https://www.adafruit.com/products/???
-
-    Adafruit invests time and resources providing this open source code,
-    please support Adafruit and open-source hardware by purchasing
-    products from Adafruit!
-
-    @section  HISTORY
-
-    v1.0 - First release
-*/
-/**************************************************************************/
-
-#define ADS1115_ADDRESS                 (0x48)
-
-static void writeRegister(uint8_t i2cAddress, uint8_t reg, uint16_t value) {
-  Wire.beginTransmission(i2cAddress);
+  Wire.beginTransmission((uint8_t)_i2caddr);
   Wire.write((uint8_t)reg);
-  Wire.write((uint8_t)(value>>8));
-  Wire.write((uint8_t)(value & 0xFF));
-  Wire.endTransmission();}
+  Wire.endTransmission(I2C_NOSTOP);
+  Wire.requestFrom((uint8_t)_i2caddr, (byte)1);
+  value = Wire.read();
 
-void beginADC(byte dataRate){
+  return value;}
 
-  #define ADS1115_REG_CONFIG_DR_32SPS    (0x40)
-  #define ADS1115_REG_CONFIG_DR_800SPS   (0x00E0)
-  #define ADS1115_REG_CONFIG_DR_400SPS   (0x00C0)  
-  uint16_t rateSPS;
+void write8(byte reg, byte _i2caddr, byte value){
 
-  switch(dataRate){
-    case 1: rateSPS = ADS1115_REG_CONFIG_DR_800SPS;
-    break;
-
-    case 2: rateSPS = ADS1115_REG_CONFIG_DR_400SPS;
-    break;
-
-    case 3: rateSPS = ADS1115_REG_CONFIG_DR_32SPS;
-    break;}
-  
-  uint16_t configADS = 
-   
-  #define ADS1115_REG_CONFIG_CQUE_NONE    (0x0003)  
-  ADS1115_REG_CONFIG_CQUE_NONE    | // Disable the comparator (default val)
-  #define ADS1115_REG_CONFIG_CLAT_NONLAT  (0x0000)
-  ADS1115_REG_CONFIG_CLAT_NONLAT  | // Non-latching (default val)
-  #define ADS1115_REG_CONFIG_CPOL_ACTVLOW (0x0000) 
-  ADS1115_REG_CONFIG_CPOL_ACTVLOW | // Alert/Rdy active low   (default val)
-  #define ADS1115_REG_CONFIG_CMODE_TRAD   (0x0000)  
-  ADS1115_REG_CONFIG_CMODE_TRAD   | // Traditional comparator (default val)
-  //set the sample rate
-  rateSPS   | 
-  #define ADS1115_REG_CONFIG_MODE_CONTIN  (0x0000)  
-  ADS1115_REG_CONFIG_MODE_CONTIN;   // Continuous mode
-
-  //Set gain
-  #define ADS1115_REG_CONFIG_PGA_4_096V   (0x0200) 
-  configADS |= ADS1115_REG_CONFIG_PGA_4_096V;
-
-  //Set channel
-  #define ADS1115_REG_CONFIG_MUX_SINGLE_0 (0x4000)  
-  configADS |= ADS1115_REG_CONFIG_MUX_SINGLE_0;
-
-  // Set 'start single-conversion' bit
-  #define ADS1115_REG_CONFIG_OS_SINGLE    (0x8000)  
-  configADS |= ADS1115_REG_CONFIG_OS_SINGLE;
-
-  // Write config register to the ADC
-  #define ADS1115_REG_POINTER_CONFIG      (0x01)
-  writeRegister(ADS1115_ADDRESS, ADS1115_REG_POINTER_CONFIG, configADS);}
-
- void getADC0(){
-  #define ADS1115_REG_POINTER_CONVERT     (0x00)
-  readS16(ADS1115_ADDRESS, ADS1115_REG_POINTER_CONVERT, &analogAccelX);}  
-
-
+  Wire.beginTransmission((uint8_t)_i2caddr);
+  Wire.write((uint8_t)reg);
+  Wire.write((uint8_t)value);
+  Wire.endTransmission(I2C_STOP);}
+    
