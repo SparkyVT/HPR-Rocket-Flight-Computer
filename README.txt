@@ -13,8 +13,8 @@ as the PerfectFlite StratoLogger is strongly recommended.
 --------FEATURES----------
 1000Hz 3-axis digital 24G and 100G accelerometer data logging
 1000Hz 3-axis digital 2000dps gyroscope data logging
-1000Hz of flight events
-1000Hz of integrated speed, altitude, rotation, continuity
+1000Hz of flight events and continuity
+1000Hz of integrated speed, altitude, and rotation
 20Hz of digital barometric data logging
 20Hz of telemetry output (time, event, speed, altitude, accel, GPS, baro, rotation)/10Hz of magnetic data logging
 8Hz of GPS data logging
