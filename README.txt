@@ -40,7 +40,7 @@ Telemetry data recorded to ground station SD card
 
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 3.5 (tested) or 3.6 or 3.2 (untested)
- 9 DoF IMU: LSM9DS1
+         9 DoF IMU: LSM9DS1
 100G Accelerometer: H3LIS331DL
    Pressure Sensor: BMP280
                GPS: UBLOX NEO-M8N or SAM-M8Q
