@@ -3,6 +3,7 @@
 //This is built for the Teensy3.5 board
 //-----------Change Log------------
 //V2_0 Final Version of the 2d Gen Initial Code
+//V2_1 Incorporates quaternions and adds user adjustable settings
 //Compatible Sentences: GPGGA, GPRMC, GNGGA, GNRMC
 //--------FEATURES----------
 //1000Hz 3-axis digital 24G and 100G accelerometer data logging
@@ -27,7 +28,6 @@
 //Reads user flight profile from SD card
 //--------UPGRADES----------
 //User adjustable radio frequency, bandwidth, & modulation
-//Incorporate Quaternions or develop magnetic sensor fusion
 //Ground-station Adjustable Radio Frequency
 //Auto-changing accelerometer scale
 //------KNOWN PROBLEMS------
