@@ -23,6 +23,7 @@ void beginLSM9DS1(){
   #define LSM9DS1_REGISTER_CTRL_REG1_M         (0x20)
   #define LSM9DS1_REGISTER_CTRL_REG3_M         (0x22)
   #define LSM9DS1_REGISTER_CTRL_REG4_M         (0x23)
+  #define LSM9DS1_REGISTER_CTRL_REG3_G         (0x12)
 
   //----------------------
   //GET WHO AM I REGISTERS
@@ -41,6 +42,9 @@ void beginLSM9DS1(){
   //Set 2000dps Range, 952 Hz ODR
   write8(LSM9DS1_REGISTER_CTRL_REG1_G, LSM9DS1_ADDRESS_ACCELGYRO, 0b11011000);
 
+  //enable high-pass filtern at 30Hz cutoff frequency
+  write8(LSM9DS1_REGISTER_CTRL_REG3_G, LSM9DS1_ADDRESS_ACCELGYRO, 0b01000001);
+
   //----------------------
   //CONFIGURE MAGNETOMETER
   //----------------------
@@ -51,6 +55,55 @@ void beginLSM9DS1(){
   //Mag Reverse Magnetometer MSB / LSB Order, Z-Axis high-perf mode
   write8(LSM9DS1_REGISTER_CTRL_REG4_M, LSM9DS1_ADDRESS_MAG, 0b000011100);
   }//end begin
+
+void getAccelGyro(){
+
+  //this uses the LSM9DS1 burst read to rapidly sample the sensors
+  #define LSM9DS1_REGISTER_OUT_X_L_XL (0x28)
+  #define LSM9DS1_REGISTER_OUT_X_L_G  (0x18)
+  //readSensor(LSM9DS1_ADDRESS_ACCELGYRO, 0x80 | LSM9DS1_REGISTER_OUT_X_L_XL, (byte)1);
+  
+  Wire.beginTransmission(LSM9DS1_ADDRESS_ACCELGYRO);
+  //Wire.write(0x80 | LSM9DS1_REGISTER_OUT_X_L_G);
+  Wire.write(LSM9DS1_REGISTER_OUT_X_L_G);
+  Wire.endTransmission();
+  Wire.requestFrom(LSM9DS1_ADDRESS_ACCELGYRO, (byte)12);
+
+  //wait for the gyro data to arrive
+  while(Wire.available() < 6){};
+  
+  //Capture current timestamp
+  timeGyroClockPrev = timeGyroClock;
+  timeGyroClock = micros();
+
+  //wait for the accelerometer data to arrive
+  while(Wire.available() < 6){};
+
+  //Capture current timestamp
+  timeClockPrev = timeClock;
+  timeClock = micros();
+
+  //read the data
+  uint8_t gxLow  = Wire.read();
+  uint8_t gxHigh = Wire.read();
+  uint8_t gyLow  = Wire.read();
+  uint8_t gyHigh = Wire.read();
+  uint8_t gzLow  = Wire.read();
+  uint8_t gzHigh = Wire.read();
+  uint8_t axLow  = Wire.read();
+  uint8_t axHigh = Wire.read();
+  uint8_t ayLow  = Wire.read();
+  uint8_t ayHigh = Wire.read();
+  uint8_t azLow  = Wire.read();
+  uint8_t azHigh = Wire.read();
+  
+  accelX = (int16_t)(axLow | (axHigh << 8));
+  accelY = (int16_t)(ayLow | (ayHigh << 8));
+  accelZ = (int16_t)(azLow | (azHigh << 8));
+  gyroX  = (int16_t)(gxLow | (gxHigh << 8));
+  gyroY  = (int16_t)(gyLow | (gyHigh << 8));
+  gyroZ  = (int16_t)(gzLow | (gzHigh << 8));
+  }
 
 void getAccel(){
   #define LSM9DS1_REGISTER_OUT_X_L_XL (0x28)

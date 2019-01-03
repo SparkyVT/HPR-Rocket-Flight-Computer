@@ -8,7 +8,7 @@ void getRotnDCM2D(){
     if (dx > 0) {counterSign = 1;}
     else {counterSign = -1;}
     dx -= counterSign * oneDeg;
-    rotnX += counterSign;
+    rollZ += counterSign;
     //cos(A+B) = cosAcosB - sinAsinB A=big B=small cos(1deg)=0.999847695~=1
     cosX = PrevCosX * 0.999847695 - PrevSinX * (counterSign * 0.017452406);
     //sin(A+B) = sinAcosB + cosAsinB A=big B=small
@@ -26,22 +26,22 @@ void getRotnDCM2D(){
     if (dy > 0) {counterSign = 1;}
     else {counterSign = -1;}
     dy -= counterSign * oneTenthDeg;
-    rotnY += counterSign;
+    yawY += counterSign;
     calcOffVert = true;}
   //Overflow Z data and recompute as needed
   while (abs(dz) > oneTenthDeg) {
     if (dz > 0) {counterSign = 1;}
     else {counterSign = -1;}
     dz -= counterSign * oneTenthDeg;
-    rotnZ += counterSign;
+    pitchX += counterSign;
     calcOffVert = true;}
 
   //Check if the max angle is exceeded, shutdown staging if angle > 45 is detected
   if (!sustainerFireCheck && !rotationFault && calcOffVert){
     
     //calculate the off-vertical rotation angle
-    if(abs(rotnY) > 10 && abs(rotnZ) > 10){offVert = sqrt(sq(rotnY) + sq(rotnZ));}
-    else{offVert = max(abs(rotnY), abs(rotnZ));}
+    if(abs(yawY) > 10 && abs(pitchX) > 10){offVert = sqrt(sq(yawY) + sq(pitchX));}
+    else{offVert = max(abs(yawY), abs(pitchX));}
     calcOffVert = false;
       
     //check to see if the maximum angle has been exceeded
@@ -50,7 +50,7 @@ void getRotnDCM2D(){
     if(offVert > 450){rotationFault = true;}}
 }//end void
 
-/*void getRotnQuat(float dx, float dy, float dz){
+void getQuatRotn(float dx, float dy, float dz){
 
 //Local Vectors
 float NewPoint[4];
@@ -59,7 +59,13 @@ float Rotn1[4];
 float Rotn2[4];
 float Rotn3[4];
 
+//Local rotation holders
+float quatPitchX;
+float quatYawY;
+float quatRollZ;
+
 const float pi = 3.14159265359;
+const float radDeg = 57.295780;
     
 //Compute quaternion derivative
 QuatDiff[1] = 0.5 * (-1 * dx * Quat[2] - dy * Quat[3] - dz * Quat[4]);
@@ -108,19 +114,25 @@ Rotn3[2] = 2 * (cd + ab);
 Rotn3[3] = a2 - b2 - c2 + d2;
 
 //Compute angle off vertical
-pitchX = atan2(Rotn3[2], Rotn3[3]);
-rollZ = atan2(Rotn2[1], Rotn1[1]);
-yawY = asin(-Rotn3[1]);
+quatPitchX = atan2(Rotn3[2], Rotn3[3]);
+quatRollZ = atan2(Rotn2[1], Rotn1[1]);
+quatYawY = asin(-Rotn3[1]);
 
 float tanYaw;
 float tanPitch;
 
-if(yawY <= 0.176){tanYaw = yawY;}
-else{tanYaw = tan(yawY);}
+if(quatYawY <= 0.176){tanYaw = quatYawY;}
+else{tanYaw = tan(quatYawY);}
 
-if(pitchX <= 0.176){tanPitch = pitchX;}
-else{tanPitch = tan(pitchX);}
+if(quatPitchX <= 0.176){tanPitch = quatPitchX;}
+else{tanPitch = tan(quatPitchX);}
 
 offVert = atan(pow(tanYaw*tanYaw + tanPitch*tanPitch, 0.5));
 
-}*/
+rollZ = (int)(quatRollZ*radDeg*10);
+yawY = (int)(quatYawY*radDeg*10);
+pitchX = (int)(quatPitchX*radDeg*10);
+
+//Check if the max angle is exceeded
+if (!sustainerFireCheck && rotation_OK && offVert > max_ang){rotation_OK = false;}
+}
