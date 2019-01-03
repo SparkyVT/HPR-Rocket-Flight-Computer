@@ -1,6 +1,6 @@
 Rocket Name = Mach Shock;
 callSign = KK4ELF;
-magSwitchEnable = 0;
+magSwitchEnable = 1;
 TXenable = 1;
 TXpwr = 13;
 silentMode = 0;
