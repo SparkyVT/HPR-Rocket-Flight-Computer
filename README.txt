@@ -11,14 +11,15 @@ supersonic flights to 18K feet.  For large projects, a backup computer such
 as the PerfectFlite StratoLogger is strongly recommended.  
 
 --------FEATURES----------
-1000Hz 3-axis digital 24G and 100G accelerometer data logging
-1000Hz 3-axis digital 2000dps gyroscope data logging
-1000Hz of flight events and continuity
-1000Hz of integrated speed, altitude, and rotation
+1300Hz 3-axis digital 24G and 100G accelerometer data logging
+1300Hz 3-axis digital 2000dps gyroscope data logging
+1300Hz of flight events and continuity
+1300Hz of integrated speed, altitude, and rotation
 20Hz of digital barometric data logging
-20Hz of telemetry output (time, event, speed, altitude, accel, GPS, baro, orientation)
+20Hz of telemetry output (time, event, speed, altitude, accel, GPS, orientation)
 10Hz of magnetic data logging
 8Hz of GPS data logging
+4 pyro outputs (user adjustable)
 Mach immune events
 Sensor Fusion based apogee event
 Barometric based main deploy event
@@ -41,9 +42,9 @@ Telemetry data recorded to ground station SD card
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 3.5 (tested) or 3.6 or 3.2 (untested)
          9 DoF IMU: LSM9DS1
-100G Accelerometer: H3LIS331DL
-   Pressure Sensor: BMP280
-               GPS: UBLOX NEO-M8N or SAM-M8Q
+100G Accelerometer: ADXL377
+   Pressure Sensor: MPL5115A2
+               GPS: UBLOX MAX-M8Q or SAM-M8Q
     LoRa Telemetry: RFM95W (License Free - untested) or RFM96W (Ham License Only - tested)
    Tactile Buttons: 0.25 in spacing
                PCB: Create your own or use the provided design file for PCBexpress
@@ -80,11 +81,11 @@ Note: TinyGPS++ is only compatible with GPGGA and GPRMC sentences.  If using
 a UBLOX M8N or other GNSS unit, then TinyGPS++ must be modified to accept
 the GNGGA & GNRMC format.  Support available upon request.
 
-Note: Required mounting space is 9.5 square inches.  Will fit in
-a 2-inch avionics bay that is at least 1 inch wide and 8 inches long.  
+Note: 1.2 in x 3.8 in size board.  Required mounting space is 9.5 square inches.
+Will fit in a 2-inch avionics bay that is at least 1 inch wide and 4 inches long.  
 Components mount on both sides.  See provided pictures for examples.
 
-Note: Estimated Flight Computer Cost = $150
+Note: Estimated Flight Computer Cost = $135
 Note: Estimated Ground Station Cost = $165
 Note: Estimated build time = 2hrs
 Note: Estimated programing & debugging time = 10hrs
