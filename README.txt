@@ -35,7 +35,7 @@ User flight profile settings read from SD card
 Optional magnetic startup switch
 Onboard flight data recorded to SD card
 Separate output file for each flight up to 99 stored flights
-User selectable test mode for bench testing via button
+User selectable test mode for bench testing via button with Serial output
 User selectable self-calibration mode via button
 Telemetry data recorded to ground station SD card
 
