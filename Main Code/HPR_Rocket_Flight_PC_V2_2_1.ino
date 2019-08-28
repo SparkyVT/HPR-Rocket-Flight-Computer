@@ -957,7 +957,7 @@ void setup(void) {
   if(testMode){Serial.print(F("Reporting last flight: "));}
   for(byte i=0;i<6;i++){maxAltDigits[i]=EEPROM.read(i);}
   while (maxAltDigits[altDigits-1]==0){altDigits--;}  
-  for(byte i = altDigits + 1; i > 0; i--){
+  for(byte i = altDigits; i > 0; i--){
     delay(800);
     if(testMode){Serial.print(maxAltDigits[i-1]);}
     for(byte j = maxAltDigits[i-1]; j > 0; j--){
