@@ -326,7 +326,7 @@ void loop() {
   Serial.print("Mag: ");Serial.print(magX);Serial.print(",");Serial.print(magY);Serial.print(",");Serial.println(magZ);
   Serial.print("HighG: ");Serial.print(highGx);Serial.print(",");Serial.print(highGy);Serial.print(",");Serial.println(highGz);
   Serial.print("Baro: ");Serial.print(temperature);Serial.print(",");Serial.print(pressure);Serial.print(",");Serial.println(Alt);
-  rf95.send((uint8_t *)dataPacket, 80); Serial.println("Data Packet Sent");
+  rf95.setModeIdle();rf95.send((uint8_t *)dataPacket, 80); Serial.println("Data Packet Sent");
   
   delay(1000);
 }
