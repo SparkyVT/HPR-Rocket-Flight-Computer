@@ -26,7 +26,7 @@ void configGPS() {
   byte setNav[] = {0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4F, 0x1F};
 
   //Generate the configuration string for Data Rate
-  byte setDataRate[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xFA, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x96};
+  byte setDataRate[] =    {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xFA, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x96};
 
   //Generate the configuration string for NMEA messages
   byte setGLL[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x2B};
@@ -37,10 +37,11 @@ void configGPS() {
 
   //Generate the configuration string for interference resistance settings
   byte setJam[] = {0xB5, 0x62, 0x06, 0x39, 0x08, 0x00, 0xF3, 0xAC, 0x62, 0xAD, 0x1E, 0x43, 0x00, 0x00, 0x56, 0x45};
-
+  // byte setJam[] = {0xB5, 0x62, 0x06, 0x39, 0x00, 0x00, 0xF3, 0xAC, 0x62, 0xAD, 0x1E, 0xD3, 0x00, 0x00, 0xE6, 0xF5};
+  
   //Set Navigation Mode
   while(gpsSetSuccess < 3) {
-    if(testMode)Serial.print("Setting Navigation Mode... ");
+    if(testMode){Serial.print("Setting Navigation Mode... ");}
     sendUBX(&setNav[0], sizeof(setNav));  //Send UBX Packet
     gpsSetSuccess += getUBX_ACK(&setNav[2]); //Passes Class ID and Message ID to the ACK Receive function
   }
@@ -49,29 +50,29 @@ void configGPS() {
 
   //Set Data Update Rate
   while(gpsSetSuccess < 3) {
-    if(testMode)Serial.print("Setting Data Update Rate... ");
+    if(testMode){Serial.print("Setting Data Update Rate... ");}
     sendUBX(&setDataRate[0], sizeof(setDataRate));  //Send UBX Packet
     gpsSetSuccess += getUBX_ACK(&setDataRate[2]); //Passes Class ID and Message ID to the ACK Receive function      
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("Data update mode configuration failed.");
+  if (gpsSetSuccess == 3 && testMode){Serial.println("Data update mode configuration failed.");}
   gpsSetSuccess = 0;
 
   //Set Interference Thresholds
   while(gpsSetSuccess < 3) {
-    if(testMode) Serial.print("Deactivating NMEA GLL Messages ");
+    if(testMode){Serial.print("Deactivating NMEA GLL Messages ");}
     sendUBX(setJam, sizeof(setJam));
     gpsSetSuccess += getUBX_ACK(&setJam[2]);
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("NMEA GLL Message Deactivation Failed!");
+  if (gpsSetSuccess == 3 && testMode){Serial.println("NMEA GLL Message Deactivation Failed!");}
   gpsSetSuccess = 0;
 
   //Turn Off NMEA GLL Messages
   while(gpsSetSuccess < 3) {
-    if(testMode) Serial.print("Deactivating NMEA GLL Messages ");
+    if(testMode){Serial.print("Deactivating NMEA GLL Messages ");}
     sendUBX(setGLL, sizeof(setGLL));
     gpsSetSuccess += getUBX_ACK(&setGLL[2]);
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("NMEA GLL Message Deactivation Failed!");
+  if (gpsSetSuccess == 3 && testMode){Serial.println("NMEA GLL Message Deactivation Failed!");}
   gpsSetSuccess = 0;
 
   //Turn Off NMEA GSA Messages
@@ -80,25 +81,25 @@ void configGPS() {
     sendUBX(setGSA, sizeof(setGSA));
     gpsSetSuccess += getUBX_ACK(&setGSA[2]);
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("NMEA GSA Message Deactivation Failed!");  
+  if (gpsSetSuccess == 3 && testMode){Serial.println("NMEA GSA Message Deactivation Failed!");}
   gpsSetSuccess = 0;
 
   //Turn Off NMEA GSV Messages
   while(gpsSetSuccess < 3) {
-    if(testMode)Serial.print("Deactivating NMEA GSV Messages ");
+    if(testMode){Serial.print("Deactivating NMEA GSV Messages ");}
     sendUBX(setGSV, sizeof(setGSV));
     gpsSetSuccess += getUBX_ACK(&setGSV[2]);
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("NMEA GSV Message Deactivation Failed!");  
+  if (gpsSetSuccess == 3 && testMode){Serial.println("NMEA GSV Message Deactivation Failed!");}
   gpsSetSuccess = 0;
 
   //Turn Off NMEA VTG Messages
   while(gpsSetSuccess < 3) {
-    if(testMode) Serial.print("Deactivating NMEA VTG Messages ");
+    if(testMode){Serial.print("Deactivating NMEA VTG Messages ");}
     sendUBX(setVTG, sizeof(setVTG));
     gpsSetSuccess += getUBX_ACK(&setVTG[2]);
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("NMEA VTG Message Deactivation Failed!");
+  if (gpsSetSuccess == 3 && testMode){Serial.println("NMEA VTG Message Deactivation Failed!");}
   gpsSetSuccess = 0;}
 
 void GPSpowerSaveMode(){
@@ -115,31 +116,44 @@ void GPSpowerSaveMode(){
   //Generate configuration string to put reciever into power save mode
   byte setPwr2[] = {0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x01, 0x22, 0x92}; 
 
+  //Generate configuration string to put receiver into 1Hz update mode
+  byte setDataRate1Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};//once per second
+  byte setDataRate01Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x10, 0x27, 0x01, 0x00, 0x01, 0x00, 0x4D, 0xDD};//once per 10 seconds
+
   //Config GNSS
   while(gpsSetSuccess < 3) {
-    if(testMode) Serial.print("Configuring GNSS for Power Save Mode");
+    if(testMode){Serial.print("Configuring GNSS for Power Save Mode");}
     sendUBX(setGNSS, sizeof(setGNSS));
     gpsSetSuccess += getUBX_ACK(&setGNSS[2]);
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("Config GNSS Message Failed!");
+  if (gpsSetSuccess == 3 && testMode){Serial.println("Config GNSS Message Failed!");}
   gpsSetSuccess = 0;
 
     //Config Power Save
   while(gpsSetSuccess < 3) {
-    if(testMode) Serial.print("Configuring Power Save Mode");
+    if(testMode){Serial.print("Configuring Power Save Mode");}
     sendUBX(setPwr, sizeof(setPwr));
     gpsSetSuccess += getUBX_ACK(&setPwr[2]);
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("Config PSM Message Failed!");
+  if (gpsSetSuccess == 3 && testMode){Serial.println("Config PSM Message Failed!");}
   gpsSetSuccess = 0;
 
     //Commit PSM
   while(gpsSetSuccess < 3) {
-    if(testMode) Serial.print("Commit Power Save Mode");
+    if(testMode){Serial.print("Commit Power Save Mode");}
     sendUBX(setPwr2, sizeof(setPwr2));
     gpsSetSuccess += getUBX_ACK(&setPwr2[2]);
   }
-  if (gpsSetSuccess == 3 && testMode) Serial.println("Commit PSM Message Failed!");
+  if (gpsSetSuccess == 3 && testMode){Serial.println("Commit PSM Message Failed!");}
+  gpsSetSuccess = 0;
+
+  //Set Data Update Rate
+  while(gpsSetSuccess < 3) {
+    if(testMode){Serial.print("Setting Data Update Rate... ");}
+    sendUBX(setDataRate01Hz, sizeof(setDataRate01Hz));  //Send UBX Packet
+    gpsSetSuccess += getUBX_ACK(&setDataRate01Hz[2]); //Passes Class ID and Message ID to the ACK Receive function      
+  }
+  if (gpsSetSuccess == 3 && testMode){Serial.println("Data update mode configuration failed.");}
   gpsSetSuccess = 0;
 }
 

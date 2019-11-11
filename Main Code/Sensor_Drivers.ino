@@ -23,6 +23,7 @@ bool beginLSM9DS1(){
   #define LSM9DS1_REGISTER_CTRL_REG5_XL        (0x1F)
   #define LSM9DS1_REGISTER_CTRL_REG6_XL        (0x20)
   #define LSM9DS1_REGISTER_CTRL_REG1_M         (0x20)
+  #define LSM9DS1_REGISTER_CTRL_REG2_M         (0x21)
   #define LSM9DS1_REGISTER_CTRL_REG3_M         (0x22)
   #define LSM9DS1_REGISTER_CTRL_REG4_M         (0x23)
   #define LSM9DS1_REGISTER_CTRL_REG3_G         (0x12)
@@ -53,6 +54,8 @@ bool beginLSM9DS1(){
   //----------------------
   //Mag Temp Compensation, UltraHigh Perf, 10Hz
   write8(LSM9DS1_REGISTER_CTRL_REG1_M, LSM9DS1_ADDRESS_MAG, 0b11110000);
+  //Mag Scale Setting
+  write8(LSM9DS1_REGISTER_CTRL_REG2_M, LSM9DS1_ADDRESS_MAG, 0b01100000);
   //Mag Continuous Conversion
   write8(LSM9DS1_REGISTER_CTRL_REG3_M, LSM9DS1_ADDRESS_MAG, 0b000000000);
   //Mag Reverse Magnetometer MSB / LSB Order, Z-Axis high-perf mode
@@ -68,46 +71,62 @@ void getAccelGyro(){
   #define LSM9DS1_REGISTER_OUT_X_L_G  (0x18)
   //readSensor(LSM9DS1_ADDRESS_ACCELGYRO, 0x80 | LSM9DS1_REGISTER_OUT_X_L_XL, (byte)1);
   
-  Wire.beginTransmission(LSM9DS1_ADDRESS_ACCELGYRO);
+  Wire2.beginTransmission(LSM9DS1_ADDRESS_ACCELGYRO);
   //Wire.write(0x80 | LSM9DS1_REGISTER_OUT_X_L_G);
-  Wire.write(LSM9DS1_REGISTER_OUT_X_L_G);
-  Wire.endTransmission();
-  Wire.requestFrom(LSM9DS1_ADDRESS_ACCELGYRO, (byte)12);
+  Wire2.write(LSM9DS1_REGISTER_OUT_X_L_G);
+  Wire2.endTransmission();
+  Wire2.requestFrom(LSM9DS1_ADDRESS_ACCELGYRO, (byte)12);
 
   //wait for the gyro data to arrive
-  while(Wire.available() < 6){};
+  while(Wire2.available() < 6){};
   
   //Capture current timestamp
   timeGyroClockPrev = timeGyroClock;
   timeGyroClock = micros();
 
   //wait for the accelerometer data to arrive
-  while(Wire.available() < 12){};
+  while(Wire2.available() < 12){};
 
   //Capture current timestamp
   timeClockPrev = timeClock;
   timeClock = micros();
 
   //read the data
-  uint8_t gxLow  = Wire.read();
-  uint8_t gxHigh = Wire.read();
-  uint8_t gyLow  = Wire.read();
-  uint8_t gyHigh = Wire.read();
-  uint8_t gzLow  = Wire.read();
-  uint8_t gzHigh = Wire.read();
-  uint8_t axLow  = Wire.read();
-  uint8_t axHigh = Wire.read();
-  uint8_t ayLow  = Wire.read();
-  uint8_t ayHigh = Wire.read();
-  uint8_t azLow  = Wire.read();
-  uint8_t azHigh = Wire.read();
+  uint8_t gxLow  = Wire2.read();
+  uint8_t gxHigh = Wire2.read();
+  uint8_t gyLow  = Wire2.read();
+  uint8_t gyHigh = Wire2.read();
+  uint8_t gzLow  = Wire2.read();
+  uint8_t gzHigh = Wire2.read();
+  uint8_t axLow  = Wire2.read();
+  uint8_t axHigh = Wire2.read();
+  uint8_t ayLow  = Wire2.read();
+  uint8_t ayHigh = Wire2.read();
+  uint8_t azLow  = Wire2.read();
+  uint8_t azHigh = Wire2.read();
   
-  accelX = (int16_t)(axLow | (axHigh << 8));
-  accelY = (int16_t)(ayLow | (ayHigh << 8));
+  accelX = -1*(int16_t)(axLow | (axHigh << 8));
+  accelY = -1*(int16_t)(ayLow | (ayHigh << 8));
   accelZ = (int16_t)(azLow | (azHigh << 8));
-  gyroX  = (int16_t)(gxLow | (gxHigh << 8));
-  gyroY  = (int16_t)(gyLow | (gyHigh << 8));
+  gyroX  = -1*(int16_t)(gxLow | (gxHigh << 8));
+  gyroY  = -1*(int16_t)(gyLow | (gyHigh << 8));
   gyroZ  = (int16_t)(gzLow | (gzHigh << 8));
+
+  //Eliminate digital accceleration bias
+  accelX -= accelBiasX;
+  accelY -= accelBiasY;
+  accelZ -= accelBiasZ;
+
+  //Eliminate gyro bias
+  gyroX -= gyroBiasX;
+  gyroY -= gyroBiasY;
+  gyroZ -= gyroBiasZ; 
+  
+  //Check range
+  /*if(accelX > 31500 && range < 16){
+    
+    //Set 16G Range, 952 Hz ODR,
+    write8(LSM9DS1_REGISTER_CTRL_REG6_XL, LSM9DS1_ADDRESS_ACCELGYRO,  0b11001000);}*/
   }
 
 void getAccel(){
@@ -123,24 +142,24 @@ void getMag(){
   readSensor(LSM9DS1_ADDRESS_MAG, 0x80 | LSM9DS1_REGISTER_OUT_X_L_M, (byte)2);}
 
 void readSensor(byte address, byte reg, byte sensor){
-  Wire.beginTransmission(address);
-  Wire.write(reg);
-  Wire.endTransmission(I2C_NOSTOP);
-  Wire.requestFrom(address, (byte)6);
-  while(Wire.available() < 6){};
+  Wire2.beginTransmission(address);
+  Wire2.write(reg);
+  Wire2.endTransmission(I2C_NOSTOP);
+  Wire2.requestFrom(address, (byte)6);
+  while(Wire2.available() < 6){};
 
-  uint8_t xLow  = Wire.read();
-  uint8_t xHigh = Wire.read();
-  uint8_t yLow  = Wire.read();
-  uint8_t yHigh = Wire.read();
-  uint8_t zLow  = Wire.read();
-  uint8_t zHigh = Wire.read();
+  uint8_t xLow  = Wire2.read();
+  uint8_t xHigh = Wire2.read();
+  uint8_t yLow  = Wire2.read();
+  uint8_t yHigh = Wire2.read();
+  uint8_t zLow  = Wire2.read();
+  uint8_t zHigh = Wire2.read();
 
   switch(sensor){
 
     case 1://LSM9DS1 accelerometer
-      accelX = (int16_t)(xLow | (xHigh << 8));
-      accelY = (int16_t)(yLow | (yHigh << 8));
+      accelX = -1*(int16_t)(xLow | (xHigh << 8));
+      accelY = -1*(int16_t)(yLow | (yHigh << 8));
       accelZ = (int16_t)(zLow | (zHigh << 8));
       break;
 
@@ -151,18 +170,80 @@ void readSensor(byte address, byte reg, byte sensor){
       break;
 
     case 3://LSM9DS1 gyro
-      gyroX = (int16_t)(xLow | (xHigh << 8));
-      gyroY = (int16_t)(yLow | (yHigh << 8));
+      gyroX = -1*(int16_t)(xLow | (xHigh << 8));
+      gyroY = -1*(int16_t)(yLow | (yHigh << 8));
       gyroZ = (int16_t)(zLow | (zHigh << 8));
       break;
 
-    case 4://H3LIS331 high-G accelerometer (potential future use)
+    case 4://H3LIS331 high-G accelerometer 
       highGx = -1*(int16_t)(xLow | (xHigh << 8))>> 4;
       highGy = (int16_t)(yLow | (yHigh << 8))>> 4;
       highGz = (int16_t)(zLow | (zHigh << 8))>> 4;
       break; 
   }}//end void
+
+//***************************************************************************
+//ADXL377 High-G Analog Accelerometer
+//***************************************************************************
+bool beginADXL377(){
+
+  //Setup the ADC for the ADXL377
+  adc->setAveraging(10); // set number of averages
+  adc->setResolution(16); // set bits of resolution
+  adc->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_LOW_SPEED);
+  adc->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_LOW_SPEED);
+
+  //Start the DAC for differential mode
+  analogWriteResolution(12);
+  analogWrite(A22, 2048); //4093 = 3.3V, 2048 = 1.65V
+
+  return true;}
+
+void getADXL377(boolean axisMode){
   
+  //Fast 1-axis mode
+  if(axisMode){
+
+    //read ADC averaging mode
+    //highGxDiff = -1 * adc->adc0->analogReadDifferential(A10, A11);
+
+    //read ADC single shot mode
+    adc->adc0->startSingleDifferential(A10, A11);
+    delayMicroseconds(100);
+    highGxDiff = adc->adc0->readSingle();
+    
+    //Eliminate high-G accelerometer bias 
+    if(!calibrationMode){highGxDiff -= highGxDiffBias;}
+    }
+
+  //Slow 3-axis mode
+  else{
+
+    //Read ADC averaging mode
+     /*highGx = -1*adc->adc0->analogRead(A2);
+    highGy = adc->adc0->analogRead(A3);
+    highGz = adc->adc0->analogRead(A4);*/
+    
+    //Read ADC single shot mode
+    adc->adc0->startSingleRead(A2);
+    highGx = -1 * adc->adc0->readSingle();
+    adc->adc0->startSingleRead(A3);
+    highGy = adc->adc0->readSingle();
+    adc->adc0->startSingleRead(A4);
+    highGz = adc->adc0->readSingle();
+    
+    //Eliminate high-G accelerometer bias 
+    if(!calibrationMode){
+      highGx -= highGxBias;
+      highGy -= highGyBias;
+      highGz -= highGzBias;}
+    }
+
+   //print error if any
+   adc->printError();
+    
+  }//endvoid
+
 //***************************************************************************
 //H3LIS331DL High-G Accelerometer
 //***************************************************************************
@@ -204,22 +285,22 @@ void getHighG(){
     #define H3LIS331_REGISTER_OUT_X_L   0b10101000 //(0x28)
     //readSensor(H3LIS331_ADDRESS, H3LIS331_REGISTER_OUT_X_L, (byte)4);
 
-    Wire.beginTransmission(H3LIS331_ADDRESS);
-    Wire.write(H3LIS331_REGISTER_OUT_X_L);
-    Wire.endTransmission(I2C_NOSTOP);
-    Wire.requestFrom(H3LIS331_ADDRESS, (byte)6);
-    while(Wire.available() < 6){};
+    Wire2.beginTransmission(H3LIS331_ADDRESS);
+    Wire2.write(H3LIS331_REGISTER_OUT_X_L);
+    Wire2.endTransmission(I2C_NOSTOP);
+    Wire2.requestFrom(H3LIS331_ADDRESS, (byte)2);
+    while(Wire2.available() < 2){};
 
-    uint8_t xLow  = Wire.read();
-    uint8_t xHigh = Wire.read();
-    uint8_t yLow  = Wire.read();
-    uint8_t yHigh = Wire.read();
-    uint8_t zLow  = Wire.read();
-    uint8_t zHigh = Wire.read();
+    uint8_t xLow  = Wire2.read();
+    uint8_t xHigh = Wire2.read();
+    //uint8_t yLow  = Wire2.read();
+    //uint8_t yHigh = Wire2.read();
+    //uint8_t zLow  = Wire2.read();
+    //uint8_t zHigh = Wire2.read();
 
-    highGx = (int16_t)(xLow | (xHigh << 8))>> 4;
-    highGy = (int16_t)(yLow | (yHigh << 8))>> 4;
-    highGz = (int16_t)(zLow | (zHigh << 8))>> 4;
+    highGx = -1*(int16_t)(xLow | (xHigh << 8))>> 4;
+    //highGy = (int16_t)(yLow | (yHigh << 8))>> 4;
+    //highGz = (int16_t)(zLow | (zHigh << 8))>> 4;
 }
 
 //***************************************************************************
@@ -252,24 +333,24 @@ boolean beginMPL3115A2(){
 
 void readMPLbaro(){
 
-  Wire.beginTransmission(MPL3115A2_ADDRESS);
-  Wire.write(0x01);
-  Wire.endTransmission(false);
-  Wire.requestFrom(MPL3115A2_ADDRESS, (byte)5);
-  while(Wire.available() < 4){};
+  Wire2.beginTransmission(MPL3115A2_ADDRESS);
+  Wire2.write(0x01);
+  Wire2.endTransmission(false);
+  Wire2.requestFrom(MPL3115A2_ADDRESS, (byte)5);
+  while(Wire2.available() < 4){};
 
   uint32_t adc_P;
-  adc_P = Wire.read();
+  adc_P = Wire2.read();
   adc_P <<= 8;
-  adc_P |= Wire.read();
+  adc_P |= Wire2.read();
   adc_P <<= 8;
-  adc_P |= Wire.read();
+  adc_P |= Wire2.read();
   adc_P >>= 4;
   
   int16_t adc_T;
-  adc_T = Wire.read();
+  adc_T = Wire2.read();
   adc_T <<= 8;
-  adc_T |= Wire.read();
+  adc_T |= Wire2.read();
   adc_T >>= 4;
   
   pressure = (float)(adc_P) * 0.0025;
@@ -454,33 +535,33 @@ void bmp388GetReading(){
 
   #define BMP388_REGISTER_PRESSUREDATA 0x04
   
-  Wire.beginTransmission(BMP388_ADDRESS);
-  Wire.write(BMP388_REGISTER_PRESSUREDATA);
-  Wire.endTransmission(I2C_NOSTOP);
-  Wire.requestFrom(BMP388_ADDRESS, (byte)6);
-  while(Wire.available() < 6){};
+  Wire2.beginTransmission(BMP388_ADDRESS);
+  Wire2.write(BMP388_REGISTER_PRESSUREDATA);
+  Wire2.endTransmission(I2C_NOSTOP);
+  Wire2.requestFrom(BMP388_ADDRESS, (byte)6);
+  while(Wire2.available() < 6){};
 
   uint32_t uncomp_press;
-  /*uncomp_press = Wire.read();
+  /*uncomp_press = Wire2.read();
   uncomp_press <<= 8;
-  uncomp_press |= Wire.read();
+  uncomp_press |= Wire2.read();
   uncomp_press <<= 8;
-  uncomp_press |= Wire.read();
+  uncomp_press |= Wire2.read();
   uncomp_press >>= 4;*/
-  uncomp_press = Wire.read();
-  uncomp_press += (Wire.read() << 8);
-  uncomp_press += (Wire.read() << 16);
+  uncomp_press = Wire2.read();
+  uncomp_press += (Wire2.read() << 8);
+  uncomp_press += (Wire2.read() << 16);
   
   uint32_t uncomp_temp;
-  /*uncomp_temp = Wire.read();
+  /*uncomp_temp = Wire2.read();
   uncomp_temp <<= 8;
-  uncomp_temp |= Wire.read();
+  uncomp_temp |= Wire2.read();
   uncomp_temp <<= 8;
-  uncomp_temp |= Wire.read();
+  uncomp_temp |= Wire2.read();
   uncomp_temp >>= 4;*/
-  uncomp_temp = Wire.read();
-  uncomp_temp += (Wire.read() << 8);
-  uncomp_temp += (Wire.read() << 16);
+  uncomp_temp = Wire2.read();
+  uncomp_temp += (Wire2.read() << 8);
+  uncomp_temp += (Wire2.read() << 16);
 
   //put the BMP388 into forced mode
   //press_en: 1 (0)
@@ -651,26 +732,26 @@ void bmpGetReading(){
   //burst read from the registers
   //---------------------------------------------------------------
 
-  Wire.beginTransmission(BMP280_ADDRESS);
-  Wire.write(BMP280_REGISTER_PRESSUREDATA);
-  Wire.endTransmission(I2C_NOSTOP);
-  Wire.requestFrom(BMP280_ADDRESS, (byte)6);
-  while(Wire.available() < 6){};
+  Wire2.beginTransmission(BMP280_ADDRESS);
+  Wire2.write(BMP280_REGISTER_PRESSUREDATA);
+  Wire2.endTransmission(I2C_NOSTOP);
+  Wire2.requestFrom(BMP280_ADDRESS, (byte)6);
+  while(Wire2.available() < 6){};
 
   int32_t adc_P;
-  adc_P = Wire.read();
+  adc_P = Wire2.read();
   adc_P <<= 8;
-  adc_P |= Wire.read();
+  adc_P |= Wire2.read();
   adc_P <<= 8;
-  adc_P |= Wire.read();
+  adc_P |= Wire2.read();
   adc_P >>= 4;
   
   int32_t adc_T;
-  adc_T = Wire.read();
+  adc_T = Wire2.read();
   adc_T <<= 8;
-  adc_T |= Wire.read();
+  adc_T |= Wire2.read();
   adc_T <<= 8;
-  adc_T |= Wire.read();
+  adc_T |= Wire2.read();
   adc_T >>= 4;
 
   //put the BMP280 into forced mode
@@ -732,11 +813,11 @@ uint16_t read16(byte reg, byte _i2caddr){
   
   uint16_t value;
 
-  Wire.beginTransmission((uint8_t)_i2caddr);
-  Wire.write((uint8_t)reg);
-  Wire.endTransmission(I2C_NOSTOP);
-  Wire.requestFrom((uint8_t)_i2caddr, (byte)2);
-  value = (Wire.read() << 8) | Wire.read();
+  Wire2.beginTransmission((uint8_t)_i2caddr);
+  Wire2.write((uint8_t)reg);
+  Wire2.endTransmission(I2C_NOSTOP);
+  Wire2.requestFrom((uint8_t)_i2caddr, (byte)2);
+  value = (Wire2.read() << 8) | Wire2.read();
 
   return value;}
 
@@ -754,11 +835,11 @@ int8_t readS8(byte reg, byte _i2caddr){
 
   int8_t value;
 
-  Wire.beginTransmission((uint8_t)_i2caddr);
-  Wire.write((uint8_t)reg);
-  Wire.endTransmission(I2C_NOSTOP);
-  Wire.requestFrom((uint8_t)_i2caddr, (byte)1);
-  value = Wire.read();
+  Wire2.beginTransmission((uint8_t)_i2caddr);
+  Wire2.write((uint8_t)reg);
+  Wire2.endTransmission(I2C_NOSTOP);
+  Wire2.requestFrom((uint8_t)_i2caddr, (byte)1);
+  value = Wire2.read();
 
   return value;
 }
@@ -767,18 +848,18 @@ uint8_t read8(byte reg, byte _i2caddr){
   
   uint8_t value;
 
-  Wire.beginTransmission((uint8_t)_i2caddr);
-  Wire.write((uint8_t)reg);
-  Wire.endTransmission(I2C_NOSTOP);
-  Wire.requestFrom((uint8_t)_i2caddr, (byte)1);
-  value = Wire.read();
+  Wire2.beginTransmission((uint8_t)_i2caddr);
+  Wire2.write((uint8_t)reg);
+  Wire2.endTransmission(I2C_NOSTOP);
+  Wire2.requestFrom((uint8_t)_i2caddr, (byte)1);
+  value = Wire2.read();
 
   return value;}
 
 void write8(byte reg, byte _i2caddr, byte value){
 
-  Wire.beginTransmission((uint8_t)_i2caddr);
-  Wire.write((uint8_t)reg);
-  Wire.write((uint8_t)value);
-  Wire.endTransmission(I2C_STOP);}
+  Wire2.beginTransmission((uint8_t)_i2caddr);
+  Wire2.write((uint8_t)reg);
+  Wire2.write((uint8_t)value);
+  Wire2.endTransmission(I2C_STOP);}
     
