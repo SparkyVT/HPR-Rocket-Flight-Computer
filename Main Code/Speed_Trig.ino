@@ -1,7 +1,7 @@
-/*This is a lookup table for the tangent function in 0.1 degree steps, which is the precision that the
+/*Below are lookup tables for the tangent, sine, and cosine functions in 0.1 degree steps, which is the precision that the
  * off-vertical output variables move.  The position of the value represents the degrees of rotation.
  * For example Tan[0] = tan(0) = 0, Tan[455] = tan(45.5) = 1.0176073929.  In this way, the table is used
- * to compute arcTan with the binary algorithm.  Each arcTan evaluation takes approx 38 microseconds
+ * to compute arcTan with the binary algorithm.  Each arcTan, arcSin, and arcCos evaluation takes approx 38 microseconds
  */
 const float Tan[901] =
 {0.0,0.0017453310241888,0.00349067268159625,0.00523603560570013,0.00698143043049648,0.00872686779075879,0.0104723583222972,0.0122179126622177,
@@ -126,11 +126,6 @@ const float Tan[901] =
 57.2899616307599,63.6567411628717,71.6150701195219,81.8470411146703,95.4894751711147,114.58865012931,143.237121669474,190.984186377826,
 286.477734011608,572.957213354303,573.0};
 
-/*This is a lookup table for the sine function in 0.1 degree steps, which is the precision that the
- * off-vertical output variables move.  The position of the value represents the degrees of rotation.
- * For example Tan[0] = tan(0) = 0, Tan[455] = tan(45.5) = 1.0176073929.  In this way, the table is used
- * to compute arcTan with the binary algorithm.  Each arcTan evaluation takes approx 38 microseconds
- */
 const float Sin[901] = {
 0.0, 0.00174532836589831, 0.00349065141522373, 0.00523596383141958, 0.00698126029796155, 0.00872653549837393, 0.0104717841162458,
 0.0122170008352472, 0.0139621803391453, 0.0157073173118207, 0.0174524064372835, 0.0191974423996897, 0.020942419883357, 0.0226873335727814, 0.0244321781526532,
@@ -383,6 +378,11 @@ float speedTan(int rotn){
   return Tan[rotn];}
 
 int speedArcTan(float myValue){
+
+  int sign = 1;
+  if(myValue < 0){
+    myValue *= -1;
+    sign = -1;}
   int cycle = 0;
   int posnA = 0;
   int posnB = 900;
@@ -400,7 +400,7 @@ int speedArcTan(float myValue){
     if(posnB-posnA <= 1){exitFlag = true;}
     else{posnC = (int)((posnA + posnB)*0.5);cycle++;}}
   
-return posnA;}
+return (posnA*sign);}
 
 float speedSin( int degree){
 
@@ -411,44 +411,42 @@ float speedSin( int degree){
 
   degree = abs(degree);
 
-  degree = degree % 360;
+  degree = degree % 3600;
 
-  if(degree <= 90){myValue = sign*Sin[degree];}
-  else if(degree <= 180){myValue = sign*Sin[180 - degree];}
-  else if(degree <= 270){myValue = -1*sign*Sin[degree - 180];}
-  else{myValue = -1*sign*Sin[360 - degree];}
+  if(degree <= 900){myValue = sign*Sin[degree];}
+  else if(degree <= 1800){myValue = sign*Sin[1800 - degree];}
+  else if(degree <= 2700){myValue = -1*sign*Sin[degree - 1800];}
+  else{myValue = -1*sign*Sin[3600 - degree];}
 
   return myValue;}
 
 int speedArcSin(float myValue){
 
-  int baseValue;
+  int sign = 1;
+  if(myValue < 0){
+    myValue *= -1;
+    sign = -1;}
   int cycle = 0;
   int posnA = 0;
   int posnB = 900;
   int posnC = 450;
   boolean exitFlag = false;
 
-  baseValue = abs(myValue);
-
-  if(testMode && baseValue > 1.0){Serial.println(F("Arc Sine value too large")); exitFlag = true;}
+  if(settings.testMode && myValue > 1.0){Serial.println(F("Arc Sine value too large")); exitFlag = true;}
   
   //if the value is outside the max range, then its at 90 degrees
   if(myValue == 0.0){posnA = 0; exitFlag = true;}
-  else if(myValue = 1.0){posnA = 900; exitFlag = true;}
+  else if(myValue == 1.0){posnA = 900*sign; exitFlag = true;}
 
   //use the binary algorithm to speed things up
   while(!exitFlag && cycle < 900){
 
-    if(baseValue > Sin[posnC]){posnA = posnC;}
+    if(myValue > Sin[posnC]){posnA = posnC;}
     else{posnB = posnC;}
     if(posnB-posnA <= 1){exitFlag = true;}
     else{posnC = (int)((posnA + posnB)*0.5);cycle++;}}
-
-  //adjust for negative input values
-  if(myValue < 0){posnA *= -1;}
   
-return posnA;}
+return (posnA*sign);}
 
 float speedCos( int degree){
 
@@ -456,12 +454,12 @@ float speedCos( int degree){
 
   degree = abs(degree);
 
-  degree = degree % 360;
+  degree = degree % 3600;
 
-  if(degree <= 90){myValue = Cos[degree];}
-  else if(degree <= 180){myValue = -1*Cos[180 - degree];}
-  else if(degree <= 270){myValue = -1*Cos[degree - 180];}
-  else{myValue = Cos[360 - degree];}
+  if(degree <= 900){myValue = Cos[degree];}
+  else if(degree <= 1800){myValue = -1*Cos[1800 - degree];}
+  else if(degree <= 2700){myValue = -1*Cos[degree - 1800];}
+  else{myValue = Cos[3600 - degree];}
 
   return myValue;}
 
@@ -475,9 +473,10 @@ int speedAtan2(float y, float x){
 
   else if(y < 0.0){myValue = -900 - speedArcTan(x/y);}
 
-  else if(x < 0.0){myValue = speedArcTan(y/x) + 180;}
+  else if(x < 0.0){myValue = speedArcTan(y/x) + 1800;}
 
   else if(x == 0.0 && y == 0.0){myValue = 0;}
 
   return myValue;}
+
 
