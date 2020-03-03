@@ -11,40 +11,42 @@ supersonic flights to 18K feet.  For large projects, a backup computer such
 as the PerfectFlite StratoLogger is strongly recommended.  
 
 --------FEATURES----------
-1300Hz 3-axis digital 24G and 100G accelerometer data logging
-1300Hz 3-axis digital 2000dps gyroscope data logging
-1300Hz of flight events and continuity
-1300Hz of integrated speed, altitude, and rotation
-20Hz of digital barometric data logging
-20Hz of telemetry output (time, event, speed, altitude, accel, GPS, orientation)
-10Hz of magnetic data logging
-8Hz of GPS data logging
-4 pyro outputs (user adjustable)
-Mach immune events
-Sensor Fusion based apogee event
-Barometric based main deploy event
-Optional Apogee delay
-Optional Two-Stage mode w/ tilt-sensing safety features
-Audible Pre-flight main deploy setting and previous flight report
-Audible Pre-flight pyro continuity and battery voltage report
-Audible Post-flight altitude & velocity report
-Separate file for each flight
-Optional test mode for bench testing
-Built-in self-calibration mode
-User flight profile settings read from SD card
-Optional magnetic startup switch
-Onboard flight data recorded to SD card
-Separate output file for each flight up to 99 stored flights
-User selectable test mode for bench testing via button with Serial output
-User selectable self-calibration mode via button
-Telemetry data recorded to ground station SD card
+//1500Hz 3-axis digital 24G and 100G accelerometer data logging
+//1500Hz 3-axis digital 2000dps gyroscope data logging
+//1500Hz of flight events
+//1500Hz of integrated speed, altitude, DCM2D rotation, continuity, events
+//100Hz of user selectable quaternion rotation
+//30Hz of digital barometric data logging (Altitude, pressure, temperature)
+//30Hz of main battery voltage
+//20Hz of telemetry output (time, event, acceleration, speed, altitude, rotation, GPS)
+//10Hz of magnetic data logging
+//8Hz of GPS data logging
+//4 programmable pyro outputs with continuity checks
+//User Selectable Flight Mode: Single-Stage, Two-Stage, Airstart
+//Mach immune events
+//Sensor Fusion based apogee event
+//Barometric based main deploy event
+//Optional Apogee delay
+//Optional Audible Continuity report at startup
+//Optional Audible Battery Voltage report at startup
+//Optional Magnetic Switch Flight Activation
+//Audible Post-flight max altitude & speed report
+//Can be mounted in any orientation
+//Separate file for each flight up to 100 flights
+//Bench-test mode activated w/ tactile button
+//Built-in self-calibration mode
+//Reads user flight profile from SD card
+//Compatible with multiple different sensors
+//Configurable pyro pin outputs and I2C bus options
+//Report in SI or Metric units
+//Preflight audible reporting options: Perfectflight, Marsa, Raven
 
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 3.5 (tested) or 3.6 or 3.2 (untested)
-         9 DoF IMU: LSM9DS1
-100G Accelerometer: ADXL377
-   Pressure Sensor: MPL5115A2
-               GPS: UBLOX MAX-M8Q or SAM-M8Q
+         9 DoF IMU: LSM9DS1, or LSM303 & L3GD20H combo
+100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
+   Pressure Sensor: MPL5115A2, BMP180, BMP280, or BMP388
+               GPS: UBLOX M6, M7, M8
     LoRa Telemetry: RFM95W (License Free - untested) or RFM96W (Ham License Only - tested)
    Tactile Buttons: 0.25 in spacing
                PCB: Create your own or use the provided design file for PCBexpress
@@ -69,8 +71,6 @@ RadioHead
 
 --------INTENDED FUTURE REVISIONS----------
 1) Develop Android App for ground station
-2) Airstart mode
-3) Customizable pyro ouputs
 
 --------NOTES----------
 Note: All of the above components were purchased through Digikey.  Other
@@ -81,11 +81,10 @@ Note: TinyGPS++ is only compatible with GPGGA and GPRMC sentences.  If using
 a UBLOX M8N or other GNSS unit, then TinyGPS++ must be modified to accept
 the GNGGA & GNRMC format.  Support available upon request.
 
-Note: 1.2 in x 3.8 in size board.  Required mounting space is 9.5 square inches.
-Will fit in a 2-inch avionics bay that is at least 1 inch wide and 4 inches long.  
-Components mount on both sides.  See provided pictures for examples.
+Note: 1.2 in x 3.8 in size board.  Will fit in a 2-inch avionics bay that is at least 
+1 inch wide and 4 inches long.  Components mount on both sides.  See provided pictures for examples.
 
-Note: Estimated Flight Computer Cost = $135
+Note: Estimated Flight Computer Cost = $150
 Note: Estimated Ground Station Cost = $165
-Note: Estimated build time = 2hrs
+Note: Estimated build time = 3hrs
 Note: Estimated programing & debugging time = 10hrs
