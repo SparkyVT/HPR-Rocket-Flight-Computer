@@ -79,7 +79,7 @@ fit the provided PCB
 
 Note: TinyGPS++ is only compatible with GPGGA and GPRMC sentences.  If using
 a UBLOX M8N or other GNSS unit, then TinyGPS++ must be modified to accept
-the GNGGA & GNRMC format.  Support available upon request.
+the GNGGA & GNRMC format.  Modified files are on the master page.
 
 Note: 1.2 in x 3.8 in size board.  Will fit in a 2-inch avionics bay that is at least 
 1 inch wide and 4 inches long.  Components mount on both sides.  See provided pictures for examples.
