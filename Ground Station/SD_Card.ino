@@ -1,11 +1,11 @@
  void writePreflightData(){
     strPosn = 0;
-    writeIntData(event);
+    writeIntData((int)0);
     for(byte i=0; i<sizeof(rocketName)-1; i++){dataString[strPosn]=rocketName[i];strPosn++;}dataString[strPosn]=',';strPosn++;
     writeIntData(contCode);
     writeIntData(GPSlock);
     writeIntData(baseAlt);
-    writeIntData(GPSalt);
+    writeIntData(baseGPSalt);
     dataString[strPosn]=charGPSlat;strPosn++;
     writeFloatData(GPSlatitude,2,4);
     dataString[strPosn]=charGPSlon;strPosn++;
@@ -14,35 +14,32 @@
     dataString[strPosn] = '\n';strPosn++;
     dataString[strPosn] = '\0';
     myFile.write(dataString,strPosn);
-    Serial.print(dataString);
+
     strPosn=0;
-    myFile.println(F("event, time, integratedVel, integratedAlt, baroAlt, rotnX, rotnY, rotnZ, acceleration, signal strength, gpsAlt, gpsLat, gpsLon, packetNum"));
+    myFile.println(F("event,time,acceleration,velocity,altitude,spin,offVert,gpsAlt,gpsLat,gpsLon,signalStrength,packetNum"));
     myFile.sync();
     preFlightWrite = false;}
 
 void writeInflightData(){
   strPosn = 0;
   writeIntData(event);
-  writeFloatData(currentTime,2,0);
-  writeIntData(accelVel);
-  writeIntData(accelAlt);
-  writeIntData(baroAlt);
-  writeIntData(angX);
-  writeIntData(angY);
-  writeIntData(angZ);
-  writeIntData(accelX);
-  writeIntData(signalStrength);
+  writeFloatData((float)(sampleTime) * 0.01,2,2);
+  writeFloatData((float)(accelX) * 0.029927521,2,4);
+  writeIntData(velocity);
+  writeIntData(Alt);
+  writeIntData(spin);
+  writeFloatData((float)(offVert) * 0.1,2,1);
   writeIntData(GPSalt);
   dataString[strPosn]=charGPSlat;strPosn++;
   writeFloatData(GPSlatitude,2,4);
   dataString[strPosn]=charGPSlon;strPosn++;
   writeFloatData(GPSlongitude,2,4);
+  writeIntData(signalStrength);
   writeIntData(packetnum);
   //end of sample - carriage return, newline, and null value
   dataString[strPosn] = '\r';strPosn++;
   dataString[strPosn] = '\n';strPosn++;
   dataString[strPosn] = '\0';
-  Serial.println(dataString);
   myFile.write(dataString, strPosn);}
   
 void writePostflightData(){
@@ -53,7 +50,7 @@ void writePostflightData(){
   writeIntData(event);
   writeIntData(maxAltitude);
   writeIntData(maxVelocity);
-  writeIntData(maxG);
+  writeFloatData((float)(maxG) * 0.029927521,2,4);
   writeIntData(maxGPSalt);
   writeIntData(GPSlock);
   writeIntData(GPSalt);
@@ -64,6 +61,7 @@ void writePostflightData(){
   myFile.write(dataString,strPosn);
   strPosn=0;
   myFile.close();
+  fileOpen = false;
   postFlightWrite = false;}
 
 void writeIntData(int dataValue) {

@@ -35,7 +35,7 @@ void startupLCD(){
   parseCoord(lastGPSlat);
   lcd.print(dataString);
   lcd.print((char)39);
-  lcd.print(lastCharGPSlat);
+  lcd.print(charGPSlat);
   //----------------------------------------
   //GPS Latitude - Line 4
   //----------------------------------------
@@ -44,7 +44,7 @@ void startupLCD(){
   parseCoord(lastGPSlon);
   lcd.print(dataString);
   lcd.print((char)39);
-  lcd.print(lastCharGPSlon);}
+  lcd.print(charGPSlon);}
 
 void preflightLCD(){
   //-----------------------------------------------------
@@ -93,6 +93,8 @@ void inflightLCD(){
   switch (event){
     case 1:
       lcd.print(F("Liftoff!"));
+      litePin = GREENLITE;
+      if(!liteUp){liteLED(litePin);}
       break;
     case 2:
       lcd.print(F("Booster Burnout!"));
@@ -102,24 +104,36 @@ void inflightLCD(){
       break;
     case 4:
       lcd.print(F("Firing 2nd Stage!"));
+      litePin = GREENLITE;
+      if(!liteUp){liteLED(litePin);}
       break;
     case 5:
       lcd.print(F("Apogee Detected!"));
       break;
     case 6:
       lcd.print(F("Separation Detected!"));
+      litePin = GREENLITE;
+      if(!liteUp){liteLED(litePin);}
       break;
     case 7:
       lcd.print(F("Mains Deployed!"));
+      litePin = GREENLITE;
+      if(!liteUp){liteLED(litePin);}
       break;
     case 10:
       lcd.print(F("Rotation Exceeded"));
+      litePin = REDLITE;
+      if(!liteUp){liteLED(litePin);}
       break;
     case 11:
       lcd.print(F("Below Alt Threshold"));
+      litePin = REDLITE;
+      if(!liteUp){liteLED(litePin);}
       break;
     case 12:
       lcd.print(F("Rotn / Alt Limits"));
+      litePin = REDLITE;
+      if(!liteUp){liteLED(litePin);}
       break;
     case 13:
       lcd.print(F("2nd Stage Ignition!"));
@@ -127,23 +141,26 @@ void inflightLCD(){
     case 14:
       lcd.print(F("2nd Stage Burnout!"));
       break;
+    case 15:
+      lcd.print(F("Under Chute!"));
+      litePin = GREENLITE;
+      if(!liteUp){liteLED(litePin);}
+      break;
     default: 
-      lcd.print(F("Event Error"));lcd.print(event);}
-   //----------------------------------------
-   //barometric altitude - line 1
-   //----------------------------------------
-   lcd.setCursor(0,1);
-   lcd.print(F("Altitude: "));
-   if(event == 1 || accelVel > 300){lcd.print((long)(accelAlt*3.2808));}
-   else{lcd.print((long)(baroAlt*3.2808));}
-   lcd.print(F(" ft"));
+      lcd.print(F("Event Error: "));lcd.print(event);}
   //----------------------------------------
-  //integrated velocity - line 2
+  //display altitude - line 1
+  //----------------------------------------
+  lcd.setCursor(0,1);
+  lcd.print(F("Altitude: "));
+  lcd.print((long)(Alt*3.2808));
+  lcd.print(F(" ft"));
+  //----------------------------------------
+  //display velocity - line 2
   //----------------------------------------
   lcd.setCursor(0,2);
   lcd.print(F("Speed: "));
-  if(accelVel > 100){lcd.print((long)(accelVel*3.2808));}
-  else{lcd.print((int)(((baroAlt-prevAlt)*3.2808)/((currentTime - prevTime)*0.000001)));}
+  lcd.print((long)(velocity*3.2808));
   lcd.print(F(" fps"));
   //----------------------------------------
   //signal strength - line 3
@@ -152,6 +169,9 @@ void inflightLCD(){
   lcd.print(F("Signal: "));
   lcd.print(signalStrength);
   lcd.print(F(" dBm"));
+  if(micros() - lastGPSfix < 2000000UL){
+    lcd.setCursor(17,3);
+    lcd.print(F("GPS"));}
   }//end Inflight Code
   
 void postflightLCD(){
@@ -213,21 +233,19 @@ void signalLostLCD(){
     //GPS Latitude - Line 2
     //----------------------------------------
     lcd.setCursor(0,1);
-    //lcd.print(lastGPSlat,4);
     parseCoord(lastGPSlat);
     lcd.print(dataString);
     lcd.print((char)39);
-    lcd.print(lastCharGPSlat);
+    lcd.print(charGPSlat);
   
     //----------------------------------------
     //GPS Latitude - Line 2
     //----------------------------------------
     lcd.setCursor(0,2);
-    //lcd.print(lastGPSlon,4);
     parseCoord(lastGPSlon);
     lcd.print(dataString);
     lcd.print((char)39);
-    lcd.print(lastCharGPSlon);
+    lcd.print(charGPSlon);
 }
 
 void parseCoord(float coord){
@@ -239,3 +257,7 @@ void parseCoord(float coord){
     while(endPosn >= strPosn - 2){dataString[endPosn+1]=dataString[endPosn]; endPosn--;}
     dataString[strPosn-2]=(char)223;}
 
+void liteLED(byte pin){
+  analogWrite(pin, 255);
+  liteStart = micros();
+  liteUp = true;}
