@@ -85,6 +85,6 @@ Note: 1.2 in x 3.8 in size board.  Will fit in a 2-inch avionics bay that is at 
 1 inch wide and 4 inches long.  Components mount on both sides.  See provided pictures for examples.
 
 Note: Estimated Flight Computer Cost = $150
-Note: Estimated Ground Station Cost = $165
+Note: Estimated Ground Station Cost = $130-$180 (configuration dependent)
 Note: Estimated build time = 3hrs
 Note: Estimated programing & debugging time = 10hrs
