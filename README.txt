@@ -37,7 +37,7 @@ as the PerfectFlite StratoLogger is strongly recommended.
 //Built-in self-calibration mode
 //Reads user flight profile from SD card
 //Compatible with multiple different sensors
-//Configurable pyro pin outputs and I2C bus options
+//Configurable GPIO pin and I2C bus options
 //Report in SI or Metric units
 //Preflight audible reporting options: Perfectflight, Marsa, Raven
 
