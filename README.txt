@@ -1,5 +1,5 @@
 HPR Rocket Flight Computer
-Original sketch by Bryan Sparkman
+Original sketch by SparkyVT
 NAR #85720, L3
 TRA #12111, L3
 
