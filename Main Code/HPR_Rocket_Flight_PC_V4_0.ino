@@ -1,5 +1,5 @@
 ///HPR Rocket Flight Computer
-//Original sketch by Bryan Sparkman
+//Original sketch by SparkyVT
 //This is built for the Teensy3.5 board
 //-----------Change Log------------
 //V4_0 is cross-compatible across hardware and can be mounted in any orientation
