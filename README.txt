@@ -45,8 +45,8 @@ as the PerfectFlite StratoLogger is strongly recommended.
     Microprocessor: Teensy 3.5 (tested) or 3.6 or 3.2 (untested)
          9 DoF IMU: LSM9DS1, or LSM303 & L3GD20H combo
 100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
-   Pressure Sensor: MPL5115A2, BMP180, BMP280, or BMP388
-               GPS: UBLOX M6, M7, M8
+   Pressure Sensor: MPL3115A2, BMP180, BMP280, or BMP388
+               GPS: UBLOX M6, M7, M8, M9
     LoRa Telemetry: RFM95W (License Free - untested) or RFM96W (Ham License Only - tested)
    Tactile Buttons: 0.25 in spacing
                PCB: Create your own or use the provided design file for PCBexpress
@@ -77,14 +77,10 @@ Note: All of the above components were purchased through Digikey.  Other
 sources for the same components should work, but are untested, but may not
 fit the provided PCB
 
-Note: TinyGPS++ is only compatible with GPGGA and GPRMC sentences.  If using
-a UBLOX M8N or other GNSS unit, then TinyGPS++ must be modified to accept
-the GNGGA & GNRMC format.  Modified files are on the master page.
-
 Note: 1.2 in x 3.8 in size board.  Will fit in a 2-inch avionics bay that is at least 
 1 inch wide and 4 inches long.  Components mount on both sides.  See provided pictures for examples.
 
 Note: Estimated Flight Computer Cost = $150
 Note: Estimated Ground Station Cost = $130-$180 (configuration dependent)
 Note: Estimated build time = 3hrs
-Note: Estimated programing & debugging time = 10hrs
+Note: Estimated programing & debugging time = 4hrs
