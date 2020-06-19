@@ -16,13 +16,14 @@ For large & high-power projects, a backup computer such as the PerfectFlite Stra
 //1400Hz 3-axis digital 24G and 100G accelerometer data logging
 //1400Hz 3-axis digital 2000dps gyroscope data logging
 //1400Hz of flight events
-//1400Hz of integrated speed, altitude, continuity, events
+//1400Hz of integrated speed and altitude
+//1400Hz of pyro status (continuity detection, closed/open circuit, and pin debugging)
 //1000Hz of quaternion rotation, user selectable down to 100Hz
 //30Hz of digital barometric data logging (Altitude, pressure, temperature)
 //30Hz of main battery voltage
-//20Hz of 70cm LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GPS)
+//20Hz of Amateur 70cm band LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GPS)
 //10Hz of magnetic data logging
-//10Hz of GPS data logging
+//10Hz of location data logging on GPS, GLONASS, and Galileo systems, 0.1Hz post-flight location updates
 //All data written to an easy to read CSV text file, 3-5 million data points per flight is typical 
 //4 programmable pyro outputs with continuity checks
 //4 programmable powered servo connections (plug 'n play)
