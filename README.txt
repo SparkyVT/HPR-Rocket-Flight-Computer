@@ -3,7 +3,8 @@ Original sketch by SparkyVT
 NAR #85720, L3
 TRA #12111, L3
 
-*NOTE: If you are planning to use this code or board files, please send me a PM on Rocketry Forum to ensure I have posted the latest updates.  https://www.rocketryforum.com/members/sparkyvtflyer.810/  
+*NOTE: If you are planning to use this code or board files, please send me a PM on Rocketry Forum 
+to ensure I have posted the latest updates.  https://www.rocketryforum.com/members/sparkyvtflyer.810/  
 
 --------DESCRIPTION----------
 This flight computer is designed for rockets 2-inches in diameter or greater.
