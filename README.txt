@@ -23,7 +23,7 @@ For large & high-power projects, a backup computer such as the PerfectFlite Stra
 //20Hz of 70cm LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GPS)
 //10Hz of magnetic data logging
 //10Hz of GPS data logging
-//All data collected to a CSV text file, 3-5 million data points typical per flight 
+//All data written to an easy to read CSV text file, 3-5 million data points per flight is typical 
 //4 programmable pyro outputs with continuity checks
 //4 programmable powered servo connections (plug 'n play)
 //4 programmable un-powered servo outputs (requires JST connector)
@@ -31,6 +31,7 @@ For large & high-power projects, a backup computer such as the PerfectFlite Stra
 //Mach immune events
 //Sensor Fusion based apogee event
 //Barometric based main deploy event
+//False-liftoff detection logic, increases safefy from accidental pyro discharge
 //Optional Apogee delay
 //Optional Audible Continuity report at startup
 //Optional Audible Battery Voltage report at startup
@@ -82,6 +83,7 @@ RadioHead
 1) 915MHz option & LoRaWAN compatibility
 2) Upgrade ground station with GPS, digital compass, & Bluetooth
 3) Develop Android App for ground station
+4) Optional remote start & shutdown command
 
 --------NOTES----------
 Note: All of the above components were purchased through Digikey.  Other
