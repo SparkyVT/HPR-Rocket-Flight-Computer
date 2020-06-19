@@ -20,11 +20,11 @@ void preflightPacket(){
         charGPSlon = (byte)dataPacket[pktPosn];pktPosn++;
         for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)dataPacket[pktPosn];pktPosn++;}
         GPSlongitude=radioUnion.GPScoord;
+        satNum = (byte)dataPacket[pktPosn];pktPosn++;
+        satNum += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
 
         //capture the last good GPS coordinates to potentially store later in EEPROM
         if(GPSlock){captureGPS();}
-
-        Serial.println(pktPosn);
 
         //display to LCD
         preflightLCD();}
@@ -39,7 +39,7 @@ void inflightPacket(){
         if (preFlightWrite){writePreflightData();}
 
         //parse the GPS data and packet number first, then the samples
-        pktPosn = 52;
+        pktPosn = samples * 13;
         packetnum = (byte)dataPacket[pktPosn];pktPosn++;//53
         packetnum += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//54
         GPSalt = (byte)dataPacket[pktPosn];pktPosn++;//55
@@ -50,36 +50,36 @@ void inflightPacket(){
         GPSlongitude=radioUnion.GPScoord;
       
         //determine GPS lock from the packet length
-        if(len < 60){GPSlock = 0;}
+        if(len < samples * 13 + 12){GPSlock = 0;}
         else{GPSlock = 1; lastGPSfix = micros();}
         
         //parse inflight packet of 4 samples
         pktPosn = 0;
-        for(byte i=0;i<4;i++){
+        for(byte i=0;i<samples;i++){
                       
           //parse the samples
           event = (byte)dataPacket[pktPosn];pktPosn++;//1
+          if(!apogee && event >=4 && event <=6){apogee = true;}
           sampleTime = (byte)dataPacket[pktPosn];pktPosn++;//2
           sampleTime += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//3
           velocity = (byte)dataPacket[pktPosn];pktPosn++;//4
           velocity += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//5
+          if(!apogee && velocity > maxVelocity){maxVelocity = velocity;}
           Alt = (byte)dataPacket[pktPosn];pktPosn++;//6
           Alt += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//7
+          if(!apogee && Alt > maxAltitude){maxAltitude = Alt;}
           spin = (byte)dataPacket[pktPosn];pktPosn++;//8
           spin += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//9
           offVert = (byte)dataPacket[pktPosn];pktPosn++;//10
           offVert += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//11
           accelX = (byte)dataPacket[pktPosn];pktPosn++;//12
           accelX += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//13
-
+          if(!apogee && accelX > maxG){maxG = accelX;}
           //write to the SD card
           writeInflightData();}
 
         //sync the SD card
         myFile.sync();
-
-        //Echo to the Bluetooth Device
-        //Serial.write(dataPacket, strPosn);
 
         //capture the last good GPS coordinates to potentially store later in EEPROM
         if(GPSlock == 1){captureGPS();}

@@ -1,6 +1,6 @@
  void writePreflightData(){
     strPosn = 0;
-    writeIntData((int)0);
+    writeIntData(event);
     for(byte i=0; i<sizeof(rocketName)-1; i++){dataString[strPosn]=rocketName[i];strPosn++;}dataString[strPosn]=',';strPosn++;
     writeIntData(contCode);
     writeIntData(GPSlock);
@@ -14,7 +14,7 @@
     dataString[strPosn] = '\n';strPosn++;
     dataString[strPosn] = '\0';
     myFile.write(dataString,strPosn);
-
+    Serial.println(dataString);
     strPosn=0;
     myFile.println(F("event,time,acceleration,velocity,altitude,spin,offVert,gpsAlt,gpsLat,gpsLon,signalStrength,packetNum"));
     myFile.sync();
@@ -40,7 +40,8 @@ void writeInflightData(){
   dataString[strPosn] = '\r';strPosn++;
   dataString[strPosn] = '\n';strPosn++;
   dataString[strPosn] = '\0';
-  myFile.write(dataString, strPosn);}
+  myFile.write(dataString, strPosn);
+  Serial.println(dataString);}
   
 void writePostflightData(){
   //write the final data to the SD card
@@ -50,7 +51,7 @@ void writePostflightData(){
   writeIntData(event);
   writeIntData(maxAltitude);
   writeIntData(maxVelocity);
-  writeFloatData((float)(maxG) * 0.029927521,2,4);
+  writeFloatData((float)(maxG) * 0.00305176,2,4);
   writeIntData(maxGPSalt);
   writeIntData(GPSlock);
   writeIntData(GPSalt);
@@ -59,6 +60,7 @@ void writePostflightData(){
   dataString[strPosn]=charGPSlon;strPosn++;
   writeFloatData(GPSlongitude,2,4);
   myFile.write(dataString,strPosn);
+  Serial.println(dataString);
   strPosn=0;
   myFile.close();
   fileOpen = false;

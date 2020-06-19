@@ -1,4 +1,3 @@
-
 void startupLCD(){
 
   //-----------------------------------------------------
@@ -12,7 +11,16 @@ void startupLCD(){
   lcd.print(F("Battery: "));
   lcd.print((float)battVolt * 33.33 / 1023.0);
   lcd.print('V');
-  delay(2500);
+  lcd.setCursor(0,1);
+  if(SDinit){lcd.print(F("SD Card OK!"));}
+  else{lcd.print(F("SD Card Failed!"));}
+  lcd.setCursor(0,2);
+  if(radioSetup){lcd.print(F("Radio OK!"));}
+  else{lcd.print(F("Radio Failed!"));}
+  lcd.setCursor(0,3);
+  lcd.print(F("Frequency: "));
+  lcd.print(radioFreq[chnl], 3);
+  delay(4000);
   
   //Print to the LCD the last good coordinates from the previous flight
   
@@ -21,7 +29,7 @@ void startupLCD(){
   //Message - Line 1    
   //----------------------------------------
   lcd.setCursor(0,0);
-  lcd.print(F("Last Packet From:"));
+  lcd.print(F("Last Packet From: "));
   //----------------------------------------
   //Rocket Name - Line 2
   //----------------------------------------
@@ -31,20 +39,14 @@ void startupLCD(){
   //GPS Latitude - Line 3
   //----------------------------------------
   lcd.setCursor(0,2);
-  //lcd.print(lastGPSlat,4);
-  parseCoord(lastGPSlat);
-  lcd.print(dataString);
-  lcd.print((char)39);
-  lcd.print(charGPSlat);
+  displayLat();
+  
   //----------------------------------------
-  //GPS Latitude - Line 4
+  //GPS Longitude - Line 4
   //----------------------------------------
   lcd.setCursor(0,3);
-  //lcd.print(lastGPSlon,4);
-  parseCoord(lastGPSlon);
-  lcd.print(dataString);
-  lcd.print((char)39);
-  lcd.print(charGPSlon);}
+  displayLon();
+  }
 
 void preflightLCD(){
   //-----------------------------------------------------
@@ -60,23 +62,25 @@ void preflightLCD(){
   lcd.print(rocketName);
   //line 1
   lcd.setCursor(0,1);
-  if(contCode == 4){lcd.print(F("All 4 Pyros Detected"));}
-  else if (contCode == 6){lcd.print(F("Pyro Apogee Only"));}
-  else if (contCode == 7){lcd.print(F("Pyro Mains Only"));}
-  else if (contCode == 8){lcd.print(F("Pyro Mains & Apogee"));}
-  else if (contCode == 9){lcd.print(F("No Pyros Detected!"));}
-  else{lcd.print(F("No Cont Pyro "));
-    if(contCode == 5){lcd.print(F("4"));}
-    else{lcd.print(contCode);}}
+  if(contCode == 5){lcd.print(F("All 3 Pyros Detected"));}
+  else if (contCode == 6){lcd.print(F("All 4 Pyros Detected"));}
+  else if (contCode == 7){lcd.print(F("Pyro Apogee Only"));}
+  else if (contCode == 8){lcd.print(F("Pyro Mains Only"));}
+  else if (contCode == 9){lcd.print(F("Pyro Mains & Apogee"));}
+  else if (contCode ==10){lcd.print(F("No Pyros Detected!"));}
+  else{lcd.print(F("No Cont Pyro "));lcd.print(contCode);}
   //line 2
   lcd.setCursor(0,2);
-  if(GPSlock == 1){lcd.print(F("GPS Lock OK!"));}
-  else{lcd.print(F("Awaiting GPS Lock"));}
+  if(GPSlock == 1){
+    lcd.print(F("GPS FIX OK! "));
+    lcd.print(satNum);lcd.print(F(" SVs"));}
+  else{
+    lcd.print(F("NO GPS FIX: "));
+    lcd.print(satNum);lcd.print(F(" SVs"));}
   //line 3
   lcd.setCursor(0,3);
   lcd.print(F("Base Alt: "));
-  lcd.print((long)(baseAlt*3.2808));
-  lcd.print(F(" ft"));
+  displayAlt(baseAlt);
 
   }//end Preflight Code
 
@@ -84,84 +88,37 @@ void inflightLCD(){
   //-----------------------------------------------------------
   //Inflight Code
   //-----------------------------------------------------------
-
   //-----------------------------------
   //event - line 0
   //-----------------------------------
   lcd.clear();
   lcd.setCursor(0,0);
-  switch (event){
-    case 1:
-      lcd.print(F("Liftoff!"));
+  for(byte i = 0; i < 21; i++){dataString[i]= '\0';}
+  strcpy_P(dataString, (char *)pgm_read_word(&(eventTable[event])));
+  lcd.print(dataString);
+  //light up the LCD if it has this capability
+  /*for(byte i = 0; i < sizeof(greenEvents); i++){
+    if(event == greenEvents[i]){
       litePin = GREENLITE;
       if(!liteUp){liteLED(litePin);}
-      break;
-    case 2:
-      lcd.print(F("Booster Burnout!"));
-      break;
-    case 3:
-      lcd.print(F("Booster Separation!"));
-      break;
-    case 4:
-      lcd.print(F("Firing 2nd Stage!"));
-      litePin = GREENLITE;
-      if(!liteUp){liteLED(litePin);}
-      break;
-    case 5:
-      lcd.print(F("Apogee Detected!"));
-      break;
-    case 6:
-      lcd.print(F("Separation Detected!"));
-      litePin = GREENLITE;
-      if(!liteUp){liteLED(litePin);}
-      break;
-    case 7:
-      lcd.print(F("Mains Deployed!"));
-      litePin = GREENLITE;
-      if(!liteUp){liteLED(litePin);}
-      break;
-    case 10:
-      lcd.print(F("Rotation Exceeded"));
+      break;}}
+  for(byte i = 0; i < sizeof(redEvents); i++){
+    if(event == redEvents[i]){
       litePin = REDLITE;
       if(!liteUp){liteLED(litePin);}
-      break;
-    case 11:
-      lcd.print(F("Below Alt Threshold"));
-      litePin = REDLITE;
-      if(!liteUp){liteLED(litePin);}
-      break;
-    case 12:
-      lcd.print(F("Rotn / Alt Limits"));
-      litePin = REDLITE;
-      if(!liteUp){liteLED(litePin);}
-      break;
-    case 13:
-      lcd.print(F("2nd Stage Ignition!"));
-      break;
-    case 14:
-      lcd.print(F("2nd Stage Burnout!"));
-      break;
-    case 15:
-      lcd.print(F("Under Chute!"));
-      litePin = GREENLITE;
-      if(!liteUp){liteLED(litePin);}
-      break;
-    default: 
-      lcd.print(F("Event Error: "));lcd.print(event);}
-  //----------------------------------------
+      break;}}*/
+    //----------------------------------------
   //display altitude - line 1
   //----------------------------------------
   lcd.setCursor(0,1);
   lcd.print(F("Altitude: "));
-  lcd.print((long)(Alt*3.2808));
-  lcd.print(F(" ft"));
+  displayAlt(Alt);
   //----------------------------------------
   //display velocity - line 2
   //----------------------------------------
   lcd.setCursor(0,2);
   lcd.print(F("Speed: "));
-  lcd.print((long)(velocity*3.2808));
-  lcd.print(F(" fps"));
+  displayVel(velocity);
   //----------------------------------------
   //signal strength - line 3
   //----------------------------------------
@@ -175,7 +132,7 @@ void inflightLCD(){
   }//end Inflight Code
   
 void postflightLCD(){
-  
+ //----------------------------------------------------------- 
  //Postflight Code
  //-----------------------------------------------------------
 
@@ -185,36 +142,26 @@ void postflightLCD(){
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print(F("Max Alt: "));
-  lcd.print((long)(maxAltitude*3.2808));
-  lcd.print(F(" ft"));
-
+  displayAlt(maxAltitude);
+  
   //----------------------------------------
   //integrated velocity - line 1
   //----------------------------------------
   lcd.setCursor(0,1);
   lcd.print(F("Max Speed: "));
-  lcd.print((long)(maxVelocity*3.2808));
-  lcd.print(F(" fps"));
+  displayVel(maxVelocity);
 
   //----------------------------------------
   //GPS Latitude - Line 2
   //----------------------------------------
   lcd.setCursor(0,2);
-  //lcd.print(GPSlatitude,4);
-  parseCoord(GPSlatitude);
-  lcd.print(dataString);
-  lcd.print((char)39);
-  lcd.print(charGPSlat);
+  displayLat();
   
   //----------------------------------------
-  //GPS Latitude - Line 2
+  //GPS Longitude - Line 2
   //----------------------------------------
   lcd.setCursor(0,3);
-  //lcd.print(GPSlongitude,4);
-  parseCoord(GPSlongitude);
-  lcd.print(dataString);
-  lcd.print((char)39);
-  lcd.print(charGPSlon);
+  displayLon();
 
   }//end Postflight Code
 
@@ -233,21 +180,37 @@ void signalLostLCD(){
     //GPS Latitude - Line 2
     //----------------------------------------
     lcd.setCursor(0,1);
-    parseCoord(lastGPSlat);
-    lcd.print(dataString);
-    lcd.print((char)39);
-    lcd.print(charGPSlat);
+    displayLat();
   
     //----------------------------------------
-    //GPS Latitude - Line 2
+    //GPS Longitude - Line 3
     //----------------------------------------
     lcd.setCursor(0,2);
-    parseCoord(lastGPSlon);
-    lcd.print(dataString);
-    lcd.print((char)39);
-    lcd.print(charGPSlon);
+    displayLon();
+
+    //----------------------------------------
+    //Max Values - Line 4
+    //----------------------------------------
+    lcd.setCursor(0,3);
+    displayAlt(maxAltitude);
+    lcd.print(' ');
+    displayVel(maxVelocity);
+    lcd.print(' ');
+    lcd.print(maxG * 0.00305176, 1);
+    lcd.print('G');
 }
 
+void changeFreqLCD(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(F("Change Freq to Ch: "));
+  lcd.print(chnl);
+  lcd.setCursor(0,1);
+  lcd.print(F("Frequency: "));
+  lcd.print(radioFreq[chnl], 3);
+  lastRX = micros();
+  delay(1000);
+}
 void parseCoord(float coord){
     dtostrf(coord, 2, 4, dataString);
     strPosn=0;
@@ -257,7 +220,32 @@ void parseCoord(float coord){
     while(endPosn >= strPosn - 2){dataString[endPosn+1]=dataString[endPosn]; endPosn--;}
     dataString[strPosn-2]=(char)223;}
 
-void liteLED(byte pin){
-  analogWrite(pin, 255);
+void displayAlt(int val){
+  lcd.print(val * unitConvert, 0);
+  if(displayStandard){lcd.print("ft");}
+  else{lcd.print('m');}
+}
+
+void displayVel(int val){
+  lcd.print(val * unitConvert, 0);
+  if(displayStandard){lcd.print("fps ");}
+  else{lcd.print("m/s ");}
+}
+
+void displayLat(){
+  parseCoord(lastGPSlat);
+  lcd.print(dataString);
+  lcd.print((char)39);
+  lcd.print(charGPSlat);
+}
+
+void displayLon(){
+  parseCoord(lastGPSlon);
+  lcd.print(dataString);
+  lcd.print((char)39);
+  lcd.print(charGPSlon);
+}
+/*void liteLED(byte pin){
+  //analogWrite(pin, 255);
   liteStart = micros();
-  liteUp = true;}
+  liteUp = true;}*/
