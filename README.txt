@@ -8,10 +8,9 @@ to ensure I have posted the latest updates.  https://www.rocketryforum.com/membe
 
 --------DESCRIPTION----------
 This flight computer is designed for rockets 2-inches in diameter or greater.
-It has similar functionality as a TeleMega, but without a smart-phone app.  
+It has similar capability as a TeleMega, but without a smart-phone app or advanced interfaces  
 It has flown on multiple M-powered supersonic flights to over 18K feet.  
-For large & high-power projects, a backup computer such 
-as the PerfectFlite StratoLogger is strongly recommended.  
+For large & high-power projects, a backup computer such as the PerfectFlite StratoLogger is strongly recommended.  
 
 --------FEATURES----------
 //1400Hz 3-axis digital 24G and 100G accelerometer data logging
@@ -21,7 +20,7 @@ as the PerfectFlite StratoLogger is strongly recommended.
 //1000Hz of quaternion rotation, user selectable down to 100Hz
 //30Hz of digital barometric data logging (Altitude, pressure, temperature)
 //30Hz of main battery voltage
-//20Hz of telemetry output (time, event, acceleration, speed, altitude, rotation, GPS)
+//20Hz of 70cm LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GPS)
 //10Hz of magnetic data logging
 //10Hz of GPS data logging
 //All data collected to a CSV text file, 3-5 million data points typical per flight 
@@ -80,7 +79,9 @@ TinyGPS++
 RadioHead
 
 --------INTENDED FUTURE REVISIONS----------
-1) Develop Android App for ground station
+1) 915MHz option & LoRaWAN compatibility
+2) Upgrade ground station with GPS, digital compass, & Bluetooth
+3) Develop Android App for ground station
 
 --------NOTES----------
 Note: All of the above components were purchased through Digikey.  Other
