@@ -31,7 +31,7 @@ For large & high-power projects, a backup computer such as the PerfectFlite Stra
 //Mach immune events
 //Sensor Fusion based apogee event
 //Barometric based main deploy event
-//False-liftoff detection logic, increases safefy from accidental pyro discharge
+//False-liftoff detection logic, prevents accidental pyro discharge due to chuffing or accidental drop at the pad
 //Optional Apogee delay
 //Optional Audible Continuity report at startup
 //Optional Audible Battery Voltage report at startup
