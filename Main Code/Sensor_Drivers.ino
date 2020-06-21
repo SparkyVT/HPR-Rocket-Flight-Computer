@@ -7,9 +7,9 @@
 //26 Nov 17: Version 1 created
 //10 Nov 18: Version 2 created to support new sensor package
 //30 Apr 19: Version 3 created to support MPL3115A2 after EMI problems with BMP280 & BMP388
-//15 Sep 19: Version 4 created to support all coded sensors and all orientations
+//31 Jan 20: Version 4 created to support all coded sensors and all orientations
 //--------Supported Sensors---------
-//Accelerometers/Magnetometers:LSM303, LSM9DS1
+//Accelerometers/Magnetometers: LSM303, LSM9DS1
 //High-G Accelerometers: H3LIS331DL, ADS115 & ADXL377 Combo, ADXL377 & Teensy3.5 ADC combo
 //Gyroscopes: L3GD20H, LSM9DS1
 //Barometric: BMP180, BMP280, BMP388, MPL3115A2
@@ -37,7 +37,7 @@ void getAccel() {
   switch (sensors.accel) {
 
     case 2:
-      if (liftoff) {getLSM9DS1_AG();}
+      if (events.liftoff) {getLSM9DS1_AG();}
       else {getLSM9DS1_A();}
       break;
 
@@ -172,7 +172,7 @@ void getGyro() {
   switch (sensors.gyro) {
 
     case 2:
-      if (!liftoff) {getLSM9DS1_G();}
+      if (!events.liftoff) {getLSM9DS1_G();}
       break;
 
     case 1:
@@ -452,8 +452,8 @@ void getLSM303_A() {
 #define LSM303_REGISTER_ACCEL_OUT_X_L_A  (0x28)
   readSensor(LSM303_ADDRESS_ACCEL, (LSM303_REGISTER_ACCEL_OUT_X_L_A | 0x80), 6);
   //get the timestamp
-  timeClockPrev = timeClock;
-  timeClock = micros();
+  fltTime.tmClockPrev = fltTime.tmClock;
+  fltTime.tmClock = micros();
   //assemble the data
   accel.rawX = (int16_t)(rawData[0] | (rawData[1] << 8)) >> 4;
   accel.rawY = (int16_t)(rawData[2] | (rawData[3] << 8)) >> 4;
@@ -518,8 +518,8 @@ void getL3GD20H() {
 #define GYRO_REGISTER_OUT_X_L (0x28)
   readSensor(L3GD20_ADDRESS, (GYRO_REGISTER_OUT_X_L | 0x80), 6);
   //Capture current timestamp
-  timeGyroClockPrev = timeGyroClock;
-  timeGyroClock = micros();
+  fltTime.gyroClockPrev = fltTime.gyroClock;
+  fltTime.gyroClock = micros();
   //Assemble the data
   gyro.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
   gyro.rawY = (int16_t)(rawData[2] | (rawData[3] << 8));
@@ -606,10 +606,10 @@ void getLSM9DS1_AG() {
   //readSensor(LSM9DS1_ADDRESS_ACCELGYRO, LSM9DS1_REGISTER_OUT_X_L_G, 12);
 
   //Capture current timestamp
-  timeGyroClockPrev = timeGyroClock;
-  timeGyroClock = micros();
-  timeClockPrev = timeClock;
-  timeClock = micros();
+  fltTime.gyroClockPrev = fltTime.gyroClock;
+  fltTime.gyroClock = micros();
+  fltTime.tmClockPrev = fltTime.tmClock;
+  fltTime.tmClock = micros();
 
   readSensor(LSM9DS1_ADDRESS_ACCELGYRO, LSM9DS1_REGISTER_OUT_X_L_G, 12);
   //read the data
@@ -632,10 +632,10 @@ void getLSM9DS1_A() {
   readSensor(LSM9DS1_ADDRESS_ACCELGYRO, 0x80 | LSM9DS1_REGISTER_OUT_X_L_XL, 6);
 
   //Capture current timestamp
-  timeGyroClockPrev = timeGyroClock;
-  timeGyroClock = micros();
-  timeClockPrev = timeClock;
-  timeClock = micros();
+  fltTime.gyroClockPrev = fltTime.gyroClock;
+  fltTime.gyroClock = micros();
+  fltTime.tmClockPrev = fltTime.tmClock;
+  fltTime.tmClock = micros();
 
   accel.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
   accel.rawY = (int16_t)(rawData[2] | (rawData[3] << 8));
@@ -666,8 +666,8 @@ void getLSM9DS1_M() {
 bool beginADXL377() {
 
   //set gain
-  for(byte i = 0; i < 4; i++){GPSunion.GPSbyte[i] = (byte)EEPROM.read(68+i);}
-  highG.gainX = highG.gainY = highG.gainZ = GPSunion.GPScoord * 9.80655;
+  for(byte i = 0; i < 4; i++){calFloat.calByte[i] = (byte)EEPROM.read(68+i);}
+  highG.gainX = highG.gainY = highG.gainZ = calUnion.calValue * 9.80655;
   //highG.gainX = highG.gainY = highG.gainZ = 0.0158337 * 9.80655;
 
   //high1G = 63;// bits in 1G = 1/gain = 63
@@ -675,6 +675,8 @@ bool beginADXL377() {
   high1G = 129;
   //sizeHighGfilter = 1;
   sizeHighGfilter = 10;
+  //transmitter interference time: 118020 uS
+  //Reading offset +16
 
   //Start the DAC for differential mode
   //analogWriteResolution(12);
@@ -701,6 +703,13 @@ void getADXL377(boolean threeAxisMode) {
   long highGsumX = 0L;
   long highGsumY = 0L;
   long highGsumZ = 0L;
+  int16_t interferenceValue = 16;
+  unsigned long interferenceTime = 118020UL;
+  static boolean radioInterference = false;
+  static int16_t prevPacketNum = 0;
+  //Is the radio transmitting?  If so, counter the interference
+  if(!radioInterference && radio.packetnum > prevPacketNum){radioInterference = true; prevPacketNum = radio.packetnum;}
+  if(radioInterference && fltTime.timeCurrent - TXnow > interferenceTime){radioInterference = false;}
   
 //  //singleAxisMode = true: only samples the axis aligned to the travel of the rocket (Z-axis)
 //  if(threeAxisMode){
@@ -752,6 +761,11 @@ if(threeAxisMode){
   highG.rawX = (int16_t)((highGsumX/5) - ADCmidValue);
   highG.rawY = (int16_t)((highGsumY/5) - ADCmidValue);
   highG.rawZ = (int16_t)((highGsumZ/5) - ADCmidValue);
+
+  if(radioInterference){
+    highG.rawX += interferenceValue;
+    highG.rawY += interferenceValue;
+    highG.rawZ += interferenceValue;}
   }
 
 else{
@@ -760,15 +774,18 @@ else{
   
   if (highG.orientX == 'Z'){
     for(byte i = 0; i < 5; i++){highGsumZ += analogRead(A2);}
-    highG.rawX = (int16_t)((highGsumZ/5) - ADCmidValue);}
+    highG.rawX = (int16_t)((highGsumZ/5) - ADCmidValue);
+    if(radioInterference){highG.rawX += interferenceValue;}}
 
   else if (highG.orientY == 'Z'){
     for(byte i = 0; i < 5; i++){highGsumZ += analogRead(A3);}
-    highG.rawY = (int16_t)((highGsumZ/5) - ADCmidValue);}
+    highG.rawY = (int16_t)((highGsumZ/5) - ADCmidValue);
+    if(radioInterference){highG.rawY += interferenceValue;}}
 
   else if (highG.orientZ == 'Z'){
     for(byte i = 0; i < 5; i++){highGsumZ += analogRead(A4);}
-    highG.rawZ = (int16_t)((highGsumZ/5) - ADCmidValue);}}
+    highG.rawZ = (int16_t)((highGsumZ/5) - ADCmidValue);
+    if(radioInterference){highG.rawZ += interferenceValue;}}}
  
 }//endvoid
 
@@ -1000,6 +1017,14 @@ boolean beginMPL3115A2() {
   //Standby: 0
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);
 
+  //Read the offsets from the registers
+  baroPressOffset = (float)(readS8(0x2B, MPL3115A2_ADDRESS)) * 0.04; 
+  //Serial.print("Press Offset: ");Serial.println(baroPressOffset, 2);
+  baroTempOffset = (int16_t)(readS8(0x2C, MPL3115A2_ADDRESS));
+  //Serial.print("Temp Offset: ");Serial.println(baroTempOffset * 0.0625, 2);
+  baroAltOffset = (float)(readS8(0x2D, MPL3115A2_ADDRESS));
+  //Serial.print("Alt Offset: ");Serial.println(baroAltOffset);
+
   return true;
 }
 
@@ -1021,13 +1046,13 @@ void readMPLbaro() {
   adc_T |= rawData[4];
   adc_T >>= 4;
 
-  pressure = (float)(adc_P) * 0.0025;
+  pressure = (float)(adc_P) * 0.0025 + baroPressOffset;
   temperature = adc_T;
   if (adc_T & 0x800) {
     adc_T |= 0xF000;
   }
-  temperature = (float)(adc_T) * 0.0625;
-  Alt = 44330.77 * (1.0 - pow(pressure / seaLevelPressure, 0.1902632));
+  temperature = (float)(adc_T + baroTempOffset) * 0.0625;
+  Alt = 44330.77 * (1.0 - pow(pressure / seaLevelPressure, 0.1902632)) + baroAltOffset;
 
   //initiate next reading
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);
@@ -1726,4 +1751,3 @@ void write8(byte reg, byte _i2caddr, byte value) {
       break;
   }
 }
-

@@ -478,5 +478,3 @@ int speedAtan2(float y, float x){
   else if(x == 0.0 && y == 0.0){myValue = 0;}
 
   return myValue;}
-
-

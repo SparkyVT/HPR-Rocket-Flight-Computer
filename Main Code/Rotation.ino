@@ -1,7 +1,7 @@
 void getRotnDCM2D(){
 
   //Calculate new Z angle from gyro data
-  dz += gyro.z * gdt;
+  dz += gyro.z * fltTime.gdt;
   //Overflow Z data and recompute as needed
   counterSign = (dz > 0) ? 1 : -1;
   while (abs(dz) > oneDeg) {
@@ -15,10 +15,10 @@ void getRotnDCM2D(){
     PrevSinZ = sinZ;}
       
   //Compute the new y and x angles
-  dx += cosZ * gyro.x * gdt;
-  dx += sinZ * gyro.y * gdt;
-  dy += cosZ * gyro.y * gdt;
-  dy -= sinZ * gyro.x * gdt;
+  dx += cosZ * gyro.x * fltTime.gdt;
+  dx += sinZ * gyro.y * fltTime.gdt;
+  dy += cosZ * gyro.y * fltTime.gdt;
+  dy -= sinZ * gyro.x * fltTime.gdt;
   //Overflow Y data and recompute as needed
   counterSign = (dy > 0) ? 1 : -1;
   while (abs(dy) > oneTenthDeg) {
@@ -34,7 +34,7 @@ void getRotnDCM2D(){
     calcOffVert = true;}
 
   //Check if the max angle is exceeded, shutdown staging if angle > 45 is detected
-  if ((!apogee && calcOffVert) || settings.testMode){
+  if ((!events.apogee && calcOffVert) || settings.testMode){
     tanYaw = speedTan(yawY);
     tanPitch = speedTan(pitchX);
     //calculate the off-vertical rotation angle
@@ -44,7 +44,7 @@ void getRotnDCM2D(){
     calcOffVert = false;
       
     //check to see if the maximum angle has been exceeded
-    if (offVert > settings.max_ang) {rotnOK = false;}
+    if (offVert > settings.maxAngle) {rotnOK = false;}
     else if (!rotationFault){rotnOK = true;}
     if(!rotationFault && offVert > 450){rotationFault = true;}}
 }//end void
@@ -117,9 +117,9 @@ pitchX = speedAtan2(Rotn3[2], Rotn3[3]);
 yawY = speedArcSin(-1*Rotn3[1]);
 prevRollZ = quatRollZ;
 quatRollZ = speedAtan2(Rotn2[1], Rotn1[1]);
-if(quatRollZ - prevRollZ > 1800){fullRollZ++;}
-else if(quatRollZ - prevRollZ < 1800){fullRollZ--;}
-rollZ = fullRollZ*3600 + quatRollZ;
+if(quatRollZ - prevRollZ > 1800){fullRollZ--;}
+else if(quatRollZ - prevRollZ < -1800){fullRollZ++;}
+rollZ = (fullRollZ*3600 + quatRollZ)*.1;
 
 //Compute angle off vertical
 float tanYaw;
@@ -134,7 +134,6 @@ hyp2 = pow(hyp1, 0.5);
 offVert = speedArcTan(hyp2);
 
 //check to see if the maximum angle has been exceeded
-if (!rotationFault && offVert > settings.max_ang) {rotnOK = false;}
+if (!rotationFault && offVert > settings.maxAngle) {rotnOK = false;}
 if (!rotationFault && offVert > 450){rotationFault = true; rotnOK = false;}
 }//end getQuatRotn
-
