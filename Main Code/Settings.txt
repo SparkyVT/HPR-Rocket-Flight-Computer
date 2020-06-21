@@ -1,59 +1,118 @@
-Rocket Name = HyperLOC's Revenge
-callSign = KK4ELF
-magSwitchEnable = 0
-TXenable = 1
-TXpwr = 13
-TXfreq = 433.250
-silentTestMode = 0
+Flight Computer Settings File
+Not not delete or change the order of the settings
+***********************
+----Flight Settings----
+***********************
+Rocket Name = Distant Thunder
+flightProfile = S, 2, B, A
 startupTime = 5
 gTrigger = 2.5
 detectLiftoffTime = 0.5
+mainDeployAlt = 500
 apogeeDelay = 0.0
-mainDeployAlt = 800
 maxRecordTime = 900
+highG 3-axis mode = 0
+silentTestMode = 1
+magSwitchEnable = 0
+rotationCalcRate = 100
+***********************
+-----Pyro Settings-----
+***********************
 pyroFiringTime = 0.5
 pyro4function = M
 pyro3function = A
 pyro2function = N
 pyro1function = N
-2 Stage = 0
-2stageIgnitionDelay = 0.5
+***********************
+--Telemetry Settings---
+***********************
+callSign = KK4ELF
+TXenable = 1
+TXpwr = 13
+TXfreq = 433.250
+**********************************
+---------2 Stage Settings---------
+IGNORED UNLESS FLIGHT PROFILE IS 2
+**********************************
 boosterSeparateDelay = 0.5
-2stageAltThreshold = 400
+ignitionDelay = 0.5
+**********************************
+--------Airstart Settings---------
+IGNORED UNLESS FLIGHT PROFILE IS A
+**********************************
+1stAirstartEvent = I
+1stAirStartDelayTime = 0.5
+2ndAirStartEvent = B
+2ndAirStartDelayTime = 0.0
+**************************************************
+-----Safety Thresholds for Inflight Iginition-----
+IGNORED UNLESS FLIGHT PROFILE IS 2 OR PROFILE IS A
+**************************************************
+altitudeThreshold = 400
 maxAngleOffVertical = 45
-quaternionRotn = 0
-highG 3-axis Mode = 0
+***********************************
+---Active Stabilization Settings---
+        NOT YET SUPPORTED
+***********************************
+stableRotn = 0
+stableVert = 0
+************************************************************************************************
+                        valid setting values
+************************************************************************************************
 ---------------------------------------------
-            valid setting values
+         Flight Settings
 ---------------------------------------------
          Rocket Name: up to 20 characters of text
-           Call Sign: ham radio callsign, 6 characters of text, future versions will transmit via morse code
-     magSwitchEnable: 1 enable, 0 disable, if enabled startup will not proceed until magnet is sensed
-	    TXenable: 1 enable telemetry, 0 disable telemetry
-               TXpwr: telemetry TX power; integers between 0 and 23; 13=20mW, 15=30mW, 17=50mW, 20=100mW
-          silentMode: 1 enables the audible beeper, 0 disables audible beeper
+       flightProfile: S = single stage, 2 = 2-stage, A = Airstart, B = booster stage (single stage but recorded differently)
          startupTime: seconds from power-on until start of pre-flight sequence
-            gTrigger: # of G's required to detect liftoff, between 1.5 and 5.0
+            gTrigger: # of G's required to detect liftoff, between 1.5 and 5.0    
    detectLiftoffTime: seconds of sustained gTrigger to detect liftoff, between 0.1 and 1.0
+       mainDeployAlt: altitude to deploy mains, 100ft to 1500ft
         apogee delay: # of seconds after apogee to fire charge, between 0.0 and 5.0
-       mainDeployAlt: altitude to deploy mains, 100ft to 835ft
        maxRecordTime: if touchdown is not detected, recording will stop after this many seconds, between 300 and 4294
-      pyroFiringTime: total seconds spent sending current to pyro charge, between 0.2 and 1.0
+   highG 3-axis mode: 1 enable, 0 disable, if enabled all high-G accelerometer axes are sampled but is much slower
+      silentTestMode: 1 enable, 0 disable, if enabled the audible beeper is silent during testMode
+     magSwitchEnable: 1 enable, 0 disable, if enabled startup will not proceed until magnet is sensed.  Very useful for 2-stage mode.
+    rotationCalcRate: 100 to 500 rotation calculations per second
+---------------------------------------------
+         Telemetry Configuration
+---------------------------------------------
+           Call Sign: ham radio callsign, 6 characters of text (currently unsupported)
+            TXenable: 1 enable telemetry, 0 disable telemetry
+               TXpwr: telemetry TX power; integers between 0 and 23; 13=20mW, 15=30mW, 17=50mW, 20=100mW
+	      TXfreq: Radio frequency, 433MHz for RFM96W or 900MHz/868MHz for RFM95W 
 ---------------------------------------------
          Pyro Channel Configuration
 ---------------------------------------------
+      pyroFiringTime: total seconds spent sending current to pyro charge, between 0.2 and 1.0
+       pyroFunctions: Any single character setting below is acceptable
 		   M: Main deployment.  Fires when post-apogee altitude reaches mainDeployAlt 
 		   A: Apogee deployment.  Fires on apogee detection with a delay of apogeeDelay seconds
-		   I: Sustainer ignition.  Fires 2-stage sustainer as long as all saftey conditions are met.
-		   B: Booster separation.  Fires separation charge on burnout detection with a delay of boosterSeparateDelay.
-		   N: Not used.  No output funtion.  Nothing should be attached to the output.
-		   S: Airstart.  Not yet supported
+		   I: 2-stage Mode - Sustainer ignition.  Fires 2-stage sustainer provided all saftey conditions are met.
+		   B: 2-stage Mode - Booster separation.  Fires separation charge on burnout detection with a delay of boosterSeparateDelay.
+		   1: AirStart Mode - 1st AirStart.  Fires 1st Airstart after designated trigger event plus delay.
+                   2: AirStart Mode - 2nd AirStart.  Fires 2nd Airstart after designated trigger event plus delay.
+                   N: Pyro not used; no output funtion.  Nothing should be attached to the output.
 ---------------------------------------------
-            2 stage rocket mode
+         2 Stage Rocket Settings
 ---------------------------------------------
-             2 stage: 1 for 2-stage rocket, 0 for single stage rocket
  2stageIgnitionDelay: seconds after booster separation to light 2nd stage, between 0.0 and 8.0
 boosterSeparateDelay: seconds after booster burnout to separate 1st stage booster, between 0.0 and 3.0
-  2stageAltThreshold: minimum altitude that must be exceeded before 2nd stage can light, between 100 and 835 ft
- maxAngleOffVertical: if angle off vertical exceeds this value then 2nd stage won't light, between 0 and 90 degrees
-      quaternionRotn: 1 enables quaternions, 0 uses modified DCM, quaternions are industry standard but modified DCM is just as accurate and much faster
+---------------------------------------------
+            Air Start Settings
+---------------------------------------------
+    1stAirstartEvent: I = starts delay timer upon main motor ignition, B = starts delay timer on main motor burnout
+1stAirStartDelayTime: 1st Airstart pyro channel will fire this many seconds after the 1st Airstart Event
+    2ndAirStartEvent: I = starts 2nd airstart timer upon 1st Airstart motor ignition, B = starts 2nd airstart timer on 1st Airstart motor burnout
+2ndAirStartDelayTime: 2nd Airstart pyro channel will fire this many seconds after the 2nd Airstart Event
+---------------------------------------------
+     Inflight Ignition Safety Settings
+---------------------------------------------
+   altitudeThreshold: minimum altitude that must be exceeded before inflight ignition, between 100 and 835 ft
+ maxAngleOffVertical: if angle off vertical exceeds this value then inflight igntion will not occur, between 0 and 90 degrees
+---------------------------------------------
+     Active Stabilization Settings
+---------------------------------------------
+	  stableRotn: 1 enables the use of canard fins to correct the rocket rotation (currently unsupported)
+	  stableVert: 1 enables the use of canard fins to correct the rocket attitude and maintain vertical flight (currently unsupported)
+	
