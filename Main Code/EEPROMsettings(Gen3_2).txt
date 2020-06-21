@@ -1,0 +1,65 @@
+EEPROM for version 4.0
+------i2c Bus--------
+i2c = 2
+-------GPIO---------
+pyro1cont = 39
+pyro1fire = 38
+pyro2cont = 16
+pyro2fire = 14
+pyro3cont = 18
+pyro3fire = 17
+pyro4cont = 22
+pyro4fire = 19
+nullPin = 56
+beepPin = 23
+battPin = 34
+magPin = 33
+testGnd = 2
+testRead = 5
+radioCS = 15
+radioIRQ = 32
+radioRST = 37
+radioEN = 56
+-----Sensors------
+accel/mag = 2
+gyro = 2
+highG = 2
+baro = 2
+radio = 1
+-----Magnetometer-----
+calibrateMode = 0
+-----Reporting--------
+reportStyle = P
+reportUnits = S
+----IMU to high-G----
+accelX = -X
+accelY = +Y
+accelZ = +Z
+---ADXL377 Gain----
+gain = 0.015833
+----Control Outputs----
+servo 1 pin = 6
+servo 2 pin = 7
+servo 3 pin = 21
+servo 4 pin = 20
+servo 5 pin = 35
+servo 6 pin = 36
+servo 7 pin = 29
+servo 8 pin = 30
+________________________________
+Sensor Legend
+________________________________
+Accel/Mag: LSM303 = 1, LSM9DS1 = 2
+Gyro: L3GD20H = 1, LSM9DS1 = 2
+highG: ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3
+baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4
+radio: RFM96W 433MHz = 1, RFM95W 915MHz = 2
+reportStyle: M = Marsa, P = PerfectFlite
+reportUnits: S = Imperial, M = Metric
+
+Z   Y
+^   ^
+|  /
+| / 
+|/
+|--------------->X
