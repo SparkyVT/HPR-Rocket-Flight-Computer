@@ -8,7 +8,7 @@ TRA #12111, L3
 
 --------DESCRIPTION----------
 This flight computer is designed for rockets 2-inches in diameter or greater.
-Dimensions are 3.9in x 1.25in x 0.5in, not including antenna
+Dimensions are 3.8in x 1.25in x 0.5in, not including antenna
 It has similar capability as a TeleMega, but without a smart-phone app or advanced interfaces  
 It has flown on multiple M-powered supersonic flights to over 18K feet.  
 For large & high-power projects, a backup computer such as the PerfectFlite StratoLogger is strongly recommended.  
@@ -94,7 +94,7 @@ Note: All of the above components were purchased through Digikey.  Other
 sources for the same components should work, but are untested, but may not
 fit the provided PCB
 
-Note: 1.25in x 3.9in size board.  Will fit in a 2-inch avionics bay that is at least 
+Note: 1.25in x 3.8in size board.  Will fit in a 2-inch avionics bay that is at least 
 1.5 inch wide and 4 inches long.  Components mount on both sides.  See provided pictures for examples.
 
 Note: Estimated Flight Computer Cost = $150
