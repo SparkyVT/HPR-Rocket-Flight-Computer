@@ -4,7 +4,7 @@ Not not delete or change the order of the settings
 ----Flight Settings----
 ***********************
 Rocket Name = Distant Thunder
-flightProfile = S, 2, B, A
+flightProfile = S
 startupTime = 5
 gTrigger = 2.5
 detectLiftoffTime = 0.5
@@ -14,7 +14,7 @@ maxRecordTime = 900
 highG 3-axis mode = 0
 silentTestMode = 1
 magSwitchEnable = 0
-rotationCalcRate = 100
+rotationCalcRate = 500
 ***********************
 -----Pyro Settings-----
 ***********************
