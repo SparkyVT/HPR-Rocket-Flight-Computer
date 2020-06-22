@@ -10,8 +10,8 @@ TRA #12111, L3
 This flight computer is designed for rockets 2-inches in diameter or greater.
 Dimensions are 3.8in x 1.25in x 0.5in, not including antenna
 It has similar capability as a TeleMega, but without a smart-phone app or advanced interfaces  
-It has flown on multiple M-powered supersonic flights to over 18K feet.  
-For large & high-power projects, a backup computer such as the PerfectFlite StratoLogger is strongly recommended.  
+It has flown on multiple M-powered supersonic flights to over 24K feet.  
+For large or high-power projects, a backup computer such as the PerfectFlite StratoLogger is strongly recommended.  
 
 --------FEATURES----------
 High data logging rate that exceeds all commercially available systems, 3-5 million data points per flight is typical
