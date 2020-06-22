@@ -31,7 +31,7 @@ All data written to an easy to read CSV text file
 4 programmable "plug 'n play" servo connections, can be actuated at flight events (active stabilization in development)
 4 additional programmable un-powered servo outputs (requires JST connector)
 User Selectable Flight Mode: Single-Stage, Two-Stage Sustainer, Two-Stage Booser, Airstart
-"Smart Config Detection" will default to single-stage mode if complex pyros not detected
+"Smart Config" will default to single-stage mode if complex pyros not detected
 Mach immune flight event detection algorithms
 Sensor Fusion based apogee event
 Barometric based main deploy event
