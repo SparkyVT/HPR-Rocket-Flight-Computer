@@ -4,7 +4,9 @@ Not not delete or change the order of the settings
 ----Flight Settings----
 ***********************
 Rocket Name = Distant Thunder
-flightProfile = S
+flightProfile = S, 2, B, A
+units = M
+reportStyle = P
 startupTime = 5
 gTrigger = 2.5
 detectLiftoffTime = 0.5
@@ -14,7 +16,7 @@ maxRecordTime = 900
 highG 3-axis mode = 0
 silentTestMode = 1
 magSwitchEnable = 0
-rotationCalcRate = 500
+rotationCalcRate = 100
 ***********************
 -----Pyro Settings-----
 ***********************
@@ -26,7 +28,6 @@ pyro1function = N
 ***********************
 --Telemetry Settings---
 ***********************
-callSign = KK4ELF
 TXenable = 1
 TXpwr = 13
 TXfreq = 433.250
@@ -34,7 +35,7 @@ TXfreq = 433.250
 ---------2 Stage Settings---------
 IGNORED UNLESS FLIGHT PROFILE IS 2
 **********************************
-boosterSeparateDelay = 0.5
+boosterSeparationDelay = 0.5
 ignitionDelay = 0.5
 **********************************
 --------Airstart Settings---------
@@ -56,6 +57,11 @@ maxAngleOffVertical = 45
 ***********************************
 stableRotn = 0
 stableVert = 0
+************************************
+---Fly-Back to Launchpad Settings---
+        NOT YET SUPPORTED
+************************************
+FlyBack = 0
 ************************************************************************************************
                         valid setting values
 ************************************************************************************************
@@ -64,23 +70,24 @@ stableVert = 0
 ---------------------------------------------
          Rocket Name: up to 20 characters of text
        flightProfile: S = single stage, 2 = 2-stage, A = Airstart, B = booster stage (single stage but recorded differently)
+               units: S = US Standard System, M = Metric System  
+         reportStyle: P = Perfectflite, M = Marsa
          startupTime: seconds from power-on until start of pre-flight sequence
             gTrigger: # of G's required to detect liftoff, between 1.5 and 5.0    
    detectLiftoffTime: seconds of sustained gTrigger to detect liftoff, between 0.1 and 1.0
-       mainDeployAlt: altitude to deploy mains, 100ft to 1500ft
+       mainDeployAlt: altitude to deploy mains, 100ft to 1500ft (30m to 458m)
         apogee delay: # of seconds after apogee to fire charge, between 0.0 and 5.0
        maxRecordTime: if touchdown is not detected, recording will stop after this many seconds, between 300 and 4294
-   highG 3-axis mode: 1 enable, 0 disable, if enabled all high-G accelerometer axes are sampled but is much slower
+   highG 3-axis mode: 1 enable, 0 disable, if enabled all high-G accelerometer axes are sampled at reduced overall sample rate
       silentTestMode: 1 enable, 0 disable, if enabled the audible beeper is silent during testMode
      magSwitchEnable: 1 enable, 0 disable, if enabled startup will not proceed until magnet is sensed.  Very useful for 2-stage mode.
     rotationCalcRate: 100 to 500 rotation calculations per second
 ---------------------------------------------
          Telemetry Configuration
 ---------------------------------------------
-           Call Sign: ham radio callsign, 6 characters of text (currently unsupported)
             TXenable: 1 enable telemetry, 0 disable telemetry
                TXpwr: telemetry TX power; integers between 0 and 23; 13=20mW, 15=30mW, 17=50mW, 20=100mW
-	      TXfreq: Radio frequency, 433MHz for RFM96W or 900MHz/868MHz for RFM95W 
+	      TXfreq: Radio frequency for 433MHz band.  Input ignored for 915MHz band (FHSS implemented) 
 ---------------------------------------------
          Pyro Channel Configuration
 ---------------------------------------------
@@ -108,11 +115,14 @@ boosterSeparateDelay: seconds after booster burnout to separate 1st stage booste
 ---------------------------------------------
      Inflight Ignition Safety Settings
 ---------------------------------------------
-   altitudeThreshold: minimum altitude that must be exceeded before inflight ignition, between 100 and 835 ft
+   altitudeThreshold: minimum altitude that must be exceeded before inflight ignition, 100ft (91m) minimum, no maximum
  maxAngleOffVertical: if angle off vertical exceeds this value then inflight igntion will not occur, between 0 and 90 degrees
 ---------------------------------------------
      Active Stabilization Settings
 ---------------------------------------------
 	  stableRotn: 1 enables the use of canard fins to correct the rocket rotation (currently unsupported)
 	  stableVert: 1 enables the use of canard fins to correct the rocket attitude and maintain vertical flight (currently unsupported)
-	
+---------------------------------------------
+     Fly-Back to Launch Pad Settings
+---------------------------------------------	
+             flyBack: 1 enables the use of grid fins to guide the rocket back to the original launch site (currently unsupported)
