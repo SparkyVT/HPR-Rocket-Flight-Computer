@@ -20,14 +20,14 @@ High data logging rate that exceeds all commercially available systems, 3-5 mill
 1400Hz of flight events
 1400Hz of integrated speed and altitude
 1400Hz of pyro status (continuity detection, closed/open circuit, and pin debugging)
-100Hz - 1000Hz of user selectable quaternion rotation calculation rate
+100Hz - 500Hz of user selectable quaternion rotation calculation rate
 30Hz of digital barometric data logging (Altitude, pressure, temperature)
 30Hz of main battery voltage
 20Hz of Amateur 70cm band LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GPS)
 10Hz of magnetic field data logging
-10Hz of location data logging on GPS, GLONASS, and Galileo systems (0.1Hz post-flight location updates)
+10Hz - 20Hz of location data logging on GPS, GLONASS, and Galileo systems (chip dependent, 0.1Hz post-flight location updates)
 All data written to an easy to read CSV text file
-4 programmable pyro outputs with continuity checks
+4 programmable pyro outputs with continuity checks, detects and reports open circuits.
 4 programmable "plug 'n play" servo connections, can be actuated at flight events (active stabilization in development)
 4 additional programmable un-powered servo outputs (requires JST connector)
 User Selectable Flight Mode: Single-Stage, Two-Stage Sustainer, Two-Stage Booser, Airstart
@@ -39,12 +39,12 @@ False-liftoff detection prevents accidental pyro discharge due to chuffing or ac
 Optional Apogee delay
 Optional Audible Continuity report at startup
 Optional Audible Battery Voltage report at startup
-Optional Magnetic Switch activation of startup sequence increases safety of 2-stage and complex flight modes
+Optional Magnetic Switch activation of startup sequence to increase safety of 2-stage and complex flight modes
 Optional antenna SMA connector
 Audible Post-flight max altitude & speed report
-Can be mounted in any orientation, self-detects orientation
+Can be mounted in any orientation, self-detects orientation (requires 1-time calibration)
 Separate file for each flight up to 100 flights
-Bench-test mode activated w/ tactile button
+Bench-test mode activated w/ tactile button to simulate flight tests on the ground and test pyro outputs
 USB Serial status reporting in bench-test & calibration modes
 Built-in self-calibration & orientation detection mode
 User defined flight profile read from SD card
@@ -59,7 +59,7 @@ One-time hardware configuration via SD card, settings stored in EEPROM
     Microprocessor: Teensy 3.5 (compatible with provided motherBoard PCB file) or Teensy4.1, 4.0, 3.6 or 3.2 (no PCB file provided)
          9 DoF IMU: LSM9DS1, or LSM303 & L3GD20H combo
 100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
-   Pressure Sensor: MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 are EMI sensitive and unsuitable for use with telemetry)
+   Pressure Sensor: MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 are EMI sensitive and unsuitable for use with 433MHz telemetry)
                GPS: UBLOX M6, M7, M8, M9 (NEO-M8N/Q and NEO-M9N supported in PCB file)
     LoRa Telemetry: RFM96W (Ham License Required) or RFM95W (License Free - support coming in V4.2)
    Tactile Buttons: 0.2 in spacing
@@ -91,7 +91,7 @@ RadioHead
 
 --------NOTES----------
 Note: All of the above components were purchased through Digikey.  Other
-sources for the same components should work, but are untested, but may not
+sources for the same components should work, but are untested and may not
 fit the provided PCB
 
 Note: 1.25in x 3.8in size board.  Will fit in a 2-inch avionics bay that is at least 
