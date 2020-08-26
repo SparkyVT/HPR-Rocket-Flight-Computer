@@ -1,15 +1,14 @@
-//Sketch adapted for the Adafruit 10DoF IMU board
-//By Bryan Sparkman, TRA #12111, NAR #85720, L3
+//Written by SparkyVT, TRA #12111, NAR #85720, L3
 //Sensor Package 1: LSM303DLHC, L3GD20, BMP180, ADS1115, ADXL377
 //Sensor Package 2: LSM9DS1, BMP280, H3LIS331DL
 //Sensor Package 3: LSM9DS1, MPL3115A2, H3LIS331DL
 //-----------Change Log------------
-//26 Nov 17: Version 1 created
+//26 Nov 17: Version 1 created to support Adafruit 10Dof board
 //10 Nov 18: Version 2 created to support new sensor package
 //30 Apr 19: Version 3 created to support MPL3115A2 after EMI problems with BMP280 & BMP388
 //31 Jan 20: Version 4 created to support all coded sensors and all orientations
 //--------Supported Sensors---------
-//Accelerometers/Magnetometers: LSM303, LSM9DS1
+//Accelerometers/Magnetometers:LSM303, LSM9DS1
 //High-G Accelerometers: H3LIS331DL, ADS115 & ADXL377 Combo, ADXL377 & Teensy3.5 ADC combo
 //Gyroscopes: L3GD20H, LSM9DS1
 //Barometric: BMP180, BMP280, BMP388, MPL3115A2
@@ -666,7 +665,7 @@ void getLSM9DS1_M() {
 bool beginADXL377() {
 
   //set gain
-  for(byte i = 0; i < 4; i++){calFloat.calByte[i] = (byte)EEPROM.read(68+i);}
+  for(byte i = 0; i < 4; i++){calFloat.calByte[i] = (byte)EEPROM.read(74+i);}
   highG.gainX = highG.gainY = highG.gainZ = calUnion.calValue * 9.80655;
   //highG.gainX = highG.gainY = highG.gainZ = 0.0158337 * 9.80655;
 
@@ -1006,23 +1005,29 @@ boolean beginMPL3115A2() {
   }
 
   //set the sampling frequency
-  timeBtwnBaro = 35000UL;
+  timeBtwnBaro = 34000UL;
 
   //SETUP Control Register
   //barometer mode: 0
   //RAW mode: 0
-  //Oversampling: 18ms - 010, 34ms - 011, 66ms - 100
+  //Oversampling: 18ms - 010 (4), 34ms - 011 (8), 66ms - 100 (16)
   //Reset: 0
   //One Shot Mode (OST): 1
   //Standby: 0
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);
 
+  //write the offsets to the registers
+  baroPressOffset = (int8_t)(EEPROM.read(82));
+  baroTempOffset = (int8_t)(EEPROM.read(83));
+  write8(0x2B, MPL3115A2_ADDRESS, baroPressOffset);
+  write8(0x2C, MPL3115A2_ADDRESS, baroTempOffset);
+    
   //Read the offsets from the registers
-  baroPressOffset = (float)(readS8(0x2B, MPL3115A2_ADDRESS)) * 0.04; 
-  //Serial.print("Press Offset: ");Serial.println(baroPressOffset, 2);
+  baroPressOffset = (int8_t)(readS8(0x2B, MPL3115A2_ADDRESS)); 
+  if(settings.testMode){Serial.print("Press Offset: ");Serial.println(baroPressOffset);}
   baroTempOffset = (int16_t)(readS8(0x2C, MPL3115A2_ADDRESS));
-  //Serial.print("Temp Offset: ");Serial.println(baroTempOffset * 0.0625, 2);
-  baroAltOffset = (float)(readS8(0x2D, MPL3115A2_ADDRESS));
+  if(settings.testMode){Serial.print("Temp Offset: ");Serial.println(baroTempOffset);}
+  //baroAltOffset = (float)(readS8(0x2D, MPL3115A2_ADDRESS));
   //Serial.print("Alt Offset: ");Serial.println(baroAltOffset);
 
   return true;
@@ -1046,13 +1051,13 @@ void readMPLbaro() {
   adc_T |= rawData[4];
   adc_T >>= 4;
 
-  pressure = (float)(adc_P) * 0.0025 + baroPressOffset;
+  pressure = (float)(adc_P) * 0.0025;
   temperature = adc_T;
   if (adc_T & 0x800) {
     adc_T |= 0xF000;
   }
-  temperature = (float)(adc_T + baroTempOffset) * 0.0625;
-  Alt = 44330.77 * (1.0 - pow(pressure / seaLevelPressure, 0.1902632)) + baroAltOffset;
+  temperature = (float)(adc_T) * 0.0625;
+  Alt = 44330.77 * (1.0 - pow(pressure / seaLevelPressure, 0.1902632));
 
   //initiate next reading
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);

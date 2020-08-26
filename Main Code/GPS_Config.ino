@@ -20,16 +20,27 @@ void restoreGPSdefaults(){
 void configGPS() {
   
   byte gpsSetSuccess = 0;
+  uint16_t delayTime = 200;
   if(settings.testMode){Serial.println("Configuring u-Blox GPS ...");}
 
   //Generate the configuration string for Navigation Mode
   byte setNav[] = {0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4F, 0x1F};
 
   //Generate the configuration string for Data Rate
-  //4Hz
-  //byte setDataRate[] =    {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xFA, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x96};
-  //5Hz
-  byte setDataRate[] =    {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A};
+  //4Hz nominal rate
+  byte setDataRate[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xFA, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x96};
+  
+  //5Hz Max data rate for NEO-M8N
+  if(sensors.GPS == 1){setDataRate[6] = 0xC8; setDataRate[12] = 0xDE; setDataRate[13] = 0x6A;}
+  
+  //10Hz Max data rate for NEO-M8Q, MAX-M8Q/W, SAM-M8Q
+  if(sensors.GPS == 2){setDataRate[6] = 0x64; setDataRate[12] = 0x7A; setDataRate[13] = 0x12;}
+  
+  //19Hz Max data rate for NEO-M9N
+  if(sensors.GPS == 3){setDataRate[6] = 0x33; setDataRate[12] = 0x49; setDataRate[13] = 0xEC;}
+
+  //Faster Baud Rate for the higher update rates
+  byte setBaudRate[] = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x23, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xAF, 0x70};
   
   //Generate the configuration string for NMEA messages
   byte setGLL[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x2B};
@@ -37,7 +48,6 @@ void configGPS() {
   byte setGSV[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x39};
   byte setRMC[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x40};
   byte setVTG[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x46};
-  //byte set4_1[] = {0xB5, 0x62, 0x06, 0x17, 0x0C, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x6C, 0x3E}; 
   byte set4_1[] = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x75, 0x57};
 
   //Generate the configuration string for interference resistance settings
@@ -56,6 +66,8 @@ void configGPS() {
   if (gpsSetSuccess == 3 && settings.testMode) Serial.println("Navigation mode configuration failed!");
   gpsSetSuccess = 0;
 
+  delay(delayTime);
+  
   //Set Data Update Rate
   while(gpsSetSuccess < 3) {
     if(settings.testMode){Serial.print("Setting Data Update Rate... ");}
@@ -65,6 +77,8 @@ void configGPS() {
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Data update mode configuration failed!");}
   gpsSetSuccess = 0;
 
+  delay(delayTime); 
+  
   //Set Satellite Constellations
   while(gpsSetSuccess < 3) {
     if(settings.testMode){Serial.print("Setting Satellite Constellations... ");}
@@ -73,6 +87,8 @@ void configGPS() {
   }
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Satellite Settings Failed!");}
   gpsSetSuccess = 0;
+
+  delay(delayTime);
   
   //Set Interference Thresholds
   while(gpsSetSuccess < 3) {
@@ -83,6 +99,8 @@ void configGPS() {
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Interference Settings Failed!");}
   gpsSetSuccess = 0;
 
+  delay(delayTime);
+  
   //Turn Off NMEA GLL Messages
   while(gpsSetSuccess < 3) {
     if(settings.testMode){Serial.print("Deactivating NMEA GLL Messages... ");}
@@ -92,6 +110,8 @@ void configGPS() {
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA GLL Message Deactivation Failed!");}
   gpsSetSuccess = 0;
 
+  delay(delayTime);
+  
   //Turn Off NMEA GSA Messages
   while(gpsSetSuccess < 3) {
     if(settings.testMode)Serial.print("Deactivating NMEA GSA Messages... ");
@@ -101,6 +121,8 @@ void configGPS() {
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA GSA Message Deactivation Failed!");}
   gpsSetSuccess = 0;
 
+  delay(delayTime);
+  
   //Turn Off NMEA GSV Messages
   while(gpsSetSuccess < 3) {
     if(settings.testMode){Serial.print("Deactivating NMEA GSV Messages... ");}
@@ -109,7 +131,8 @@ void configGPS() {
   }
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA GSV Message Deactivation Failed!");}
   gpsSetSuccess = 0;
-
+  delay(delayTime);
+  
   //Turn Off NMEA VTG Messages
   while(gpsSetSuccess < 3) {
     if(settings.testMode){Serial.print("Deactivating NMEA VTG Messages... ");}
@@ -118,6 +141,7 @@ void configGPS() {
   }
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA VTG Message Deactivation Failed!");}
   gpsSetSuccess = 0;
+  delay(delayTime);
 
   //Turn on NMEA4.1 Messages
   while(gpsSetSuccess < 3) {
@@ -127,6 +151,26 @@ void configGPS() {
   }
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA 4.1 Message Activation Failed!");}
   gpsSetSuccess = 0;
+  delay(delayTime);
+
+   //Increase Baud-Rate for faster GPS updates
+  if(sensors.GPS == 2 || sensors.GPS == 3){
+    //Serial.end();
+    Serial.begin(38400);
+    Serial.clear();
+    while(gpsSetSuccess < 3) {
+      if(settings.testMode){Serial.print("Setting Ublox Baud Rate 38400... ");}
+      sendUBX(setBaudRate, sizeof(setBaudRate));
+      //HWSERIAL.end();
+      HWSERIAL.begin(38400);
+      HWSERIAL.clear();
+      gpsSetSuccess += getUBX_ACK(&setBaudRate[2]);
+      if(gpsSetSuccess > 9){
+        //HWSERIAL.end();
+        HWSERIAL.begin(9600);
+        HWSERIAL.clear();}}
+    if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Ublox Baud Rate 38400 Failed!");}}
+    delay(delayTime);
   
   }//end configGPS
 
