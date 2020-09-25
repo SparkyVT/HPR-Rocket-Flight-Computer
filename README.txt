@@ -24,10 +24,10 @@ High data logging rate: 3-5 million data points per flight is typical
 40Hz of magnetic field data logging
 30Hz of digital barometric data logging (Altitude, pressure, temperature)
 30Hz of main battery voltage
-20Hz of LoRa telemetry output on either ham amateur band 433MHz or license-free 915MHz FHSS (time, event, acceleration, speed, altitude, rotation, GNSS)
-10Hz - 20Hz of GNSS location data on GPS, GLONASS, and Galileo systems (UBLOX chip dependent, 0.1Hz post-flight location updates)
+20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS)
+10Hz - 20Hz of GNSS location data on GPS, GLONASS, and Galileo systems (UBLOX chip dependent)
 All data written to an easy to read CSV text file
-4 programmable pyro outputs with continuity checks, detects and reports open circuits.
+4 programmable pyro outputs with continuity detection and open circuit reporting.
 4 programmable "plug 'n play" servo connections, can be actuated at flight events (active stabilization in development)
 4 additional programmable un-powered servo outputs (requires JST connector)
 User Selectable Flight Mode: Single-Stage, Two-Stage Sustainer, Two-Stage Booser, Airstart
@@ -42,6 +42,7 @@ Optional Audible Battery Voltage report at startup
 Optional Magnetic Switch activation/shutdown of startup sequence to increase safety of 2-stage and complex flight modes
 Optional SMA antenna connector
 Audible Post-flight max altitude & speed report
+Telemetry over amateur 70cm band (433MHz) or license-free 915MHz FHSS 
 Can be mounted in any orientation, self-detects orientation (requires 1-time calibration)
 Separate file for each flight up to 100 flights
 Bench-test mode activated w/ tactile button to simulate flight tests on the ground and test pyro outputs
@@ -59,8 +60,8 @@ One-time hardware configuration via SD card, settings stored in EEPROM
     Microprocessor: Teensy 3.5 or 3.6 (compatible with provided motherBoard PCB file) or Teensy4.1, 4.0, or 3.2 (no PCB file provided)
          9 DoF IMU: LSM9DS1, or LSM303 & L3GD20H combo
 100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
-   Pressure Sensor: MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 are EMI sensitive and unsuitable for use with 433MHz telemetry)
-              GNSS: UBLOX M6, M7, M8, M9 (NEO-M8N/Q supported in PCB file)
+   Pressure Sensor: MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 are EMI sensitive, incompatible with 433MHz telemetry)
+              GNSS: UBLOX M6, M7, M8, M9 (NEO-M8N/Q footprint supported in PCB file)
     LoRa Telemetry: RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
    Tactile Buttons: 0.2 in spacing
                PCB: Create your own or use the provided design file for PCBexpress
@@ -87,6 +88,7 @@ RadioHead
 1) Upgrade ground station with GPS, digital compass, & Bluetooth
 2) Develop Android App for ground station
 3) Optional remote start & shutdown command
+4) In-flight powerloss detection & resume
 
 --------NOTES----------
 Note: All of the above components were purchased through Digikey.  Other
