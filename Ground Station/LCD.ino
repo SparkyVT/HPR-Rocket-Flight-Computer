@@ -9,7 +9,7 @@ void startupLCD(){
   //Display the battery voltage
   lcd.setCursor(0,0);
   lcd.print(F("Battery: "));
-  lcd.print((float)battVolt * 33.33 / 1023.0);
+  lcd.print((float)battVolt * 33.33 / 1023.0, 1);
   lcd.print('V');
   lcd.setCursor(0,1);
   if(SDinit){lcd.print(F("SD Card OK!"));}
@@ -18,9 +18,9 @@ void startupLCD(){
   if(radioSetup){lcd.print(F("Radio OK!"));}
   else{lcd.print(F("Radio Failed!"));}
   lcd.setCursor(0,3);
-  lcd.print(F("Frequency: "));
-  lcd.print(radioFreq[chnl], 3);
-  delay(4000);
+  if(FHSS){lcd.print(F("FHSS 915MHz"));}
+  else{lcd.print(F("Frequency: "));lcd.print(radioFreq[chnl], 3);}
+  delay(8000);
   
   //Print to the LCD the last good coordinates from the previous flight
   
@@ -62,21 +62,14 @@ void preflightLCD(){
   lcd.print(rocketName);
   //line 1
   lcd.setCursor(0,1);
-  if(contCode == 5){lcd.print(F("All 3 Pyros Detected"));}
-  else if (contCode == 6){lcd.print(F("All 4 Pyros Detected"));}
-  else if (contCode == 7){lcd.print(F("Pyro Apogee Only"));}
-  else if (contCode == 8){lcd.print(F("Pyro Mains Only"));}
-  else if (contCode == 9){lcd.print(F("Pyro Mains & Apogee"));}
-  else if (contCode ==10){lcd.print(F("No Pyros Detected!"));}
-  else{lcd.print(F("No Cont Pyro "));lcd.print(contCode);}
+  for(byte i = 0; i < 21; i++){dataString[i]= '\0';}
+  strcpy_P(dataString, (char *)pgm_read_word(&(pyroTable[contCode])));
+  lcd.print(dataString);
   //line 2
   lcd.setCursor(0,2);
-  if(GPSlock == 1){
-    lcd.print(F("GPS FIX OK! "));
-    lcd.print(satNum);lcd.print(F(" SVs"));}
-  else{
-    lcd.print(F("NO GPS FIX: "));
-    lcd.print(satNum);lcd.print(F(" SVs"));}
+  if(GPSlock == 1){lcd.print(F("GNSS FIX OK! "));}
+  else{lcd.print(F("NO GNSS FIX: "));}
+  lcd.print(satNum);lcd.print(F(" SVs"));
   //line 3
   lcd.setCursor(0,3);
   lcd.print(F("Base Alt: "));
@@ -158,12 +151,24 @@ void postflightLCD(){
   displayLat();
   
   //----------------------------------------
-  //GPS Longitude - Line 2
+  //GPS Longitude - Line 3
   //----------------------------------------
   lcd.setCursor(0,3);
   displayLon();
 
   }//end Postflight Code
+
+void changeFreqLCD(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(F("Change Freq to Ch: "));
+  lcd.print(chnl);
+  lcd.setCursor(0,1);
+  lcd.print(F("Frequency: "));
+  lcd.print(radioFreq[chnl], 3);
+  lastRX = micros();
+  delay(1000);
+}
 
 void signalLostLCD(){
   
@@ -196,21 +201,10 @@ void signalLostLCD(){
     lcd.print(' ');
     displayVel(maxVelocity);
     lcd.print(' ');
-    lcd.print(maxG * 0.00305176, 1);
+    lcd.print((float)(maxG/10), 1);
     lcd.print('G');
 }
 
-void changeFreqLCD(){
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print(F("Change Freq to Ch: "));
-  lcd.print(chnl);
-  lcd.setCursor(0,1);
-  lcd.print(F("Frequency: "));
-  lcd.print(radioFreq[chnl], 3);
-  lastRX = micros();
-  delay(1000);
-}
 void parseCoord(float coord){
     dtostrf(coord, 2, 4, dataString);
     strPosn=0;
@@ -245,6 +239,7 @@ void displayLon(){
   lcd.print((char)39);
   lcd.print(charGPSlon);
 }
+
 /*void liteLED(byte pin){
   //analogWrite(pin, 255);
   liteStart = micros();
