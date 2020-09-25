@@ -372,10 +372,18 @@ const float Cos[901]={
 0.0209424198833571, 0.0191974423996896, 0.0174524064372834, 0.0157073173118206, 0.0139621803391454, 0.0122170008352474, 0.0104717841162456, 
 0.0087265354983739, 0.00698126029796162, 0.00523596383141976, 0.00349065141522402, 0.00174532836589826, 0};
 
+//------------------------------------------------------------------------------
+// speed tangent
+//------------------------------------------------------------------------------
+
 float speedTan(int rotn){
   if(rotn < 0){rotn *= -1;};
   if(rotn > 900){rotn = 1800 - rotn;}
   return Tan[rotn];}
+
+//------------------------------------------------------------------------------
+// speed arc tangent
+//------------------------------------------------------------------------------
 
 int speedArcTan(float myValue){
 
@@ -402,6 +410,10 @@ int speedArcTan(float myValue){
   
 return (posnA*sign);}
 
+//------------------------------------------------------------------------------
+// speed sine
+//------------------------------------------------------------------------------
+
 float speedSin( int degree){
 
   float myValue;
@@ -419,6 +431,10 @@ float speedSin( int degree){
   else{myValue = -1*sign*Sin[3600 - degree];}
 
   return myValue;}
+
+//------------------------------------------------------------------------------
+// speed arc sine
+//------------------------------------------------------------------------------
 
 int speedArcSin(float myValue){
 
@@ -448,6 +464,10 @@ int speedArcSin(float myValue){
   
 return (posnA*sign);}
 
+//------------------------------------------------------------------------------
+// speed cosine
+//------------------------------------------------------------------------------
+
 float speedCos( int degree){
 
   float myValue;
@@ -462,6 +482,42 @@ float speedCos( int degree){
   else{myValue = Cos[3600 - degree];}
 
   return myValue;}
+
+//------------------------------------------------------------------------------
+// speed arc cosine
+//------------------------------------------------------------------------------
+
+int speedArcCos(float myValue){
+
+  int sign = 1;
+  if(myValue < 0){
+    myValue *= -1;
+    sign = -1;}
+  int cycle = 0;
+  int posnA = 0;
+  int posnB = 900;
+  int posnC = 450;
+  boolean exitFlag = false;
+
+  if(settings.testMode && myValue > 1.0){Serial.println(F("Arc Cosine value too large")); exitFlag = true;}
+  
+  //if the value is outside the max range, then its at 90 degrees
+  if(myValue == 0.0){posnA = 0; exitFlag = true;}
+  else if(myValue == 1.0){posnA = 900*sign; exitFlag = true;}
+
+  //use the binary algorithm to speed things up
+  while(!exitFlag && cycle < 900){
+
+    if(myValue > Cos[posnC]){posnA = posnC;}
+    else{posnB = posnC;}
+    if(posnB-posnA <= 1){exitFlag = true;}
+    else{posnC = (int)((posnA + posnB)*0.5);cycle++;}}
+  
+return (posnA*sign);}
+
+//------------------------------------------------------------------------------
+// speed arc tangent2
+//------------------------------------------------------------------------------
 
 int speedAtan2(float y, float x){
 

@@ -137,3 +137,44 @@ offVert = speedArcTan(hyp2);
 if (!rotationFault && offVert > settings.maxAngle) {rotnOK = false;}
 if (!rotationFault && offVert > 450){rotationFault = true; rotnOK = false;}
 }//end getQuatRotn
+
+void magRotn(){
+
+  long dotProd;
+  long valVect1;
+  long valVect2;
+  long valVect3;
+  float lenVect1;
+  float lenVect2;
+  float lenVect3;
+
+  //compute roll
+  dotProd = mag.x0*mag.x + mag.y0*mag.y;
+  valVect1 = mag.x0*mag.x0 + mag.y0*mag.y0;
+  valVect2 = mag.x*mag.x + mag.y*mag.y;
+  lenVect1 = sqrt(valVect1);
+  lenVect2 = sqrt(valVect2);
+  
+  float cosMagRoll = dotProd / (lenVect1 * lenVect2);
+  magRoll = speedArcCos(cosMagRoll);
+
+  //compute off vertical
+  dotProd = valVect2;
+  valVect3 = valVect2 + mag.z*mag.z;
+  lenVect3 = sqrt(valVect3);
+
+  float cosOffVert = dotProd / (lenVect2 * lenVect3);
+  magOffVert = speedArcCos(cosOffVert);
+
+  //reduce roll to -360 to 360
+  long tempRoll = magRoll;
+  while(tempRoll > 3600){tempRoll - 3600;}
+  while(tempRoll < 3600){tempRoll + 3600;}
+  
+  //compute pitch
+  magPitch = magOffVert * speedCos(tempRoll);
+
+  //compute yaw
+  magYaw = magOffVert * speedSin(tempRoll);
+  
+}

@@ -665,7 +665,7 @@ void getLSM9DS1_M() {
 bool beginADXL377() {
 
   //set gain
-  for(byte i = 0; i < 4; i++){calFloat.calByte[i] = (byte)EEPROM.read(74+i);}
+  for(byte i = 0; i < 4; i++){calFloat.calByte[i] = (byte)EEPROM.read(68+i);}
   highG.gainX = highG.gainY = highG.gainZ = calUnion.calValue * 9.80655;
   //highG.gainX = highG.gainY = highG.gainZ = 0.0158337 * 9.80655;
 
@@ -1005,29 +1005,23 @@ boolean beginMPL3115A2() {
   }
 
   //set the sampling frequency
-  timeBtwnBaro = 34000UL;
+  timeBtwnBaro = 35000UL;
 
   //SETUP Control Register
   //barometer mode: 0
   //RAW mode: 0
-  //Oversampling: 18ms - 010 (4), 34ms - 011 (8), 66ms - 100 (16)
+  //Oversampling: 18ms - 010, 34ms - 011, 66ms - 100
   //Reset: 0
   //One Shot Mode (OST): 1
   //Standby: 0
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);
 
-  //write the offsets to the registers
-  baroPressOffset = (int8_t)(EEPROM.read(82));
-  baroTempOffset = (int8_t)(EEPROM.read(83));
-  write8(0x2B, MPL3115A2_ADDRESS, baroPressOffset);
-  write8(0x2C, MPL3115A2_ADDRESS, baroTempOffset);
-    
   //Read the offsets from the registers
-  baroPressOffset = (int8_t)(readS8(0x2B, MPL3115A2_ADDRESS)); 
-  if(settings.testMode){Serial.print("Press Offset: ");Serial.println(baroPressOffset);}
+  baroPressOffset = (float)(readS8(0x2B, MPL3115A2_ADDRESS)) * 0.04; 
+  //Serial.print("Press Offset: ");Serial.println(baroPressOffset, 2);
   baroTempOffset = (int16_t)(readS8(0x2C, MPL3115A2_ADDRESS));
-  if(settings.testMode){Serial.print("Temp Offset: ");Serial.println(baroTempOffset);}
-  //baroAltOffset = (float)(readS8(0x2D, MPL3115A2_ADDRESS));
+  //Serial.print("Temp Offset: ");Serial.println(baroTempOffset * 0.0625, 2);
+  baroAltOffset = (float)(readS8(0x2D, MPL3115A2_ADDRESS));
   //Serial.print("Alt Offset: ");Serial.println(baroAltOffset);
 
   return true;
@@ -1051,13 +1045,13 @@ void readMPLbaro() {
   adc_T |= rawData[4];
   adc_T >>= 4;
 
-  pressure = (float)(adc_P) * 0.0025;
+  pressure = (float)(adc_P) * 0.0025 + baroPressOffset;
   temperature = adc_T;
   if (adc_T & 0x800) {
     adc_T |= 0xF000;
   }
-  temperature = (float)(adc_T) * 0.0625;
-  Alt = 44330.77 * (1.0 - pow(pressure / seaLevelPressure, 0.1902632));
+  temperature = (float)(adc_T + baroTempOffset) * 0.0625;
+  Alt = 44330.77 * (1.0 - pow(pressure / seaLevelPressure, 0.1902632)) + baroAltOffset;
 
   //initiate next reading
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);
