@@ -57,10 +57,10 @@ Preflight audible reporting options: Perfectflight or Marsa
 One-time hardware configuration via SD card, settings stored in EEPROM
 
 --------FLIGHT COMPUTER COMPONENTS----------
-    Microprocessor: Teensy 3.5 or 3.6 (compatible with provided motherBoard PCB file) or Teensy4.1, 4.0, or 3.2 (no PCB file provided)
+    Microprocessor: Teensy 3.5 or 3.6 (compatible with provided motherBoard PCB file) or Teensy 4.1/4.0/3.2 (no PCB file provided)
          9 DoF IMU: LSM9DS1, or LSM303 & L3GD20H combo
 100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
-   Pressure Sensor: MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 are EMI sensitive, incompatible with 433MHz telemetry)
+   Pressure Sensor: MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with 433MHz telemetry due to EMI)
               GNSS: UBLOX M6, M7, M8, M9 (NEO-M8N/Q footprint supported in PCB file)
     LoRa Telemetry: RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
    Tactile Buttons: 0.2 in spacing
