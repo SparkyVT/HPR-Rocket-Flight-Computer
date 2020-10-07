@@ -42,9 +42,9 @@ LiquidCrystal lcd(13, 12, 11, 10, 9, 6);
 //Code Control Option variables
 //---------------------------
 const boolean displayStandard = false;//set to true for metric
-const boolean lcdON = true;
-const boolean SDon = true;
-const boolean FHSS = false;//only use for 915MHz Spread Spectrum
+const boolean lcdON = true;//set to false to disable the LCD
+const boolean SDon = true;//set to false to disable the SD card
+const boolean FHSS = false;//set to true for 915MHz Frequency Hopping Spread Spectrum (FHSS), set to false for single frequency 433MHz band
 const boolean debugSerial = false;//only use for debugging, must turn off either LCD or SD card due to program space limits
 //---------------------------
 //Data Packet variables
