@@ -14,7 +14,7 @@ It has flown on multiple M-powered supersonic flights to over 24K feet and Mach 
 For large or high-power projects, a backup computer such as the PerfectFlite StratoLogger is strongly recommended.  
 
 --------FEATURES----------
-High data logging rate: 3-5 million data points per flight is typical
+High data logging rate: 52,000 data points per second, 3-5 million data points per flight is typical
 1400Hz 3-axis digital 24G and 100G accelerometer data logging
 1400Hz 3-axis digital 2000dps gyroscope data logging
 1400Hz of flight events
