@@ -25,7 +25,7 @@ High data logging rate: 3-5 million data points per flight is typical
 30Hz of digital barometric data logging (Altitude, pressure, temperature)
 30Hz of main battery voltage (1400Hz during firing events)
 20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS)
-10Hz - 20Hz of GNSS location data on GPS, GLONASS, Galileo and Baidou systems (UBLOX chip dependent)
+10Hz - 25Hz of GNSS location data on GPS, GLONASS, Galileo and Baidou systems (UBLOX chip dependent)
 All data written to an easy to read CSV text file
 4 programmable pyro outputs with continuity detection and open circuit reporting.
 4 programmable "plug 'n play" servo connections, can be actuated at flight events (active stabilization in development)
