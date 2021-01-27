@@ -421,7 +421,7 @@ float speedSin( int degree){
 
   if(degree < 0){sign = -1;}
 
-  degree = abs(degree);
+  degree = fabs(degree);
 
   degree = degree % 3600;
 
@@ -472,7 +472,7 @@ float speedCos( int degree){
 
   float myValue;
 
-  degree = abs(degree);
+  degree = fabs(degree);
 
   degree = degree % 3600;
 
@@ -534,3 +534,78 @@ int speedAtan2(float y, float x){
   else if(x == 0.0 && y == 0.0){myValue = 0;}
 
   return myValue;}
+
+float cosSmallAngle(float rad){
+
+  float cosine;
+
+  //small angle approximation of cosine
+  //accurate to 10 sig figs at angles less than 0.7
+  if(fabs(rad) < Cos[7]){
+    cosine = 1 - rad*rad * 0.5;
+    return cosine;}
+    
+  //Maclauren Series for cosine around 0, useful from -pi/4 to pi/4
+  //accurate to 10 sig figs at angles less than 45 degrees
+  else if(fabs(rad) < 0.7853981){
+    
+    float radSq = rad * rad;
+    
+    rad = radSq;
+    cosine = 1 - rad * 0.5;
+
+    rad *= radSq;
+    cosine += rad / 24;
+
+    rad *= radSq;
+    cosine -= rad / 720;
+
+    rad *= radSq;
+    cosine += rad / 40320;
+    
+    rad *= radSq;
+    cosine -= rad / 3628800;
+    
+    return cosine;}
+
+  else{
+    cosine = cosf(rad);
+    return cosine;}
+  
+}
+
+float sinSmallAngle(float rad){
+  
+  float sine;
+
+  //small angle approximation
+  //accurate to 10 sig figs at angles less than 0.1 degrees
+  if(fabs(rad) < Sin[1]){
+    sine = rad;
+    return sine;}
+  
+  //Maclauren Series for cosine around 0, useful from -pi/4 to pi/4
+  //accurate to 10 sig figs at angles less than 45 degrees
+  else if(fabs(rad) < 0.7853981){
+    
+    float radSq = rad * rad;
+    
+    sine = rad;
+
+    rad *= radSq;
+    sine -= rad / 6;
+
+    rad *= radSq;
+    sine += rad / 120;
+
+    rad *= radSq;
+    sine -= rad / 5040;
+    
+    rad *= radSq;
+    sine += rad / 362880;
+    
+    return sine;}
+
+  else{
+    sine = sinf(rad);
+    return sine;}}

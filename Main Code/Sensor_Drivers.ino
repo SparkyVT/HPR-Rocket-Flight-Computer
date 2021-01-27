@@ -7,11 +7,12 @@
 //10 Nov 18: Version 2 created to support new sensor package
 //30 Apr 19: Version 3 created to support MPL3115A2 after EMI problems with BMP280 & BMP388
 //31 Jan 20: Version 4 created to support all coded sensors and all orientations
+//29 Oct 20: Added code for MS5611 sensor
 //--------Supported Sensors---------
 //Accelerometers/Magnetometers:LSM303, LSM9DS1
 //High-G Accelerometers: H3LIS331DL, ADS115 & ADXL377 Combo, ADXL377 & Teensy3.5 ADC combo
 //Gyroscopes: L3GD20H, LSM9DS1
-//Barometric: BMP180, BMP280, BMP388, MPL3115A2
+//Barometric: BMP180, BMP280, BMP388, MPL3115A2, MS5611
 
 //***************************************************************************
 //Generic Sensor Begin & Read Statements
@@ -87,11 +88,11 @@ void setMagGain(boolean magSwitch){
         //Set mag trigger
         magTrigger = 6000;
         //Reset the bias
-        calUnion.calByte[0]=EEPROM.read(18); calUnion.calByte[1]=EEPROM.read(19);
+        calUnion.calByte[0]=EEPROM.read(eeprom.magBiasX); calUnion.calByte[1]=EEPROM.read(eeprom.magBiasX+1);
         mag.biasX = calUnion.calValue;
-        calUnion.calByte[0]=EEPROM.read(20); calUnion.calByte[1]=EEPROM.read(21);
+        calUnion.calByte[0]=EEPROM.read(eeprom.magBiasY); calUnion.calByte[1]=EEPROM.read(eeprom.magBiasY+1);
         mag.biasY = calUnion.calValue;
-        calUnion.calByte[0]=EEPROM.read(22); calUnion.calByte[1]=EEPROM.read(23);
+        calUnion.calByte[0]=EEPROM.read(eeprom.magBiasZ); calUnion.calByte[1]=EEPROM.read(eeprom.magBiasZ+1);
         mag.biasZ = calUnion.calValue;
         //clear the buffer
         getMag();
@@ -121,11 +122,11 @@ void setMagGain(boolean magSwitch){
           //Set mag trigger
           magTrigger = 6000;
           //Reset the bias
-          calUnion.calByte[0]=EEPROM.read(18); calUnion.calByte[1]=EEPROM.read(19);
+          calUnion.calByte[0]=EEPROM.read(eeprom.magBiasX); calUnion.calByte[1]=EEPROM.read(eeprom.magBiasX+1);
           mag.biasX = calUnion.calValue;
-          calUnion.calByte[0]=EEPROM.read(20); calUnion.calByte[1]=EEPROM.read(21);
+          calUnion.calByte[0]=EEPROM.read(eeprom.magBiasY); calUnion.calByte[1]=EEPROM.read(eeprom.magBiasY+1);
           mag.biasY = calUnion.calValue;
-          calUnion.calByte[0]=EEPROM.read(22); calUnion.calByte[1]=EEPROM.read(23);
+          calUnion.calByte[0]=EEPROM.read(eeprom.magBiasZ); calUnion.calByte[1]=EEPROM.read(eeprom.magBiasZ+1);
           mag.biasZ = calUnion.calValue;
           //clear the buffer
         getMag();
@@ -256,6 +257,10 @@ void beginBaro() {
     case 4:
       sensors.status_BMP388 = beginBMP388();
       break;
+
+    case 5: 
+      sensors.status_MS5611 = beginMS5611();
+      break;
   }
 }
 
@@ -335,7 +340,7 @@ void readSensor(byte address, byte reg, byte bytes) {
     case 0:
       Wire.beginTransmission(address);
       Wire.write(reg);
-      Wire.endTransmission();
+      Wire.endTransmission(I2C_NOSTOP);
       Wire.requestFrom(address, bytes);
       while (Wire.available() < bytes) {};
       for (byte i = 0; i < bytes; i++) {
@@ -368,7 +373,7 @@ void readSensor(byte address, byte reg, byte bytes) {
     default:
       Wire.beginTransmission(address);
       Wire.write(reg);
-      Wire.endTransmission();
+      Wire.endTransmission(I2C_NOSTOP);
       Wire.requestFrom(address, bytes);
       while (Wire.available() < bytes) {};
       for (byte i = 0; i < bytes; i++) {
@@ -508,7 +513,7 @@ bool beginL3GD20H() {
   write8(GYRO_REGISTER_CTRL_REG1, L3GD20_ADDRESS, 0xdf);
 
   //configure high-pass filter
-  write8(GYRO_REGISTER_CTRL2, L3GD20_ADDRESS, 0b00010001);
+  //write8(GYRO_REGISTER_CTRL2, L3GD20_ADDRESS, 0b00010001);
 
   return true;
 }
@@ -577,8 +582,8 @@ bool beginLSM9DS1() {
   //Set 2000dps Range, 952 Hz ODR
   write8(LSM9DS1_REGISTER_CTRL_REG1_G, LSM9DS1_ADDRESS_ACCELGYRO, 0b11011000);
 
-  //enable high-pass filtern at 30Hz cutoff frequency
-  write8(LSM9DS1_REGISTER_CTRL_REG3_G, LSM9DS1_ADDRESS_ACCELGYRO, 0b01000001);
+  //disable high-pass filter
+  //write8(LSM9DS1_REGISTER_CTRL_REG3_G, LSM9DS1_ADDRESS_ACCELGYRO, 0b00000000);
 
   //----------------------
   //CONFIGURE MAGNETOMETER
@@ -665,8 +670,9 @@ void getLSM9DS1_M() {
 bool beginADXL377() {
 
   //set gain
-  for(byte i = 0; i < 4; i++){calFloat.calByte[i] = (byte)EEPROM.read(68+i);}
+  for(byte i = 0; i < 4; i++){calFloat.calByte[i] = (byte)EEPROM.read(eeprom.ADXL377gain+i);}
   highG.gainX = highG.gainY = highG.gainZ = calUnion.calValue * 9.80655;
+  if(settings.testMode){Serial.print("ADXL377 Gain: ");Serial.println(highG.gainX, 2);}
   //highG.gainX = highG.gainY = highG.gainZ = 0.0158337 * 9.80655;
 
   //high1G = 63;// bits in 1G = 1/gain = 63
@@ -707,8 +713,8 @@ void getADXL377(boolean threeAxisMode) {
   static boolean radioInterference = false;
   static int16_t prevPacketNum = 0;
   //Is the radio transmitting?  If so, counter the interference
-  if(!radioInterference && radio.packetnum > prevPacketNum){radioInterference = true; prevPacketNum = radio.packetnum;}
-  if(radioInterference && fltTime.timeCurrent - TXnow > interferenceTime){radioInterference = false;}
+  //if(!radioInterference && radio.packetnum > prevPacketNum){radioInterference = true; prevPacketNum = radio.packetnum;}
+  //if(radioInterference && fltTime.timeCurrent - TXnow > interferenceTime){radioInterference = false;}
   
 //  //singleAxisMode = true: only samples the axis aligned to the travel of the rocket (Z-axis)
 //  if(threeAxisMode){
@@ -1017,11 +1023,13 @@ boolean beginMPL3115A2() {
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);
 
   //Read the offsets from the registers
-  baroPressOffset = (float)(readS8(0x2B, MPL3115A2_ADDRESS)) * 0.04; 
+  baroPressOffset = (float)EEPROM.read(eeprom.MPL3115A2pressOffset) * 0.04;
+  baroTempOffset = (int16_t)EEPROM.read(eeprom.MPL3115A2tempOffset);
+  //baroPressOffset = (float)(readS8(0x2B, MPL3115A2_ADDRESS)) * 0.04; 
   //Serial.print("Press Offset: ");Serial.println(baroPressOffset, 2);
-  baroTempOffset = (int16_t)(readS8(0x2C, MPL3115A2_ADDRESS));
+  //baroTempOffset = (int16_t)(readS8(0x2C, MPL3115A2_ADDRESS));
   //Serial.print("Temp Offset: ");Serial.println(baroTempOffset * 0.0625, 2);
-  baroAltOffset = (float)(readS8(0x2D, MPL3115A2_ADDRESS));
+  //baroAltOffset = (float)(readS8(0x2D, MPL3115A2_ADDRESS));
   //Serial.print("Alt Offset: ");Serial.println(baroAltOffset);
 
   return true;
@@ -1051,7 +1059,7 @@ void readMPLbaro() {
     adc_T |= 0xF000;
   }
   temperature = (float)(adc_T + baroTempOffset) * 0.0625;
-  Alt = 44330.77 * (1.0 - pow(pressure / seaLevelPressure, 0.1902632)) + baroAltOffset;
+  Alt = 44330.77 * (1.0 - pow(pressure / seaLevelPressure, 0.1902632));
 
   //initiate next reading
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);
@@ -1686,6 +1694,172 @@ void getBMP388() {
 
   Alt = 44330 * (1.0 - pow(pressure / (seaLevelPressure), 0.1903));
 }
+
+//***************************************************************************
+//MS5611 Barometric Pressure Sensor
+//***************************************************************************
+#define MS5611_ADDRESS                (0x77)
+
+int16_t MS5611_PROM[6];
+int32_t MS5611_dT;
+int32_t MS5611_TEMP;
+
+bool beginMS5611(){
+
+  #define MS5611RdPROM 0xA2
+
+  if (!testSensor(MS5611_ADDRESS)) {
+    if (settings.testMode) {
+      Serial.println(F("BMP280 not found!"));
+    } return false;}
+
+  //read PROM
+  for(byte ii = 0; ii < 6; ii++){
+    CmdMS5611(MS5611RdPROM + 2*ii);
+    ReadMS5611(2);
+    MS5611_PROM[ii] = rawData[0];
+    MS5611_PROM[ii+1] = rawData[1];}
+
+  //get initial temperature
+  CmdMS5611(0x58);
+  delayMicroseconds(9040);
+  ReadMS5611(3);
+  ConvertTempMS5611();
+
+  //get initial pressure
+  CmdMS5611(0x48);
+  
+  return true;}
+
+void GetMS5611(){
+  
+  static byte counter = 0;
+  static float prevAlt = 0;
+
+  //Get pressure
+  if(counter < 11){
+    
+    //D2 at 4096
+    //Read pressure and issue next command
+    ReadMS5611(3);
+    ConvertPressMS5611();
+    counter++;
+
+    //if we have done 10 pressure readings, then initiate a temperature reading
+    if(counter > 10){CmdMS5611(0x58);}
+    //else issue the next pressure command
+    else{CmdMS5611(0x48);}}
+
+  //Read temp and issue command for pressure
+  else if(counter == 11){
+    ReadMS5611(3);
+    temperature = ConvertTempMS5611();
+    CmdMS5611(0x48);
+    counter = 0;}
+}
+
+void CmdMS5611(byte cmd){
+
+switch (pins.i2c) {
+  
+    case 0:
+      Wire.beginTransmission(MS5611_ADDRESS);
+      Wire.write(cmd);
+      Wire.endTransmission(I2C_STOP);
+      break;
+    
+    case 1:
+      Wire1.beginTransmission(MS5611_ADDRESS);
+      Wire1.write(cmd);
+      Wire1.endTransmission(I2C_STOP);
+      break;
+      
+    case 2:
+      Wire2.beginTransmission(MS5611_ADDRESS);
+      Wire2.write(cmd);
+      Wire2.endTransmission(I2C_STOP);
+      break;}
+}
+
+void ReadMS5611(byte bytes){
+  
+switch (pins.i2c) {
+
+    case 0:
+      Wire.requestFrom(MS5611_ADDRESS, bytes);
+      while (Wire.available() < bytes) {};
+      for (byte i = 0; i < bytes; i++) {rawData[i] = Wire.read();}
+      break;
+
+   case 1:
+      Wire1.requestFrom(MS5611_ADDRESS, bytes);
+      while (Wire1.available() < bytes) {};
+      for (byte i = 0; i < bytes; i++) {rawData[i] = Wire1.read();}
+      break;
+
+   case 2:
+      Wire2.requestFrom(MS5611_ADDRESS, bytes);
+      while (Wire2.available() < bytes) {};
+      for (byte i = 0; i < bytes; i++) {rawData[i] = Wire2.read();}
+      break;}
+
+}
+
+float ConvertTempMS5611(){
+
+  uint16_t C6 = MS5611_PROM[5];
+  uint16_t C5 = MS5611_PROM[4];
+
+  uint32_t D2 = (rawData[0]<<16) + (rawData[1]<<8) + rawData[2];
+
+  MS5611_dT = D2 - (C5*256);
+
+  MS5611_TEMP = 2000 + ((MS5611_dT*C6)/8388608);
+  
+  int32_t T2 = 0L;
+  if(MS5611_TEMP < 2000){T2 = (MS5611_dT  * MS5611_dT)/2147483648;}
+
+  MS5611_TEMP -= T2;
+   
+  float finalTemp = ((float)MS5611_TEMP)*0.01;
+
+  return finalTemp;}
+
+float ConvertPressMS5611(){
+
+  uint16_t C1 = MS5611_PROM[0];
+  uint16_t C2 = MS5611_PROM[1];
+  uint16_t C3 = MS5611_PROM[2];
+  uint16_t C4 = MS5611_PROM[3];
+
+  int64_t OFF1 = C2*2^16 + (C4*MS5611_dT)/128;
+  int64_t SENS = C1*2^15 + (C3*MS5611_dT)/256;
+  
+  int64_t OFF2 = 0;
+  int64_t SENS2 = 0;
+  if(temperature < 20.0F){
+    OFF2 = 5 * (MS5611_TEMP - 2000) * (MS5611_TEMP - 2000) / 2;
+    SENS2 = 5 * (MS5611_TEMP - 2000) * (MS5611_TEMP - 2000) / 4;}
+
+  if(temperature < -15.0F){
+    OFF2 += 7*(MS5611_TEMP +1500)*(MS5611_TEMP +1500);
+    SENS2 += 11*(MS5611_TEMP +1500)*(MS5611_TEMP +1500)/2;}
+
+  OFF1 -= OFF2;
+  SENS -= SENS2;
+
+  uint32_t D1 = (rawData[0] << 16) | (rawData[1] << 8) | rawData[2];
+    
+  int32_t p = (D1*SENS/2097152 - OFF1)/32768;
+
+  pressure = (float)p *0.01;
+
+  Alt = 44330 * (1.0 - pow(pressure / (seaLevelPressure), 0.1903));
+
+}
+//***************************************************************************
+//Common I2C helper functions
+//***************************************************************************
 
 uint16_t read16(byte reg, byte _i2caddr) {
 
