@@ -19,8 +19,8 @@ High data logging rate: 52,000 data points per second, 3-5 million data points p
 1400Hz 3-axis digital 2000dps gyroscope data logging
 1400Hz of flight events
 1400Hz of integrated speed and altitude
-1400Hz of pyro status (continuity detection, closed/open circuit, and pin debugging)
-100Hz of quaternion rotation calculation rate
+1400Hz of pyro status (continuity detection, closed/open circuit, firing status, and pin debugging)
+100Hz of pitch, yaw, roll rotation calculations using quaternion differentials
 40Hz of magnetic field data logging
 30Hz of digital barometric data logging (Altitude, pressure, temperature)
 30Hz of main battery voltage (1400Hz during firing events)
