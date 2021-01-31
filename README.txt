@@ -27,7 +27,7 @@ High data logging rate: 52,000 data points per second, 3-5 million data points p
 20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS)
 10Hz - 25Hz of GNSS location data on GPS, GLONASS, Galileo and Baidou systems (UBLOX chip dependent)
 All data written to an easy to read CSV text file
-4 programmable pyro outputs with continuity detection and open circuit reporting.
+4 programmable high-current pyro outputs with continuity detection and open circuit reporting.
 4 programmable "plug 'n play" servo connections, can be actuated at flight events (active stabilization in development)
 4 additional programmable un-powered servo outputs (requires JST connector)
 User Selectable Flight Mode: Single-Stage, Two-Stage Sustainer, Two-Stage Booser, Airstart
