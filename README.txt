@@ -7,7 +7,7 @@ NAR #85720, L3
 TRA #12111, L3
 
 --------DESCRIPTION----------
-This flight computer is designed for rockets 2-inches in diameter or greater.
+This flight computer is designed for rockets 38mm in diameter or greater, and will fit inside a 38mm tube coupler.
 Dimensions are 3.8in x 1.25in x 0.5in, not including antenna
 It has similar capability as a TeleMega, but without a smart-phone app or advanced interfaces  
 It has flown on multiple M-powered supersonic flights to over 24K feet and Mach 2.0.  
