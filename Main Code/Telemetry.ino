@@ -166,7 +166,7 @@ void radioSendPacket(){
   if(events.preLiftoff){
     
     //hop frequency
-    hopTXfreq();
+    if(sensors.radio == 2){hopTXfreq();}
     
     pktPosn=0;
     dataPacket[pktPosn]=radio.event; pktPosn++;
@@ -220,12 +220,10 @@ void radioSendPacket(){
     dataPacket[pktPosn] = lowByte(radio.fltTime);pktPosn++;//2
     dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//3
     //velocity
-    radio.vel = (int16_t)fusionVel;
     dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//4
     dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//5
     //altitude
-    if(!events.apogee){radio.alt = (int16_t)fusionAlt;}
-    else{radio.alt = (int16_t)Alt;}
+    radio.alt = (int16_t)Alt;
     dataPacket[pktPosn] = lowByte(radio.alt);pktPosn++;//6
     dataPacket[pktPosn] = highByte(radio.alt);pktPosn++;//7
     //Roll data

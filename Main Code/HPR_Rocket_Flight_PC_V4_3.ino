@@ -1,8 +1,8 @@
 //HPR Rocket Flight Computer
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //This is built for the Teensy3.5, 3.6, or 4.1 boards
-//Code Line Count: 3684 main + 277 GPSconfig + 240 Rotation + 1925 SensorDrivers + 536 SpeedTrig + 368 Telemetry = 7023 lines of code
-//-----------Change Log------------
+//Code Line Count: 3755 main + 277 GPSconfig + 240 Rotation + 1928 SensorDrivers + 611 SpeedTrig + 366 Telemetry = 7177 lines of code
+//-----------Change Log------------c
 //V4_0_0 combines all previous versions coded for specific hardware setups; now compatible across multiple hardware configurations and can be mounted in any orientation
 //V4_1_0 adds upgrades for airstart capability, more flight event codes, improved settings file, PWM Pyro firing, quaternion rotation, improved continuity reporting, and timer interrupts for the radios
 //V4_1_1 eliminates timer interrupts since they interfere with the micros() command, improves telemetry timing, enables the Galileo GNSS system
@@ -78,7 +78,7 @@ PWMServo canardPitch1;
 PWMServo canardPitch2;
 
 //SDIO Setup: requires SDFat v2.0 or greater
-SdFs SD;
+/*SdFs SD;
 FsFile outputFile;
 FsFile settingsFile;
 
@@ -87,7 +87,12 @@ const uint8_t SD_CS_PIN = SS;
 #else  // SDCARD_SS_PIN
 // Assume built-in SD is used.
 const uint8_t SD_CS_PIN = SDCARD_SS_PIN;
-#endif  // SDCARD_SS_PIN
+#endif  // SDCARD_SS_PIN*/
+
+//SDIO Setup, requires SDFat v1.1.4, V2.0 is incompatible with RadioHead library
+SdFatSdioEX SD;
+File outputFile;
+File settingsFile;
 
 //ADC Setup
 //ADC *adc = new ADC(); // adc object;
@@ -767,7 +772,7 @@ union{
 long debugStart;
 long debugTime;
 const boolean GPSecho = true;
-const boolean radioDebug = true;
+const boolean radioDebug = false;
 
 void setup(void) {
 
@@ -792,7 +797,8 @@ void setup(void) {
   HWSERIAL.begin(9600);
   
   //Start SDIO Comms with the SD card
-  if(!SD.begin(SdSpiConfig(SD_CS_PIN, DEDICATED_SPI, SD_SCK_MHZ(50)))){Serial.println(F("SD card failed!"));}
+  //if(!SD.begin(SdSpiConfig(SD_CS_PIN, DEDICATED_SPI, SD_SCK_MHZ(50)))){Serial.println(F("SD card failed!"));}
+  if(!SD.begin()){Serial.println(F("SD card failed!"));}
    
   //If an EEPROM settings file exists, open it and copy the values into EEPROM
   byte kk;
@@ -898,7 +904,7 @@ void setup(void) {
   sensors.gyro = EEPROM.read(eeprom.gyroID);
   sensors.highG = EEPROM.read(eeprom.highGID);
   sensors.baro = EEPROM.read(eeprom.baroID);
-  sensors.radio = EEPROM.read(eeprom.radioID);
+  sensors.radio = EEPROM.read(eeprom.radioID);Serial.print("Radio ID: ");Serial.println(sensors.radio); 
   sensors.GPS = EEPROM.read(eeprom.GPSID);
   pins.servo1 = EEPROM.read(eeprom.servo1pin);
   pins.servo2 = EEPROM.read(eeprom.servo2pin);
@@ -1143,7 +1149,7 @@ void setup(void) {
     radioInterval = RIpreLiftoff;}
 
   //setup servos if enabled
-  if(settings.stableRotn || settings.stableVert){
+  /*if(settings.stableRotn || settings.stableVert){
     canardYaw1.attach(pins.servo1);
     canardYaw2.attach(pins.servo2);
     canardPitch1.attach(pins.servo3);
@@ -1163,7 +1169,7 @@ void setup(void) {
     canardYaw1.write(90);
     canardYaw2.write(90);
     canardPitch1.write(90);
-    canardPitch2.write(90);}  
+    canardPitch2.write(90);}  */
   
   //signal if in test-mode
   if (settings.testMode){
@@ -1833,8 +1839,10 @@ void setup(void) {
 void loop(void){
   RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
 
+
   //Sample the Accelerometer & Gyro w/ timestamps
   getAccel();
+  //Serial.println("breakpoint 4");
   getGyro();
 
   //Get a barometric event if needed
@@ -1950,6 +1958,7 @@ void loop(void){
         baroVelPosn = altAvgPosn - 10;
         if(baroVelPosn < 0){baroVelPosn = (int)((sizeof(altAvgBuff)/sizeof(altAvgBuff[0])) - (10 - altAvgPosn));}}
       baroVel = (altMoveAvg - altAvgBuff[baroVelPosn])/((float)(fltTime.timeCurrent - baroTimeBuff[baroVelPosn])*mlnth);
+      radio.vel = baroVel;
       if(fltTime.timeCurrent < 500000L){baroVel = accelVel;}
       altAvgBuff[altAvgPosn] = altMoveAvg;
       baroTimeBuff[altAvgPosn] = fltTime.timeCurrent;
@@ -1986,6 +1995,7 @@ void loop(void){
       if(newBaro && baroVel < fusionVel && accelNow < 0.2F && fusionVel < 300.0F &&  Alt < 9000){
         fusionVel *= 0.99F;
         fusionVel += 0.01F * baroVel;}
+      radio.vel = fusionVel;
       
       //update maximum velocity if it exceeds the previous value
       if(fusionVel > maxVelocity){maxVelocity = fusionVel;}
@@ -2257,7 +2267,7 @@ void loop(void){
 
     //Check for apogee if the accelerometer velocity or barometric velocity < 0
     //Above 9000 meters, only use accelerometer velocity for apogee trigger
-    if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (accelVel < 0 || fusionVel < 0) {
+    if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (accelVel < 0 || (baroVel < 0 && accelVel < 70 && (Alt + baseAlt) < 9000)) || fusionVel < 0) {
       events.apogee = true;
       fltTime.apogee = fltTime.timeCurrent;
       radio.event = 3;
@@ -2589,8 +2599,11 @@ void loop(void){
   }//end of liftoff flag
 
   //radio handling
-  if(settings.radioTXenable && !syncFreq && micros() - lastTX >= radioInterval){lastTX += radioInterval; radioSendPacket();}//
-  if(syncFreq && micros() - TXdataStart > (140000UL + RIsyncOffset)){syncPkt();}//only used for 915MHz FHSS
+  //Serial.println("breakpoint 1");
+  if(settings.radioTXenable && !syncFreq && micros() - lastTX >= radioInterval){lastTX += radioInterval; radioSendPacket();}
+  //Serial.println("breakpoint 2");
+  if(syncFreq && micros() - TXdataStart > (140000UL + RIsyncOffset) && micros()){syncPkt();}//only used for 915MHz FHSS
+  //Serial.println("breakpoint 3");
   
   //pre-flight continuity alarm beep
   if(events.preLiftoff && settings.reportStyle != 'M' && beepAlarm && !beep && fltTime.tmClock - timeLastBeep > beep_delay){

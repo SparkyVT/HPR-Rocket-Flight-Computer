@@ -613,7 +613,8 @@ void getLSM9DS1_AG() {
   fltTime.gyroClockPrev = fltTime.gyroClock;
   fltTime.gyroClock = micros();
   fltTime.tmClockPrev = fltTime.tmClock;
-  fltTime.tmClock = micros();
+  //fltTime.tmClock = micros();
+  fltTime.tmClock = fltTime.gyroClock;
 
   readSensor(LSM9DS1_ADDRESS_ACCELGYRO, LSM9DS1_REGISTER_OUT_X_L_G, 12);
   //read the data
@@ -671,8 +672,9 @@ bool beginADXL377() {
 
   //set gain
   for(byte i = 0; i < 4; i++){calFloat.calByte[i] = (byte)EEPROM.read(eeprom.ADXL377gain+i);}
-  highG.gainX = highG.gainY = highG.gainZ = calUnion.calValue * 9.80655;
-  if(settings.testMode){Serial.print("ADXL377 Gain: ");Serial.println(highG.gainX, 2);}
+  highG.gainX = highG.gainY = highG.gainZ = calFloat.val * 9.80655;
+  //highG.gainX = highG.gainY = highG.gainZ = 9.80655/129;
+  if(settings.testMode){Serial.print("ADXL377 Gain: ");Serial.println(highG.gainX, 5);}
   //highG.gainX = highG.gainY = highG.gainZ = 0.0158337 * 9.80655;
 
   //high1G = 63;// bits in 1G = 1/gain = 63
