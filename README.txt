@@ -41,7 +41,7 @@ Optional Audible Continuity report at startup
 Optional Audible Battery Voltage report at startup
 Optional Magnetic Switch activation/shutdown of startup sequence to increase safety of 2-stage and complex flight modes
 Optional SMA antenna connector
-Optional inflight powerloss recovery
+Optional inflight recovery will resume flight functions if the computer is reset due to momentary power loss
 Audible Post-flight max altitude & speed report
 Telemetry over amateur 70cm band (433MHz) or 915MHz ISM band or license-free 915MHz FHSS 
 Can be mounted in any orientation, self-detects orientation (requires 1-time calibration)
