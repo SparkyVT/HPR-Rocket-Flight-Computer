@@ -4,7 +4,7 @@ Not not delete or change the order of the settings
 ----Flight Settings----
 ***********************
 Rocket Name = Distant Thunder
-flightProfile = S, 2, B, A
+flightProfile = S
 units = M
 reportStyle = P
 startupTime = 5
@@ -16,7 +16,7 @@ maxRecordTime = 900
 highG 3-axis mode = 0
 silentTestMode = 1
 magSwitchEnable = 0
-rotationCalcRate = 100
+inflightRecovery = 1
 ***********************
 -----Pyro Settings-----
 ***********************
@@ -81,7 +81,7 @@ FlyBack = 0
    highG 3-axis mode: 1 enable, 0 disable, if enabled all high-G accelerometer axes are sampled at reduced overall sample rate
       silentTestMode: 1 enable, 0 disable, if enabled the audible beeper is silent during testMode
      magSwitchEnable: 1 enable, 0 disable, if enabled startup will not proceed until magnet is sensed.  Very useful for 2-stage mode.
-    rotationCalcRate: 100 to 500 rotation calculations per second
+    inflightRecovery: 0 - disabled, 1 - inflight brownout recovery w/out pyros, 2 - inflight brownout recovery with pyros
 ---------------------------------------------
          Telemetry Configuration
 ---------------------------------------------
