@@ -62,7 +62,7 @@ One-time hardware configuration via SD card, settings stored in EEPROM
 100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
    Pressure Sensor: MS5611, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with 433MHz telemetry due to EMI)
               GNSS: UBLOX M6, M7, M8, M9 (NEO-M8N/Q footprint supported in PCB file)
-    LoRa Telemetry: RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: FHSS License Free or Ham License without FHSS)
+    LoRa Telemetry: RFM96W 433MHz (USA: Amateur License Required, EUR: License Free) or RFM95W 915MHz (USA: FHSS License Free or Amateur License without FHSS)
    Tactile Buttons: 0.2 in spacing
                PCB: Create your own or use the provided design file for PCBexpress
            Battery: 2-cell 500mAh 20C LiPo recommended (DO NOT EXCEED 10V with provided PCB)
