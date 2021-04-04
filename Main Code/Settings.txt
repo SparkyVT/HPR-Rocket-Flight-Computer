@@ -3,18 +3,18 @@ Not not delete or change the order of the settings
 ***********************
 ----Flight Settings----
 ***********************
-Rocket Name = Distant Thunder
+Rocket Name = My Rocket Name
 flightProfile = S
-units = M
+units = S
 reportStyle = P
-startupTime = 5
+startupTime = 10
 gTrigger = 2.5
 detectLiftoffTime = 0.5
 mainDeployAlt = 500
 apogeeDelay = 0.0
 maxRecordTime = 900
 highG 3-axis mode = 0
-silentTestMode = 1
+silentTestMode = 0
 magSwitchEnable = 0
 inflightRecovery = 1
 ***********************
@@ -30,7 +30,8 @@ pyro1function = N
 ***********************
 TXenable = 1
 TXpwr = 13
-TXfreq = 433.250
+TXfreq = 915.000
+FHSS = 1
 **********************************
 ---------2 Stage Settings---------
 IGNORED UNLESS FLIGHT PROFILE IS 2
@@ -50,7 +51,7 @@ IGNORED UNLESS FLIGHT PROFILE IS A
 IGNORED UNLESS FLIGHT PROFILE IS 2 OR PROFILE IS A
 **************************************************
 altitudeThreshold = 400
-maxAngleOffVertical = 45
+maxAngleOffVertical = 30
 ***********************************
 ---Active Stabilization Settings---
         NOT YET SUPPORTED
@@ -62,6 +63,10 @@ stableVert = 0
         NOT YET SUPPORTED
 ************************************
 FlyBack = 0
+************************************
+-----Serial Debugging Settings-----
+************************************
+serialDebug = 1
 ************************************************************************************************
                         valid setting values
 ************************************************************************************************
@@ -87,7 +92,8 @@ FlyBack = 0
 ---------------------------------------------
             TXenable: 1 enable telemetry, 0 disable telemetry
                TXpwr: telemetry TX power; integers between 0 and 23; 13=20mW, 15=30mW, 17=50mW, 20=100mW
-	      TXfreq: Radio frequency for 433MHz band.  Input ignored for 915MHz band (FHSS implemented) 
+	      TXfreq: Radio frequency for 433MHz band or 915MHz band
+	        FHSS: Frequency Hopping Spread Spectrum implementation for 915MHz ISM band (no FCC license required)
 ---------------------------------------------
          Pyro Channel Configuration
 ---------------------------------------------
@@ -120,9 +126,16 @@ boosterSeparateDelay: seconds after booster burnout to separate 1st stage booste
 ---------------------------------------------
      Active Stabilization Settings
 ---------------------------------------------
-	  stableRotn: 1 enables the use of canard fins to correct the rocket rotation (currently unsupported)
-	  stableVert: 1 enables the use of canard fins to correct the rocket attitude and maintain vertical flight (currently unsupported)
+	  stableRotn: 1 enable, 0 disable, the use of canard fins to correct the rocket rotation
+	  stableVert: 1 enable, 0 disable, the use of canard fins to correct the rocket attitude and maintain vertical flight (currently unsupported)
 ---------------------------------------------
      Fly-Back to Launch Pad Settings
 ---------------------------------------------	
-             flyBack: 1 enables the use of grid fins to guide the rocket back to the original launch site (currently unsupported)
+             flyBack: 1 enable, 0 disable, ability to guide the rocket back to the original launch site (currently unsupported)
+---------------------------------------------
+     Serial Debugging Settings
+---------------------------------------------	
+         serialDebug: 0 - no serial data after initial setup
+         serialDebug: 1 - GPS data over serial in bench-test mode
+         serialDebug: 2 - telemetry debugging data in bench-test mode
+         serialDebug: 3 - GPS & telemetry debugging data in bench-test mode

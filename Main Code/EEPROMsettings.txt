@@ -1,4 +1,4 @@
-EEPROM for version 4.1.3
+EEPROM for version 4.3.2
 ----accel to high-G----
 accelX = -X
 accelY = +Y
@@ -44,8 +44,8 @@ highGain = 0.015833
 ----Ham Radio Call Sign----
 callSign = KK4ELF
 ---MPL3115A2 Offsets---
-pressOffset = 95
-tempOffset = 21
+pressOffset = 0
+tempOffset = 0
 -----Magnetometer-----
 calibrateMode = 0
 ________________________________
@@ -67,8 +67,6 @@ highG: ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3
 baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4
 radio: RFM96W 433MHz = 1, RFM95W 915MHz = 2
 GPS: NEO-M8N = 1, MAX-M8Q/W or SAM-M8Q = 2, NEO-M9N = 3
-reportStyle: M = Marsa, P = PerfectFlite, R = Raven
-reportUnits: S = Imperial, M = Metric
 ________________________________
 Orientation Legend:
 Z is direction of rocket travel
