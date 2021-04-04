@@ -55,17 +55,18 @@ Configurable GPIO pin and I2C bus options
 Report in SI or Metric units
 Preflight audible reporting options: Perfectflight or Marsa
 One-time hardware configuration via SD card, settings stored in EEPROM
+Inflight power-loss recovery (user configurable)
 
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 3.5 or 3.6 (compatible with provided PCB file) or Teensy 4.1/4.0/3.2 (no PCB file provided)
          9 DoF IMU: LSM9DS1, or LSM303 & L3GD20H combo
 100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
-   Pressure Sensor: MS5611, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with 433MHz telemetry due to EMI)
+   Pressure Sensor: MS5611, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
               GNSS: UBLOX M6, M7, M8, M9 (NEO-M8N/Q footprint supported in PCB file)
     LoRa Telemetry: RFM96W 433MHz (USA: Amateur License Required, EUR: License Free) or RFM95W 915MHz (USA: FHSS License Free or Amateur License without FHSS)
    Tactile Buttons: 0.2 in spacing
                PCB: Create your own or use the provided design file for PCBexpress
-           Battery: 2-cell 500mAh 20C LiPo recommended (DO NOT EXCEED 10V with provided PCB)
+           Battery: 2-cell 400mAh 20C LiPo recommended (DO NOT EXCEED 10V with provided PCB)
 
 --------GROUND STATION COMPONENTS----------
 Adafruit Feather LoRa: ATMega 32u4 w/ RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
