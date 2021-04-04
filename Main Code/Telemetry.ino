@@ -1,4 +1,12 @@
-/*900MHz Strategy
+//----------------------------
+//LIST OF FUNCTIONS & ROUTINES
+//----------------------------
+//radioSendPacket(): main routine to send telemetry packets
+//hopTXfreq(): hops frequency when FHSS is active
+//syncPkt(): sends a sync packet on the hailing freq
+//----------------------------
+
+/*900MHz FHSS Strategy
 
 preflight: 
 - send packet every 600ms
@@ -154,9 +162,6 @@ union {
 
 void radioSendPacket(){
   RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
-  static byte gndPkt = 0;
-  unsigned long TXlength;
-  unsigned long preflightLength = 77060UL;
   bool TX;
   
 //------------------------------------------------------------------
@@ -166,7 +171,7 @@ void radioSendPacket(){
   if(events.preLiftoff){
     
     //hop frequency
-    if(sensors.radio == 2){hopTXfreq();}
+    if(settings.FHSS && sensors.radio == 2){hopTXfreq();}
     
     pktPosn=0;
     dataPacket[pktPosn]=radio.event; pktPosn++;
@@ -194,7 +199,7 @@ void radioSendPacket(){
     if(radioDebug && settings.testMode){
       if(TX){Serial.println(F("PreFlight Packet Sent"));}
       else if(!TX){Serial.println(F("PreFlight Packet Failed!"));}}
-    if(sensors.radio == 2){
+    if(settings.FHSS && sensors.radio == 2){
       hopNum = nextHop;
       hopFreq = true;
       gndPktNum++;
@@ -211,7 +216,7 @@ void radioSendPacket(){
     sampNum++;
     
     //hop frequency if needed
-    if(hopFreq && sampNum >= packetSamples){hopTXfreq();}
+    if(sensors.radio == 2 && settings.FHSS && hopFreq && sampNum >= packetSamples){hopTXfreq();}
     
     //event
     dataPacket[pktPosn] = radio.event; pktPosn++;//1
@@ -267,7 +272,7 @@ void radioSendPacket(){
     //reset counting variables
     sampNum = 0;
     pktPosn = 0;
-    if(sensors.radio == 2){
+    if(settings.FHSS && sensors.radio == 2){
       hopNum = nextHop;
       if(radio.packetnum%3==0){hopFreq = true;}//true
       if(radio.packetnum%9==0){syncFreq = true;}}//true
@@ -280,7 +285,7 @@ void radioSendPacket(){
   else if(events.postFlight){
 
       //hop frequency
-      hopTXfreq();
+      if(settings.FHSS && sensors.radio == 2){hopTXfreq();}
     
       pktPosn=0;
       dataPacket[pktPosn]=radio.event; pktPosn++;//1 byte
@@ -308,7 +313,7 @@ void radioSendPacket(){
       if(radioDebug && settings.testMode){
         if(TX){Serial.println(F("PostFlight Packet Sent"));}
         else if(!TX){Serial.println(F("PostFlight Packet Failed!"));}}
-      if(sensors.radio == 2){
+      if(settings.FHSS && sensors.radio == 2){
         syncFreq = true;
         hopNum = nextHop;}
       
@@ -319,7 +324,6 @@ void radioSendPacket(){
 void hopTXfreq(){
   
   RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
-  byte channel;
   int nextHop2;
 
   //Serial debug
@@ -342,20 +346,19 @@ void syncPkt(){
   
   RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
   float freq;
-  byte chnl;
 
-  //Serial debug
-  if(radioDebug && settings.testMode){
-    Serial.print("---Sending Sync Packet: "); Serial.println(freq, 3);
-    Serial.print("---Sync nextChnl: ");Serial.print(nextChnl);Serial.print(", Freq: ");Serial.print(freqList915[nextChnl]);
-    Serial.print(", time; ");Serial.println(micros());}
-  
   //hop to the hailing channel
   freq = freqList915[hailChnl];
   if(liftoffSync){freq = freqList915[currentChnl];}
   if(!liftoffSync){rf95.setFrequency(freqList915[hailChnl]);}
   liftoffSync = false;
 
+  //Serial debug
+  if(radioDebug && settings.testMode){
+    Serial.print("---Sending Sync Packet: "); Serial.println(freq, 3);
+    Serial.print("---Sync nextChnl: ");Serial.print(nextChnl);Serial.print(", Freq: ");Serial.print(freqList915[nextChnl]);
+    Serial.print(", time; ");Serial.println(micros());}
+    
   //define packet
   dataPacket[0] = 255;//1
   dataPacket[1] = currentChnl;//2

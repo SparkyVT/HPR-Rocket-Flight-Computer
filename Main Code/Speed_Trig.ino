@@ -1,3 +1,17 @@
+//----------------------------
+//LIST OF FUNCTIONS & ROUTINES
+//----------------------------
+//speedTan(): uses a lookup table to return the tangent function at 0.1 degree increments
+//speedArcTan(): uses a lookup table to return the arc tangent function at 0.1 degree increments
+//speedAtan2(): uses a lookup table to return the arc tangent function at 0.1 degree increments within a specific quadrant
+//speedSin(): uses a lookup table to return the sine function at 0.1 degree increments
+//speedArcSin(): uses a lookup table to return the arc sine function at 0.1 degree increments
+//speedCos(): uses a lookup table to return the cosine function at 0.1 degree increments
+//speedArcCos(): uses a lookup table to return the arc cosine function at 0.1 degree increments
+//cosSmallAngle(): uses small angle approximation for values less than 0.7 degrees, then maclauren series for values between +/- pi/4, then cosf for anything else
+//sinSmallAngle(): uses small angle approximation for values less than 0.1 degrees, then maclauren series for values between +/- pi/4, then sinf for anything else
+//----------------------------
+
 /*Below are lookup tables for the tangent, sine, and cosine functions in 0.1 degree steps, which is the precision that the
  * off-vertical output variables move.  The position of the value represents the degrees of rotation.
  * For example Tan[0] = tan(0) = 0, Tan[455] = tan(45.5) = 1.0176073929.  In this way, the table is used
@@ -521,7 +535,7 @@ return (posnA*sign);}
 
 int speedAtan2(float y, float x){
 
-  int myValue;
+  int myValue = 0;
   
   if(x > 0.0){myValue = speedArcTan(y/x);}
 

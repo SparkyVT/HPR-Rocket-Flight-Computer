@@ -1,3 +1,12 @@
+//----------------------------
+//LIST OF FUNCTIONS & ROUTINES
+//----------------------------
+//getQuatRotn(): quaternion rotation at 100Hz using the gyroscope only
+//magRotn(): roll and heading calculated from the magnetometer
+//getRotnDCM2D(): Optimized DCM code to calculate the rotation on each cycle of the loop.  Used for active stabilization
+//setCanards(): control code for active stabilization using canards
+//----------------------------
+
 void getQuatRotn(float dx, float dy, float dz){
 
 //Local Vectors
@@ -10,9 +19,6 @@ float Rotn3[4];
 static long prevRollZ = 0;
 static long quatRollZ = 0;
 static long fullRollZ = 0;
-
-const float pi = 3.14159265359;
-const float radDeg = 57.295780;
 
 //Compute quaternion derivative
 QuatDiff[1] = 0.5 * (-1 * dx * Quat[2] - dy * Quat[3] - dz * Quat[4]);
@@ -113,8 +119,8 @@ void magRotn(){
 
   //reduce roll to -360 to 360
   long tempRoll = magRoll;
-  while(tempRoll > 3600){tempRoll - 3600;}
-  while(tempRoll < 3600){tempRoll + 3600;}
+  while(tempRoll > 3600){tempRoll -= 3600;}
+  while(tempRoll < 3600){tempRoll += 3600;}
   
   //compute pitch
   magPitch = magOffVert * speedCos(tempRoll);
@@ -124,20 +130,19 @@ void magRotn(){
   
 }
 
-void getRotnDCM2D(){
+void getRotnDCM2D(float dx, float dy, float dz){
 
-  float dx = 0.0F;
-  float dy = 0.0F;
-  static int64_t dz = 0;
+  static float rawX = 0.0F;
+  static float rawY = 0.0F;
+  static float rawZ = 0.0F;
   float deg2rad = 3.141592653589793238462 / 180;
   float rad2deg = 1/deg2rad;
-  float cosZ;
-  float sinZ;
+  static float cosZ;
+  static float sinZ;
   
   //Calculate new Z angle from gyro data
-  int32_t newRoll = gyro.z * fltTime.gdt;
-  dz += newRoll;
-  float radNewRoll = newRoll * deg2rad * gyro.gainZ;
+  rawZ += dz;
+  float radNewRoll = dz * deg2rad * gyro.gainZ;
   
   //compute sin(roll) and cos(roll)
   float sinNewRoll = sinSmallAngle(radNewRoll);
@@ -223,10 +228,10 @@ void setCanards(){
     yawPosn   = Kp*yawError   + Ki*yawErrorInt   + Kd * gyro.gainY * (speedCos(rollZ*10)*gyro.y - speedSin(rollZ)*gyro.x);
     
     //pitch and yaw corrections are limited to 2 degrees only
-    pitchPosn > 2 ? 2 : pitchPosn;
-    pitchPosn < -2 ? -2 : pitchPosn;
-    yawPosn > 2 ? 2 : yawPosn;
-    yawPosn < -2 ? -2 : yawPosn;}
+    pitchPosn = (pitchPosn > 2) ? 2 : pitchPosn;
+    pitchPosn = (pitchPosn < -2) ? -2 : pitchPosn;
+    yawPosn = (yawPosn > 2) ? 2 : yawPosn;
+    yawPosn = (yawPosn < -2) ? -2 : yawPosn;}
   else{pitchPosn = yawPosn = 0;}
 
   //Set the fin positions
