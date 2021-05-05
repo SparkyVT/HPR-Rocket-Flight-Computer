@@ -190,21 +190,6 @@ void setOrientation(){
 
   byte orientCase = 0;
   
-  //align sesnors to a common frame
-  if(sensors.status_LSM303){
-    accel.dirX = gyro.dirX = mag.dirX = 1;
-    accel.dirY = gyro.dirY = mag.dirY = 1;
-    accel.dirZ = gyro.dirZ = mag.dirZ = 1;}
-  if(sensors.status_LSM9DS1){
-    accel.dirX = gyro.dirX = mag.dirX = -1;
-    accel.dirY = gyro.dirY = mag.dirY = 1;
-    accel.dirZ = gyro.dirZ = mag.dirZ = 1;}
-
-  //correct the bias for the new frame
-  int16_t orientFrameX = accel.biasX * accel.dirX;
-  int16_t orientFrameY = accel.biasY * accel.dirY;
-  int16_t orientFrameZ = accel.biasZ * accel.dirZ;
-  
   //determine which of the 6 possible IMU orientations is present
   if(abs(orientFrameZ) > abs(orientFrameY) && abs(orientFrameZ) > abs(orientFrameX) && orientFrameZ > 0){orientCase = 1;}//Main IMU Z-axis is pointed to the nose
   if(abs(orientFrameZ) > abs(orientFrameY) && abs(orientFrameZ) > abs(orientFrameX) && orientFrameZ < 0){orientCase = 2;}//Main IMU Z-axis is pointed to the tail
