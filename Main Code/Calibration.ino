@@ -191,12 +191,12 @@ void setOrientation(){
   byte orientCase = 0;
   
   //determine which of the 6 possible IMU orientations is present
-  if(abs(orientFrameZ) > abs(orientFrameY) && abs(orientFrameZ) > abs(orientFrameX) && orientFrameZ > 0){orientCase = 1;}//Main IMU Z-axis is pointed to the nose
-  if(abs(orientFrameZ) > abs(orientFrameY) && abs(orientFrameZ) > abs(orientFrameX) && orientFrameZ < 0){orientCase = 2;}//Main IMU Z-axis is pointed to the tail
-  if(abs(orientFrameY) > abs(orientFrameZ) && abs(orientFrameY) > abs(orientFrameX) && orientFrameY > 0){orientCase = 3;}//Main IMU Y-axis is pointed to the nose
-  if(abs(orientFrameY) > abs(orientFrameZ) && abs(orientFrameY) > abs(orientFrameX) && orientFrameY < 0){orientCase = 4;}//Main IMU Y-axis is pointed to the tail
-  if(abs(orientFrameX) > abs(orientFrameZ) && abs(orientFrameX) > abs(orientFrameY) && orientFrameX > 0){orientCase = 5;}//Main IMU X-axis is pointed to the nose
-  if(abs(orientFrameX) > abs(orientFrameZ) && abs(orientFrameX) > abs(orientFrameY) && orientFrameX < 0){orientCase = 6;}//Main IMU X-axis is pointed to the tail
+  if(abs(accel.biasZ) > abs(accel.biasY) && abs(accel.biasZ) > abs(accel.biasX) && accel.biasZ > 0){orientCase = 1;}//Main IMU Z-axis is pointed to the nose
+  if(abs(accel.biasZ) > abs(accel.biasY) && abs(accel.biasZ) > abs(accel.biasX) && accel.biasZ < 0){orientCase = 2;}//Main IMU Z-axis is pointed to the tail
+  if(abs(accel.biasY) > abs(accel.biasZ) && abs(accel.biasY) > abs(accel.biasX) && accel.biasY > 0){orientCase = 3;}//Main IMU Y-axis is pointed to the nose
+  if(abs(accel.biasY) > abs(accel.biasZ) && abs(accel.biasY) > abs(accel.biasX) && accel.biasY < 0){orientCase = 4;}//Main IMU Y-axis is pointed to the tail
+  if(abs(accel.biasX) > abs(accel.biasZ) && abs(accel.biasX) > abs(accel.biasY) && accel.biasX > 0){orientCase = 5;}//Main IMU X-axis is pointed to the nose
+  if(abs(accel.biasX) > abs(accel.biasZ) && abs(accel.biasX) > abs(accel.biasY) && accel.biasX < 0){orientCase = 6;}//Main IMU X-axis is pointed to the tail
 
   //set the orientation variables
   switch (orientCase) {
