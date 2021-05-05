@@ -95,8 +95,8 @@ Note: All of the above components were purchased through Digikey.  Other
 sources for the same components should work, but are untested and may not
 fit the provided PCB
 
-Note: 1.25in x 3.8in size board.  Will fit in a 2-inch avionics bay that is at least 
-1.5 inch wide and 4 inches long, antenna dependent.  Components mount on both sides.  See provided pictures for examples.
+Note: 1.25in x 3.8in size board.  Will fit in a 38mm coupler tube.
+Components mount on both sides.  See provided pictures for examples.
 
 Note: Estimated Flight Computer Cost = $150
 Note: Estimated Ground Station Cost = $130-$180 (configuration dependent)
