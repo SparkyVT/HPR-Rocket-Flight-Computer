@@ -52,7 +52,7 @@
 //beginBMP180(): starts sensor
 //initiateTemp():
 //initiatePressure():
-//getPressur():
+//getPressure():
 
 //beginBMP280(): starts sensor
 //readBMP280coefficients(): gets sensor calibration data
@@ -129,9 +129,9 @@ void getAccel() {
   accel.rawZ -= accel.biasZ;
 
   //orient sensor data
-  accel.x = *accel.ptrX * accel.dirX;
-  accel.y = *accel.ptrY * accel.dirY;
-  accel.z = *accel.ptrZ * accel.dirZ;
+  accel.x = *accel.ptrX * *accel.ptrXdir;
+  accel.y = *accel.ptrY * *accel.ptrYdir;
+  accel.z = *accel.ptrZ * *accel.ptrZdir;
 }
 
 void setMagGain(boolean magSwitch){
@@ -231,10 +231,10 @@ void getMag() {
   mag.rawY -= mag.biasY;
   mag.rawZ -= mag.biasZ;
 
-  //orient sensor data
-  mag.x = *mag.ptrX * mag.dirX;
-  mag.y = *mag.ptrY * mag.dirY;
-  mag.z = *mag.ptrZ * mag.dirZ;
+  //translate sensor data
+  mag.x = *mag.ptrX * *mag.ptrXdir;
+  mag.y = *mag.ptrY * *mag.ptrYdir;
+  mag.z = *mag.ptrZ * *mag.ptrZdir;
 }
 
 void beginGyro() {
@@ -261,9 +261,9 @@ void getGyro() {
   gyro.rawZ -= gyro.biasZ;
 
   //orient sensor data
-  gyro.x = *gyro.ptrX * gyro.dirX;
-  gyro.y = *gyro.ptrY * gyro.dirY;
-  gyro.z = *gyro.ptrZ * gyro.dirZ;
+  gyro.x = *gyro.ptrX * *gyro.ptrXdir;
+  gyro.y = *gyro.ptrY * *gyro.ptrYdir;
+  gyro.z = *gyro.ptrZ * *gyro.ptrZdir;
 }
 
 void beginHighG(char dataRate) {
@@ -308,9 +308,9 @@ void getHighG(boolean fullScale) {
   highG.rawZ -= highG.biasZ;
 
   //orient sensor data
-  highG.x = *highG.ptrX * highG.dirX;
-  highG.y = *highG.ptrY * highG.dirY;
-  highG.z = *highG.ptrZ * highG.dirZ;
+  highG.x = *highG.ptrX * *highG.ptrXdir;
+  highG.y = *highG.ptrY * *highG.ptrYdir;
+  highG.z = *highG.ptrZ * *highG.ptrZdir;
 }
 
 void beginBaro() {

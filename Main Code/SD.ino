@@ -3,6 +3,9 @@
 //----------------------------
 //writeSDflightData(): primary routine to capture the flight data in ASCII text to the SD card
 //writeSDfooter(): writes the post flight footer to the SD card once touchdown or timeout is detected
+//--------------
+//Functions:
+//--------------
 //writeIntData(): turns int to a char array
 //writeFloatData(): turns floats to a char array, limit of 4 decimals
 //writeFloatData2(): turns floats to a char array with no decimal limit

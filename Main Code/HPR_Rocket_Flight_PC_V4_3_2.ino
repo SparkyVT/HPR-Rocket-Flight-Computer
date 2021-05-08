@@ -1,6 +1,6 @@
 //HPR Rocket Flight Computer
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
-//This is built for the Teensy3.5, 3.6, or 4.1 boards
+//This is built for the Teensy3.5 or 3.6
 //Code Line Count: 2247 main + 401 Calibration + 317 Event_Logic + 287 GPSconfig + 546 Inflight_Recover + 245 Rotation + 287 SD + 2003 SensorDrivers + 625 SpeedTrig + 369 Telemetry = 7327 lines of code
 //-----------Change Log------------
 //V4_0_0 combines all previous versions coded for specific hardware setups; now compatible across multiple hardware configurations and can be mounted in any orientation
@@ -43,7 +43,7 @@
 //Built-in self-calibration mode 
 //Reads user flight profile from SD card
 //Compatible with many different sensors over I2C
-//Configurable pyro pin outputs and I2C bus options
+//Configurable pin input/outputs and I2C bus options
 //Report in SI or Metric units
 //Preflight audible reporting options: Perfectflight or Marsa
 //User selectable inflight brownout recovery (Beta Testing Only)
@@ -275,6 +275,9 @@ typedef struct{
   int16_t *ptrX;
   int16_t *ptrY;
   int16_t *ptrZ;
+  int8_t *ptrXdir;
+  int8_t *ptrYdir;
+  int8_t *ptrZdir;
   int32_t sumX0 = 0L;
   int32_t sumY0 = 0L;
   int32_t sumZ0 = 0L;
@@ -721,7 +724,7 @@ uint32_t lastHighG = 0UL;
 //-----------------------------------------
 //GPS Variables
 //-----------------------------------------
-int maxGPSalt = 0;
+float maxGPSalt = 0.0;
 float baseGPSalt = 0.0;
 float GPSavgAlt[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
 float GPSaltBuff[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
@@ -811,7 +814,6 @@ void setup(void) {
   //if so, then we need to rapidly get the system back up and going
   //call the rapidReset routine and immediately exit void setup
   byte lastEvent = EEPROM.read(eeprom.lastEvent);
-  EEPROM.update(eeprom.lastEvent, 27);
   if(lastEvent == (byte)255){
     lastEvent = 27;
     EEPROM.write(eeprom.lastEvent, lastEvent);}
@@ -1294,48 +1296,69 @@ void setup(void) {
     Serial.print(F("mag.biasZ: "));Serial.println(mag.biasZ);}
 
   //read the orientation variables from EEPROM
-  //IMU
-  accel.dirX = mag.dirX = gyro.dirX = (int8_t)EEPROM.read(eeprom.imuXsign);
+  //IMU X-Axis
   accel.orientX = mag.orientX = gyro.orientX = (char)EEPROM.read(eeprom.imuXptr);
-  if(accel.orientX == 'X'){accel.ptrX = &accel.rawX; mag.ptrX = &mag.rawX; gyro.ptrX = &gyro.rawX;}
-  if(accel.orientX == 'Y'){accel.ptrX = &accel.rawY; mag.ptrX = &mag.rawY; gyro.ptrX = &gyro.rawY;}
-  if(accel.orientX == 'Z'){accel.ptrX = &accel.rawZ; mag.ptrX = &mag.rawZ; gyro.ptrX = &gyro.rawZ;}
-  accel.dirY = mag.dirY = gyro.dirY = (int8_t)EEPROM.read(eeprom.imuYsign);
+  accel.dirX = mag.dirX = gyro.dirX = (int8_t)EEPROM.read(eeprom.imuXsign);
+  if(accel.orientX == 'X'){
+    accel.ptrX = &accel.rawX; mag.ptrX = &mag.rawX; gyro.ptrX = &gyro.rawX;
+    accel.ptrXdir = &accel.dirX; mag.ptrXdir = &mag.dirX; gyro.ptrXdir = &gyro.dirX;}
+  if(accel.orientX == 'Y'){
+    accel.ptrX = &accel.rawY; mag.ptrX = &mag.rawY; gyro.ptrX = &gyro.rawY;
+    accel.ptrXdir = &accel.dirY; mag.ptrXdir = &mag.dirY; gyro.ptrXdir = &gyro.dirY;}
+  if(accel.orientX == 'Z'){
+    accel.ptrX = &accel.rawZ; mag.ptrX = &mag.rawZ; gyro.ptrX = &gyro.rawZ;
+    accel.ptrXdir = &accel.dirZ; mag.ptrXdir = &mag.dirZ; gyro.ptrXdir = &gyro.dirZ;}
+  //IMU Y-Axis
   accel.orientY = mag.orientY = gyro.orientY = (char)EEPROM.read(eeprom.imuYptr);
-  if(accel.orientY == 'X'){accel.ptrY = &accel.rawX; mag.ptrY = &mag.rawX; gyro.ptrY = &gyro.rawX;}
-  if(accel.orientY == 'Y'){accel.ptrY = &accel.rawY; mag.ptrY = &mag.rawY; gyro.ptrY = &gyro.rawY;}
-  if(accel.orientY == 'Z'){accel.ptrY = &accel.rawZ; mag.ptrY = &mag.rawZ; gyro.ptrY = &gyro.rawZ;}
-  accel.dirZ = mag.dirZ = gyro.dirZ = (int8_t)EEPROM.read(eeprom.imuZsign);
+  accel.dirY = mag.dirY = gyro.dirY = (int8_t)EEPROM.read(eeprom.imuYsign);
+  if(accel.orientY == 'X'){
+    accel.ptrY = &accel.rawX; mag.ptrY = &mag.rawX; gyro.ptrY = &gyro.rawX;
+    accel.ptrYdir = &accel.dirX; mag.ptrYdir = &mag.dirX; gyro.ptrYdir = &gyro.dirX;}
+  if(accel.orientY == 'Y'){
+    accel.ptrY = &accel.rawY; mag.ptrY = &mag.rawY; gyro.ptrY = &gyro.rawY;
+    accel.ptrYdir = &accel.dirY; mag.ptrYdir = &mag.dirY; gyro.ptrYdir = &gyro.dirY;}
+  if(accel.orientY == 'Z'){
+    accel.ptrY = &accel.rawZ; mag.ptrY = &mag.rawZ; gyro.ptrY = &gyro.rawZ;
+    accel.ptrYdir = &accel.dirZ; mag.ptrYdir = &mag.dirZ; gyro.ptrYdir = &gyro.dirZ;}
+  //IMU Z-Axis
   accel.orientZ = mag.orientZ = gyro.orientZ = (char)EEPROM.read(eeprom.imuZptr);
-  if(accel.orientZ == 'X'){accel.ptrZ = &accel.rawX; mag.ptrZ = &mag.rawX; gyro.ptrZ = &gyro.rawX;}
-  if(accel.orientZ == 'Y'){accel.ptrZ = &accel.rawY; mag.ptrZ = &mag.rawY; gyro.ptrZ = &gyro.rawY;}
-  if(accel.orientZ == 'Z'){accel.ptrZ = &accel.rawZ; mag.ptrZ = &mag.rawZ; gyro.ptrZ = &gyro.rawZ;}
+  accel.dirZ = mag.dirZ = gyro.dirZ = (int8_t)EEPROM.read(eeprom.imuZsign);
+  if(accel.orientZ == 'X'){
+    accel.ptrZ = &accel.rawX; mag.ptrZ = &mag.rawX; gyro.ptrZ = &gyro.rawX;
+    accel.ptrZdir = &accel.dirX; mag.ptrZdir = &mag.dirX; gyro.ptrZdir = &gyro.dirX;}
+  if(accel.orientZ == 'Y'){
+    accel.ptrZ = &accel.rawY; mag.ptrZ = &mag.rawY; gyro.ptrZ = &gyro.rawY;
+    accel.ptrZdir = &accel.dirY; mag.ptrZdir = &mag.dirY; gyro.ptrZdir = &gyro.dirY;}
+  if(accel.orientZ == 'Z'){
+    accel.ptrZ = &accel.rawZ; mag.ptrZ = &mag.rawZ; gyro.ptrZ = &gyro.rawZ;
+    accel.ptrZdir = &accel.dirZ; mag.ptrZdir = &mag.dirZ; gyro.ptrZdir = &gyro.dirZ;}
   //highG
   highG.dirX = (int8_t)EEPROM.read(eeprom.hiGxSign);
   highG.orientX = (char)EEPROM.read(eeprom.hiGxPtr);
-  if(highG.orientX == 'X'){highG.ptrX = &highG.rawX;}
-  if(highG.orientX == 'Y'){highG.ptrX = &highG.rawY;}
-  if(highG.orientX == 'Z'){highG.ptrX = &highG.rawZ;}
+  if(highG.orientX == 'X'){highG.ptrX = &highG.rawX; highG.ptrXdir = &highG.dirX;}
+  if(highG.orientX == 'Y'){highG.ptrX = &highG.rawY; highG.ptrXdir = &highG.dirY;}
+  if(highG.orientX == 'Z'){highG.ptrX = &highG.rawZ; highG.ptrXdir = &highG.dirZ;}
   highG.dirY = (int8_t)EEPROM.read(eeprom.hiGySign);
   highG.orientY = (char)EEPROM.read(eeprom.hiGyPtr);
-  if(highG.orientY == 'X'){highG.ptrY = &highG.rawX;}
-  if(highG.orientY == 'Y'){highG.ptrY = &highG.rawY;}
-  if(highG.orientY == 'Z'){highG.ptrY = &highG.rawZ;}
+  if(highG.orientY == 'X'){highG.ptrY = &highG.rawX; highG.ptrYdir = &highG.dirX;}
+  if(highG.orientY == 'Y'){highG.ptrY = &highG.rawY; highG.ptrYdir = &highG.dirY;}
+  if(highG.orientY == 'Z'){highG.ptrY = &highG.rawZ; highG.ptrYdir = &highG.dirZ;}
   highG.dirZ = (int8_t)EEPROM.read(eeprom.hiGzSign);
   highG.orientZ = (char)EEPROM.read(eeprom.hiGzPtr);
-  if(highG.orientZ == 'X'){highG.ptrZ = &highG.rawX;}
-  if(highG.orientZ == 'Y'){highG.ptrZ = &highG.rawY;}
-  if(highG.orientZ == 'Z'){highG.ptrZ = &highG.rawZ;}
+  if(highG.orientZ == 'X'){highG.ptrZ = &highG.rawX; highG.ptrZdir = &highG.dirX;}
+  if(highG.orientZ == 'Y'){highG.ptrZ = &highG.rawY; highG.ptrZdir = &highG.dirY;}
+  if(highG.orientZ == 'Z'){highG.ptrZ = &highG.rawZ; highG.ptrZdir = &highG.dirZ;}
   //display values from EEPROM
   if(settings.testMode){
-    Serial.print(F("IMU.X: "));Serial.print((accel.dirX == 1) ? '+' : '-');Serial.println(accel.orientX);
-    Serial.print(F("IMU.Y: "));Serial.print((accel.dirY == 1) ? '+' : '-');Serial.println(accel.orientY);
-    Serial.print(F("IMU.Z: "));Serial.print((accel.dirZ == 1) ? '+' : '-');Serial.println(accel.orientZ);
-    Serial.print(F("highG.X: "));Serial.print((highG.dirX == 1) ? '+' : '-');Serial.println(highG.orientX);
-    Serial.print(F("highG.Y: "));Serial.print((highG.dirY == 1) ? '+' : '-');Serial.println(highG.orientY);
-    Serial.print(F("highG.Z: "));Serial.print((highG.dirZ == 1) ? '+' : '-');Serial.println(highG.orientZ);}
+    Serial.print(F("IMU.X is pointed to real world: "));Serial.print((accel.dirX == 1) ? '+' : '-');Serial.println(accel.orientX);
+    Serial.print(F("IMU.Y is pointed to real world: "));Serial.print((accel.dirY == 1) ? '+' : '-');Serial.println(accel.orientY);
+    Serial.print(F("IMU.Z is pointed to real world: "));Serial.print((accel.dirZ == 1) ? '+' : '-');Serial.println(accel.orientZ);
+    Serial.print(F("highG.X is pointed to real world: "));Serial.print((highG.dirX == 1) ? '+' : '-');Serial.println(highG.orientX);
+    Serial.print(F("highG.Y is pointed to real world: "));Serial.print((highG.dirY == 1) ? '+' : '-');Serial.println(highG.orientY);
+    Serial.print(F("highG.Z is pointed to real world: "));Serial.print((highG.dirZ == 1) ? '+' : '-');Serial.println(highG.orientZ);}
 
   //restart the highG accelerometer at the higher rate
+  if(settings.testMode){Serial.println(F("Restarting High-G Accelerometer at high rate"));}
   beginHighG('F');
 
   //Initialize the base altitude average
@@ -1345,7 +1368,8 @@ void setup(void) {
   if (settings.testMode) {
     settings.TXpwr = 2;
     rf95.setTxPower(settings.TXpwr, false);//lowest power setting
-    Serial.println(F("Radio Power Reduced for Bench Test Mode"));
+    Serial.print(F("Radio Power Reduced for Bench Test Mode: "));
+    Serial.println(settings.TXpwr);
     settings.detectLiftoffTime = 10000UL; //0.01s
     settings.setupTime = 3000UL; //3s startup time
     settings.apogeeDelay = 1000000UL; //1s apogee delay
@@ -1775,6 +1799,7 @@ void loop(void){
     liftoffMin = GPS.time.minute();
     liftoffSec = GPS.time.second();
     liftoffMili = GPS.time.centisecond();
+    maxGPSalt = 0.0F;
     //store base alt in EEPROM
     floatUnion.val = baseAlt;
     if(settings.inflightRecover != 0){
@@ -2092,7 +2117,7 @@ void loop(void){
         //update sensor fusion velocity
         if(events.apogee){fusionVel = 0.9 * GPSvel + 0.1 * baroVel;}
         //capture max GPS alt
-        if(GPS.altitude.meters() > maxGPSalt){maxGPSalt = GPS.altitude.meters() - baseAlt;}
+        if(GPS.altitude.meters() - baseAlt > maxGPSalt){maxGPSalt = GPS.altitude.meters() - baseAlt;}
         //capture the GPS takeoff position and correct base altitude
         if(events.preLiftoff){
           if(GPS.altitude.meters() != 0){

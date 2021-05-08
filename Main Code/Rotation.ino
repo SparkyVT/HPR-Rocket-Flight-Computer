@@ -130,7 +130,7 @@ void magRotn(){
   
 }
 
-void getRotnDCM2D(float dx, float dy, float dz){
+void getRotnDCM2D(long dx, long dy, long dz){
 
   static float rawX = 0.0F;
   static float rawY = 0.0F;
@@ -153,14 +153,14 @@ void getRotnDCM2D(float dx, float dy, float dz){
   sinZ = prevSinZ * cosNewRoll + prevCosZ * sinNewRoll;
   
   //Compute the new y and x angles
-  dx += (cosZ * gyro.x - sinZ * gyro.y) * fltTime.gdt;
-  dy += (cosZ * gyro.y + sinZ * gyro.x) * fltTime.gdt;
+  rawX += (cosZ * dx - sinZ * dy) * fltTime.gdt;
+  rawY += (cosZ * dy + sinZ * dx) * fltTime.gdt;
 
   //Compute Pitch, Roll, Yaw
   const float convDeg = gyro.gainZ * mlnth;
-  rollZ = (long)(dz * convDeg);
-  pitchX = (int)(dx * convDeg * 10);
-  yawY = (int)(dy * convDeg * 10);
+  rollZ = (long)(rawZ * convDeg);
+  pitchX = (int)(rawX * convDeg * 10);
+  yawY = (int)(rawY * convDeg * 10);
 
   //Compute off-vertical
   float tanYaw = speedTan(yawY);

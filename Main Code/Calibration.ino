@@ -19,7 +19,29 @@ void accelCalibrate(){
 
     digitalWrite(pins.beep, HIGH);
 
-    //Align the highG accelerometer to the IMU
+    //reset the pointers and directions
+    accel.ptrX = &accel.rawX;
+    accel.ptrY = &accel.rawY;
+    accel.ptrZ = &accel.rawZ;
+    accel.ptrXdir = &accel.dirX;
+    accel.ptrYdir = &accel.dirY;
+    accel.ptrZdir = &accel.dirZ;
+    accel.orientX = 'X';
+    accel.orientY = 'Y';
+    accel.orientZ = 'Z';
+    accel.dirX = accel.dirY = accel.dirZ = 1;
+    highG.ptrX = &highG.rawX;
+    highG.ptrY = &highG.rawY;
+    highG.ptrZ = &highG.rawZ;
+    highG.ptrXdir = &highG.dirX;
+    highG.ptrYdir = &highG.dirY;
+    highG.ptrZdir = &highG.dirZ;
+    highG.orientX = 'X';
+    highG.orientY = 'Y';
+    highG.orientZ = 'Z';
+    highG.dirX = highG.dirY = highG.dirZ = 1;
+
+    /*//Align the highG accelerometer to the IMU
     highG.dirX = (int8_t)EEPROM.read(eeprom.IMU2hiGxSign);
     if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='X'){highG.ptrX = &highG.rawX; highG.orientX = 'X';}
     if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='Y'){highG.ptrX = &highG.rawY; highG.orientX = 'Y';}
@@ -51,7 +73,7 @@ void accelCalibrate(){
         accel.dirY = mag.dirY = gyro.dirY = 1;
         accel.dirZ = mag.dirZ = gyro.dirZ = 1;
         highG.dirX *= -1;
-        break;}
+        break;}*/
 
     Serial.println(F("Calibrating..."));
 
@@ -202,26 +224,30 @@ void setOrientation(){
   switch (orientCase) {
 
     case 1: //Main IMU Z-axis is pointed to the nose
-    
+
+      Serial.println("Main IMU Z-axis is pointed to the nose");
+      
       //align IMU axes
       accel.orientX = mag.orientX = gyro.orientX = 'X';
       accel.orientY = mag.orientY = gyro.orientY = 'Y';
       accel.orientZ = mag.orientZ = gyro.orientZ = 'Z';
 
       //set IMU axes direction
-      accel.dirX *= 1;
-      accel.dirY *= 1;
-      accel.dirZ *= 1;
-      gyro.dirX *= 1;
-      gyro.dirY *= 1;
-      gyro.dirZ *= 1;
-      mag.dirX *= 1;
-      mag.dirY *= 1;
-      mag.dirZ *= 1;
+      accel.dirX = 1;
+      accel.dirY = 1;
+      accel.dirZ = 1;
+      gyro.dirX = 1;
+      gyro.dirY = 1;
+      gyro.dirZ = 1;
+      mag.dirX = 1;
+      mag.dirY = 1;
+      mag.dirZ = 1;
 
       break;
 
     case 2: //Main IMU Z-axis is pointed to the tail
+
+      Serial.println("Main IMU Z-axis is pointed to the tail");
     
       //align IMU axes
       accel.orientX = mag.orientX = gyro.orientX = 'X';
@@ -229,19 +255,21 @@ void setOrientation(){
       accel.orientZ = mag.orientZ = gyro.orientZ = 'Z';
 
       //set IMU axes direction
-      accel.dirX *= -1;
-      accel.dirY *= 1;
-      accel.dirZ *= -1;
-      gyro.dirX *= -1;
-      gyro.dirY *= 1;
-      gyro.dirZ *= -1;
-      mag.dirX *= -1;
-      mag.dirY *= 1;
-      mag.dirZ *= -1;
+      accel.dirX = -1;
+      accel.dirY = 1;
+      accel.dirZ = -1;
+      gyro.dirX = -1;
+      gyro.dirY = 1;
+      gyro.dirZ = -1;
+      mag.dirX = -1;
+      mag.dirY = 1;
+      mag.dirZ = -1;
       
       break;
 
     case 3: //Main IMU Y-axis is pointed to the nose
+
+      Serial.println("Main IMU Y-axis is pointed to the nose");
     
       //align IMU axes
       accel.orientX = mag.orientX = gyro.orientX = 'X';
@@ -249,19 +277,21 @@ void setOrientation(){
       accel.orientZ = mag.orientZ = gyro.orientZ = 'Y';
 
       //set IMU axes direction
-      accel.dirX *= 1;
-      accel.dirY *= 1;
-      accel.dirZ *= -1;
-      gyro.dirX *= 1;
-      gyro.dirY *= 1;
-      gyro.dirZ *= -1;
-      mag.dirX *= 1;
-      mag.dirY *= 1;
-      mag.dirZ *= -1;
+      accel.dirX = 1;
+      accel.dirY = 1;
+      accel.dirZ = -1;
+      gyro.dirX = 1;
+      gyro.dirY = 1;
+      gyro.dirZ = -1;
+      mag.dirX = 1;
+      mag.dirY = 1;
+      mag.dirZ = -1;
 
       break;
 
     case 4: //Main IMU Y-axis is pointed to the tail
+
+      Serial.println("Main IMU Y-axis is pointed to the tail");
     
       //align IMU axes
       accel.orientX = mag.orientX = gyro.orientX = 'X';
@@ -269,19 +299,21 @@ void setOrientation(){
       accel.orientZ = mag.orientZ = gyro.orientZ = 'Y';
 
       //set IMU axes direction
-      accel.dirX *= 1;
-      accel.dirY *= -1;
-      accel.dirZ *= 1;
-      gyro.dirX *= 1;
-      gyro.dirY *= -1;
-      gyro.dirZ *= 1;
-      mag.dirX *= 1;
-      mag.dirY *= -1;
-      mag.dirZ *= 1;
+      accel.dirX = 1;
+      accel.dirY = -1;
+      accel.dirZ = 1;
+      gyro.dirX = 1;
+      gyro.dirY = -1;
+      gyro.dirZ = 1;
+      mag.dirX = 1;
+      mag.dirY = -1;
+      mag.dirZ = 1;
       
       break;
 
     case 5: //Main IMU X-axis is pointed to the nose
+
+      Serial.println("Main IMU X-axis is pointed to the nose");
     
       //align IMU axes
       accel.orientX = mag.orientX = gyro.orientX = 'Z';
@@ -289,19 +321,21 @@ void setOrientation(){
       accel.orientZ = mag.orientZ = gyro.orientZ = 'X';
 
       //set IMU axes direction
-      accel.dirX *= 1;
-      accel.dirY *= 1;
-      accel.dirZ *= -1;
-      gyro.dirX *= 1;
-      gyro.dirY *= 1;
-      gyro.dirZ *= -1;
-      mag.dirX *= 1;
-      mag.dirY *= 1;
-      mag.dirZ *= -1;
+      accel.dirX = 1;
+      accel.dirY = 1;
+      accel.dirZ = -1;
+      gyro.dirX = 1;
+      gyro.dirY = 1;
+      gyro.dirZ = -1;
+      mag.dirX = 1;
+      mag.dirY = 1;
+      mag.dirZ = -1;
       
       break;
 
     case 6: //Main IMU X-axis is pointed to the tail
+
+      Serial.println("Main IMU X-axis is pointed to the tail");
     
       //align IMU axes
       accel.orientX = mag.orientX = gyro.orientX = 'Z';
@@ -309,15 +343,16 @@ void setOrientation(){
       accel.orientZ = mag.orientZ = gyro.orientZ = 'X';
 
       //set IMU axes direction
-      accel.dirX *= -1;
-      accel.dirY *= 1;
-      accel.dirZ *= 1;
-      gyro.dirX *= -1;
-      gyro.dirY *= 1;
-      gyro.dirZ *= 1;
-      mag.dirX *= -1;
-      mag.dirY *= 1;
-      mag.dirZ *= 1;
+      accel.dirX = -1;
+      accel.dirY = 1;
+      accel.dirZ = 1;
+      gyro.dirX = -1;
+      gyro.dirY = 1;
+      gyro.dirZ = 1;
+      mag.dirX = -1;
+      mag.dirY = 1;
+      mag.dirZ = 1;
+      
       break;
 
     default: //error has occured
@@ -337,15 +372,15 @@ void setOrientation(){
   if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='X'){highG.orientX = accel.orientX;}
       
   //set high-G accelerometer direction
-  if((char)EEPROM.read(eeprom.IMU2hiGzAxis)=='Z'){highG.dirZ = (char)EEPROM.read(eeprom.IMU2hiGzSign) * accel.dirZ;}//vertical axis
-  if((char)EEPROM.read(eeprom.IMU2hiGyAxis)=='Z'){highG.dirY = (char)EEPROM.read(eeprom.IMU2hiGySign) * accel.dirZ;}
-  if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='Z'){highG.dirX = (char)EEPROM.read(eeprom.IMU2hiGxSign) * accel.dirZ;}
-  if((char)EEPROM.read(eeprom.IMU2hiGzAxis)=='Y'){highG.dirZ = (char)EEPROM.read(eeprom.IMU2hiGzSign) * accel.dirY;}//horizontal y axis
-  if((char)EEPROM.read(eeprom.IMU2hiGyAxis)=='Y'){highG.dirY = (char)EEPROM.read(eeprom.IMU2hiGySign) * accel.dirY;}
-  if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='Y'){highG.dirX = (char)EEPROM.read(eeprom.IMU2hiGxSign) * accel.dirY;}
-  if((char)EEPROM.read(eeprom.IMU2hiGzAxis)=='X'){highG.dirZ = (char)EEPROM.read(eeprom.IMU2hiGzSign) * accel.dirX;}//horizontal x axis
-  if((char)EEPROM.read(eeprom.IMU2hiGyAxis)=='X'){highG.dirY = (char)EEPROM.read(eeprom.IMU2hiGySign) * accel.dirX;}
-  if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='X'){highG.dirX = (char)EEPROM.read(eeprom.IMU2hiGxSign) * accel.dirX;}
+  if((char)EEPROM.read(eeprom.IMU2hiGzAxis)=='Z'){highG.dirZ = (int8_t)EEPROM.read(eeprom.IMU2hiGzSign) * accel.dirZ;}//vertical axis
+  if((char)EEPROM.read(eeprom.IMU2hiGyAxis)=='Z'){highG.dirY = (int8_t)EEPROM.read(eeprom.IMU2hiGySign) * accel.dirZ;}
+  if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='Z'){highG.dirX = (int8_t)EEPROM.read(eeprom.IMU2hiGxSign) * accel.dirZ;}
+  if((char)EEPROM.read(eeprom.IMU2hiGzAxis)=='Y'){highG.dirZ = (int8_t)EEPROM.read(eeprom.IMU2hiGzSign) * accel.dirY;}//horizontal y axis
+  if((char)EEPROM.read(eeprom.IMU2hiGyAxis)=='Y'){highG.dirY = (int8_t)EEPROM.read(eeprom.IMU2hiGySign) * accel.dirY;}
+  if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='Y'){highG.dirX = (int8_t)EEPROM.read(eeprom.IMU2hiGxSign) * accel.dirY;}
+  if((char)EEPROM.read(eeprom.IMU2hiGzAxis)=='X'){highG.dirZ = (int8_t)EEPROM.read(eeprom.IMU2hiGzSign) * accel.dirX;}//horizontal x axis
+  if((char)EEPROM.read(eeprom.IMU2hiGyAxis)=='X'){highG.dirY = (int8_t)EEPROM.read(eeprom.IMU2hiGySign) * accel.dirX;}
+  if((char)EEPROM.read(eeprom.IMU2hiGxAxis)=='X'){highG.dirX = (int8_t)EEPROM.read(eeprom.IMU2hiGxSign) * accel.dirX;}
 
   //correct IMU bias for 1G
   if(accel.orientX == 'Z'){accel.biasX -= accel.dirX * g;}
@@ -374,13 +409,13 @@ void setOrientation(){
   EEPROM.update(eeprom.hiGzPtr, highG.orientZ);
 
   //display values from EEPROM
-  Serial.print(F("IMU 2 Hi-Gx: "));Serial.print((int8_t)EEPROM.read(eeprom.IMU2hiGxSign));Serial.println((char)EEPROM.read(eeprom.IMU2hiGxAxis));
-  Serial.print(F("IMU 2 Hi-Gy: "));Serial.print((int8_t)EEPROM.read(eeprom.IMU2hiGySign));Serial.println((char)EEPROM.read(eeprom.IMU2hiGyAxis));
-  Serial.print(F("IMU 2 Hi-Gz: "));Serial.print((int8_t)EEPROM.read(eeprom.IMU2hiGzSign));Serial.println((char)EEPROM.read(eeprom.IMU2hiGzAxis));
-  Serial.print(F("IMU.X: "));Serial.print((accel.dirX == 1) ? '+' : '-');Serial.println(accel.orientX);
-  Serial.print(F("IMU.Y: "));Serial.print((accel.dirY == 1) ? '+' : '-');Serial.println(accel.orientY);
-  Serial.print(F("IMU.Z: "));Serial.print((accel.dirZ == 1) ? '+' : '-');Serial.println(accel.orientZ);
-  Serial.print(F("highG.X: "));Serial.print((highG.dirX == 1) ? '+' : '-');Serial.println(highG.orientX);
-  Serial.print(F("highG.Y: "));Serial.print((highG.dirY == 1) ? '+' : '-');Serial.println(highG.orientY);
-  Serial.print(F("highG.Z: "));Serial.print((highG.dirZ == 1) ? '+' : '-');Serial.println(highG.orientZ);
+  Serial.print(F("IMU.X points to Hi-G: "));Serial.print(((int8_t)EEPROM.read(eeprom.IMU2hiGxSign) == 1) ? '+' : '-');Serial.println((char)EEPROM.read(eeprom.IMU2hiGxAxis));
+  Serial.print(F("IMU.Y points to Hi-G: "));Serial.print(((int8_t)EEPROM.read(eeprom.IMU2hiGySign) == 1) ? '+' : '-');Serial.println((char)EEPROM.read(eeprom.IMU2hiGyAxis));
+  Serial.print(F("IMU.Z points to Hi-G: "));Serial.print(((int8_t)EEPROM.read(eeprom.IMU2hiGzSign) == 1) ? '+' : '-');Serial.println((char)EEPROM.read(eeprom.IMU2hiGzAxis));
+  Serial.print(F("IMU.X is pointed to real world: "));Serial.print((accel.dirX == 1) ? '+' : '-');Serial.println(accel.orientX);
+  Serial.print(F("IMU.Y is pointed to real world: "));Serial.print((accel.dirY == 1) ? '+' : '-');Serial.println(accel.orientY);
+  Serial.print(F("IMU.Z is pointed to real world: "));Serial.print((accel.dirZ == 1) ? '+' : '-');Serial.println(accel.orientZ);
+  Serial.print(F("highG.X is pointed to real world: "));Serial.print((highG.dirX == 1) ? '+' : '-');Serial.println(highG.orientX);
+  Serial.print(F("highG.Y is pointed to real world: "));Serial.print((highG.dirY == 1) ? '+' : '-');Serial.println(highG.orientY);
+  Serial.print(F("highG.Z is pointed to real world: "));Serial.print((highG.dirZ == 1) ? '+' : '-');Serial.println(highG.orientZ);
   }//end void
