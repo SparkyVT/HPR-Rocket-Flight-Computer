@@ -13,7 +13,10 @@
 //writeULongData(): turns unsigned long to a char array
 //writeBoolData(): turns a boolean to a char array
 //updateStrPosn(): helper function to keep track of the position within the char array
-//----------------------------
+//-----------CHANGE LOG------------
+//17 JUL 21: initial breakout created
+//04 AUG 21: edited to account for variable gain settings
+//---------------------------------
 
 void writeSDflightData(){
   //Timestamp
@@ -28,7 +31,6 @@ void writeSDflightData(){
     writeIntData(gyro.z);
     //HighG Accel Data
     if(settings.highG3axis){writeIntData(highG.x);writeIntData(highG.y);}
-    else{dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;}
     writeIntData(highG.z);
     writeIntData(highGsmooth);
     //Integrated Rotation Values
@@ -97,13 +99,8 @@ void writeSDflightData(){
     if (magCounter == 0){
       writeIntData(mag.x);
       writeIntData(mag.y);
-      writeIntData(mag.z);
-      //Magnetic Rotation Values
-      writeLongData(magRoll);
-      writeIntData(magYaw);
-      writeIntData(magPitch);
-      writeIntData(magOffVert);}
-    else{dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;}
+      writeIntData(mag.z);}
+    else{dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;}
     //GPS Data
     if(gpsWrite){
       dataString[strPosn]=gpsLat;strPosn++;
@@ -113,7 +110,7 @@ void writeSDflightData(){
       writeFloatData((float)GPS.speed.mph(),2);
       writeFloatData(((float)GPS.altitude.meters()-baseAlt),2);
       writeFloatData((float)GPS.course.deg(),2);
-      writeIntData((int)GPS.satellites.value());
+      writeIntData(radio.satNum);
       gpsWrite=false;}
     else{
       dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;

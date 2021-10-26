@@ -35,6 +35,7 @@ boolean rapidReset(){
   pins.radioIRQ = EEPROM.read(eeprom.radioIRQpin);
   pins.radioRST = EEPROM.read(eeprom.radioRstPin);
   pins.radioEN = EEPROM.read(eeprom.radioEnPin);
+  pins.highG_CS = EEPROM.read(eeprom.highG_CS);
   sensors.accel = EEPROM.read(eeprom.accelID);
   sensors.gyro = EEPROM.read(eeprom.gyroID);
   sensors.highG = EEPROM.read(eeprom.highGID);

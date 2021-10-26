@@ -4,7 +4,10 @@
 //radioSendPacket(): main routine to send telemetry packets
 //hopTXfreq(): hops frequency when FHSS is active
 //syncPkt(): sends a sync packet on the hailing freq
-//----------------------------
+//-----------CHANGE LOG------------
+//17 JUL 21: initial breakout created
+//---------------------------------
+//NOTE: as of V2.02, SDFat V2.XX is INCOMPATIBLE with the RFM95 RADIOHEAD library
 
 /*900MHz FHSS Strategy
 

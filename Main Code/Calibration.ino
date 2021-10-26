@@ -5,11 +5,13 @@
 // magCalibrate(): one-time calibration routine for the IMU magnetometer.  Runs separate from the acceleration calibration routine
 // writeCalibration(): function to store calibration values in eeprom
 // setOrientation: part of the acceleromter calibration routine - automatically determines the flight computer orientation and stores in eeprom
-//----------------------------
+//-----------CHANGE LOG------------
+//17 JUL 21: initial breakout created
+//---------------------------------
 
 void accelCalibrate(){
       
-    Serial.println(F("Accelerometer Calibration Mode Confirmed. Please hold altimeter vertical and still"));
+    Serial.println(F("Accelerometer Calibration Mode Confirmed. Ensure the altimeter is pointed vertical and held steady on a level surface"));
     
     for (byte i = 1; i < 20; i++){
       digitalWrite(pins.beep, HIGH);
@@ -82,26 +84,32 @@ void accelCalibrate(){
     highG.biasX = highG.biasY = highG.biasZ = 0;
     highG.sumX0 = highG.sumY0 = highG.sumZ0 = 0; 
 
-    for (byte i = 1; i < 101; i++){
+    int dispData = 0;
+    int sampSize = 10000;
+    uint32_t delayTime = 714*(1-0.8);//average cycle time * (100% - time spent in I2C comms)
+    for (int i = 0; i < sampSize; i++){
       getAccel();
       getHighG(true);
-      Serial.print(F("Accel X,Y,Z: "));Serial.print(accel.rawX);Serial.print(',');Serial.print(accel.rawY);Serial.print(',');Serial.println(accel.rawZ);
-      Serial.print(F("highG X,Y,Z: "));Serial.print(highG.rawX);Serial.print(',');Serial.print(highG.rawY);Serial.print(',');Serial.println(highG.rawZ);
+      dispData++;
+      if(dispData > 1000){
+        Serial.print(F("Accel X,Y,Z: "));Serial.print(accel.rawX);Serial.print(',');Serial.print(accel.rawY);Serial.print(',');Serial.println(accel.rawZ);
+        Serial.print(F("highG X,Y,Z: "));Serial.print(highG.rawX);Serial.print(',');Serial.print(highG.rawY);Serial.print(',');Serial.println(highG.rawZ);
+        dispData = 0;}
       accel.sumX0 += accel.rawX;
       accel.sumY0 += accel.rawY;
       accel.sumZ0 += accel.rawZ;
       highG.sumX0 += highG.rawX;
       highG.sumY0 += highG.rawY;
       highG.sumZ0 += highG.rawZ;
-      delay(300);}
+      delayMicroseconds(delayTime);}
       
     //calculate the bias
-    accel.biasX = (int)(accel.sumX0 / 100);
-    accel.biasY = (int)(accel.sumY0 / 100);
-    accel.biasZ = (int)(accel.sumZ0 / 100);
-    highG.biasX = (int)(highG.sumX0 / 100);
-    highG.biasY = (int)(highG.sumY0 / 100);
-    highG.biasZ = (int)(highG.sumZ0 / 100);
+    accel.biasX = (int)(accel.sumX0 / sampSize);
+    accel.biasY = (int)(accel.sumY0 / sampSize);
+    accel.biasZ = (int)(accel.sumZ0 / sampSize);
+    highG.biasX = (int)(highG.sumX0 / sampSize);
+    highG.biasY = (int)(highG.sumY0 / sampSize);
+    highG.biasZ = (int)(highG.sumZ0 / sampSize);
 
     //reset the counters
     accel.sumX0 = accel.sumY0 = accel.sumZ0 = 0;
@@ -125,7 +133,9 @@ void accelCalibrate(){
     Serial.print(F("accel.biasZ: "));Serial.println(accel.biasZ);
     Serial.print(F("highG.biasX: "));Serial.println(highG.biasX);
     Serial.print(F("highG.biasY: "));Serial.println(highG.biasY);
-    Serial.print(F("highG.biasZ: "));Serial.println(highG.biasZ);}//end accelerometer calibration
+    Serial.print(F("highG.biasZ: "));Serial.println(highG.biasZ);  
+    
+  }//end accelerometer/gyro calibration
 
 void magCalibrate(){
   
@@ -419,3 +429,223 @@ void setOrientation(){
   Serial.print(F("highG.Y is pointed to real world: "));Serial.print((highG.dirY == 1) ? '+' : '-');Serial.println(highG.orientY);
   Serial.print(F("highG.Z is pointed to real world: "));Serial.print((highG.dirZ == 1) ? '+' : '-');Serial.println(highG.orientZ);
   }//end void
+
+void baroCalibrate(){
+
+  //exit the beeping
+  digitalWrite(pins.beep, LOW);
+  beep_counter = 8;
+
+  //Send user message
+  Serial.println(F("Barometer Calibration mode initiated"));
+  
+  //clear the user input
+  while(Serial.available() > 0){char input = Serial.read();}
+
+  //Display the user temperature instructions
+  Serial.println(F("Enter the current ambient room temperature in degrees and tenths of a degree C, or enter e to exit: "));
+
+  //wait for user input, then enter into the array
+  while(Serial.available() == 0){delay(100);}
+  strPosn = 0;
+  while(Serial.available() > 0){
+    char input = Serial.read();
+    dataString[strPosn] = input; strPosn++;
+    if(input == 'e'){Serial.println(F("Exiting calibration")); return;}}
+  dataString[strPosn] = '\0';
+
+  //parse the data
+  float userInput = atof(dataString);
+  Serial.print(F("User input: "));Serial.println(userInput, 1);
+  Serial.println(F("Calibrating..."));
+
+  //Sample Temperature Sensor
+  float tempSum = 0.0F;
+  baroTempOffset = 0.0F;
+  for(int i = 0; i < 300; i++){
+    getBaro();
+    tempSum += temperature;
+    delayMicroseconds(timeBtwnBaro);}
+  
+  baroTempOffset = (tempSum / 300) - userInput;
+  Serial.println(baroTempOffset, 1);
+
+  //Print the sample conditions
+  Serial.println(F("Temperature calibration complete"));
+  Serial.print(F("Sampled atmospheric temperature: ")); Serial.println(tempSum/300, 1);
+  Serial.print("Temperature Offset: ");Serial.println(baroTempOffset, 1);
+      
+  //Display the user temperature instructions
+  Serial.println(F("Enter the current barometric pressure in hPa: "));
+
+  //wait for user input, then enter into the array
+  while(Serial.available()==0){delay(100);}
+  strPosn = 0;
+  
+  while(Serial.available() > 0){
+    char input = Serial.read();
+    dataString[strPosn] = input; strPosn++;}
+  dataString[strPosn] = '\0';
+
+  //parse the data
+  userInput = atof(dataString);
+  Serial.print(F("User input: "));Serial.println(userInput, 2);
+  Serial.println(F("Calibrating..."));
+  
+  //Sample Barometer
+  baroPressOffset = 0.0F;
+  float baroSum = 0.0F;
+  for(int i = 0; i < 300; i++){
+    getBaro();
+    baroSum += pressure;
+    delayMicroseconds(timeBtwnBaro);}
+
+  baroPressOffset = (baroSum / 300) - userInput;
+
+  //Print the sample conditions
+  Serial.println(F("Barometer calibration Complete"));
+  Serial.print(F("Sampled barometric pressure: ")); Serial.println(baroSum/300, 2);
+  Serial.print("Barometric Offset: ");Serial.print(baroPressOffset, 2); Serial.println(F(" hPa"));
+
+  //write to eeprom
+  floatUnion.val = baroTempOffset;
+  for(byte i = 0; i < 4; i++){EEPROM.update(eeprom.baroTempOffset + i, floatUnion.Byte[i]);}
+  floatUnion.val = baroPressOffset;
+  for(byte i = 0; i < 4; i++){EEPROM.update(eeprom.baroPressOffset + i, floatUnion.Byte[i]);}
+
+  delay(2000);
+    
+ }//End of barometer calibration
+
+ char a;
+char b;
+char d;
+
+void setCanardTrim(){
+
+  //Send instructions to the user
+  Serial.println(F("Enter the servo number and direction of rotation.  Each entry will add/subtract 1 degree of Trim."));
+  Serial.println(F("Ex: 2+ will move Servo #2 one degree clockwise, 6- will move Servo #6 one degree counter clockwise"));
+  Serial.println(F("Send ee to exit"));
+  //clear the buffer
+  while(Serial.available()>0){a = Serial.read();}
+
+  //Set loop flags
+  boolean errorFlag = false;
+  boolean exitFlag = false;
+
+  //loop and wait for the user to enter a value
+  while(!exitFlag){
+    if(Serial.available() == 3){
+
+      //read data
+      a = Serial.read();
+      b = Serial.read();
+      d = Serial.read();
+      
+      //exit condition
+      if(a == 'e' || b == 'e'){exitFlag = true;}
+
+      //error check
+      if(a!='1' && a!='2' && a!='3' && a!='4' && a!='5' && a!='6' && a!='7' && a!='8'){errorFlag = true;}
+      if(b!='+' && b!='-'){errorFlag = true;}
+
+      //update trim settings
+      if(a=='1'){servo1trim += (b=='+'? 1 : -1); Serial.print(F("Servo1 Trim: "));Serial.println(servo1trim); wiggleServo(1);}
+      if(a=='2'){servo2trim += (b=='+'? 1 : -1); Serial.print(F("Servo2 Trim: "));Serial.println(servo2trim); wiggleServo(2);}
+      if(a=='3'){servo3trim += (b=='+'? 1 : -1); Serial.print(F("Servo3 Trim: "));Serial.println(servo3trim); wiggleServo(3);}
+      if(a=='4'){servo4trim += (b=='+'? 1 : -1); Serial.print(F("Servo4 Trim: "));Serial.println(servo4trim); wiggleServo(4);}
+      if(a=='5'){servo5trim += (b=='+'? 1 : -1); Serial.print(F("Servo5 Trim: "));Serial.println(servo5trim); wiggleServo(5);}
+      if(a=='6'){servo6trim += (b=='+'? 1 : -1); Serial.print(F("Servo6 Trim: "));Serial.println(servo6trim); wiggleServo(6);}
+      if(a=='7'){servo7trim += (b=='+'? 1 : -1); Serial.print(F("Servo7 Trim: "));Serial.println(servo7trim); wiggleServo(7);}
+      if(a=='8'){servo8trim += (b=='+'? 1 : -1); Serial.print(F("Servo8 Trim: "));Serial.println(servo8trim); wiggleServo(8);}}
+      
+    else if(Serial.available() > 0){
+      Serial.print("Sent Bytes: ");Serial.println(Serial.available());
+      while(Serial.available() > 0){a = (char)Serial.read(); Serial.print(a);}
+      Serial.println(' ');
+      errorFlag = true;}
+
+    //report error message if needed
+    if(!exitFlag && errorFlag){
+      Serial.println(F("Error: Send a valid two character string. Ex: 3+"));
+      errorFlag = false;}
+
+    delay(100);
+  }//end trim update loop
+
+  //update the EEPROM
+  EEPROM.update(eeprom.servo1trim, servo1trim);
+  EEPROM.update(eeprom.servo2trim, servo2trim);
+  EEPROM.update(eeprom.servo3trim, servo3trim);
+  EEPROM.update(eeprom.servo4trim, servo4trim);
+  EEPROM.update(eeprom.servo5trim, servo5trim);
+  EEPROM.update(eeprom.servo6trim, servo6trim);
+  EEPROM.update(eeprom.servo7trim, servo7trim);
+  EEPROM.update(eeprom.servo8trim, servo8trim);
+
+  //display settings to user
+  Serial.println(F("FINAL SERVO TRIM SETTINGS"));
+  Serial.print(F("Servo1 Trim: "));Serial.println(servo1trim);
+  Serial.print(F("Servo2 Trim: "));Serial.println(servo2trim);
+  Serial.print(F("Servo3 Trim: "));Serial.println(servo3trim);
+  Serial.print(F("Servo4 Trim: "));Serial.println(servo4trim);
+  Serial.print(F("Servo5 Trim: "));Serial.println(servo5trim);
+  Serial.print(F("Servo6 Trim: "));Serial.println(servo6trim);
+  Serial.print(F("Servo7 Trim: "));Serial.println(servo7trim);
+  Serial.print(F("Servo8 Trim: "));Serial.println(servo8trim);
+ }
+
+void wiggleServo( byte servo){
+
+  switch (servo){
+    
+  case 1:
+    canardYaw1.write(80);delay(250);
+    canardYaw1.write(100);delay(250);
+    canardYaw1.write(90-servo1trim);
+    break;
+    
+  case 2:
+    canardYaw2.write(80);delay(250);
+    canardYaw2.write(100);delay(250);
+    canardYaw2.write(90-servo2trim);
+    break;
+    
+  case 3:
+    canardPitch3.write(80);delay(250);
+    canardPitch3.write(100);delay(250);
+    canardPitch3.write(90-servo3trim);
+    break;
+    
+  case 4:
+    canardPitch4.write(80);delay(250);
+    canardPitch4.write(100);delay(250);
+    canardPitch4.write(90-servo4trim);
+    break;
+    
+  case 5:
+    actionServo5.write(80);delay(250);
+    actionServo5.write(100);delay(250);
+    actionServo5.write(90-servo5trim);
+    break;
+    
+  case 6:
+    actionServo6.write(80);delay(250);
+    actionServo6.write(100);delay(250);
+    actionServo6.write(90-servo6trim);
+    break;
+    
+  case 7:
+    actionServo7.write(80);delay(250);
+    actionServo7.write(100);delay(250);
+    actionServo7.write(90-servo7trim);
+    break;
+    
+  case 8:
+    actionServo8.write(80);delay(250);
+    actionServo8.write(100);delay(250);
+    actionServo8.write(90-servo8trim);
+    break;}
+  
+  }//end void wiggle servo
