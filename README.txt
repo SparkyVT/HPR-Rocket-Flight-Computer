@@ -8,7 +8,7 @@ TRA #12111, L3
 
 --------DESCRIPTION----------
 This flight computer is designed for rockets 38mm in diameter or greater, and will fit inside a 38mm tube coupler.
-Dimensions are 3.8in x 1.25in x 0.5in, not including antenna
+Dimensions are 4.0in x 1.25in x 0.5in, not including antenna
 It has similar capability as a TeleMega, but without a smart-phone app or advanced interfaces  
 It has flown on multiple M-powered supersonic flights to over 24K feet and Mach 2.0.  
 For large or high-power projects, an independent backup computer such as the PerfectFlite StratoLogger is strongly recommended.  
@@ -22,12 +22,12 @@ High data logging rate: 52,000 data points per second, 3-5 million data points p
 1400Hz of pyro status (continuity detection, closed/open circuit, firing status, and pin debugging)
 100Hz of pitch, yaw, roll rotation calculations using quaternion differentials
 40Hz of magnetic field data logging
-30Hz of digital barometric data logging (Altitude, pressure, temperature)
+30Hz - 100Hz of digital barometric data logging (Altitude, pressure, temperature)
 30Hz of main battery voltage (1400Hz during firing events)
-20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS)
+20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS position/alt)
 10Hz - 25Hz of GNSS location data on GPS, GLONASS, Galileo and Baidou systems (UBLOX chip dependent)
 All data written to an easy to read CSV text file
-4 programmable high-current pyro outputs with continuity detection and open circuit reporting.
+4 programmable high-current pyro outputs with continuity detection and open circuit reporting
 4 programmable "plug 'n play" servo connections, can be actuated at flight events (active stabilization in development)
 4 additional programmable un-powered servo outputs (requires JST connector)
 User Selectable Flight Mode: Single-Stage, Two-Stage Sustainer, Two-Stage Booser, Airstart
@@ -37,32 +37,29 @@ Sensor Fusion based apogee event
 Barometric based main deploy event
 False-liftoff detection prevents accidental pyro discharge due to chuffing or accidental bump at the pad
 Optional Apogee delay
-Optional Audible Continuity report at startup
-Optional Audible Battery Voltage report at startup
+Optional Audible Continuity & Battery Voltage report at startup
 Optional Magnetic Switch activation/shutdown of startup sequence to increase safety of 2-stage and complex flight modes
-Optional SMA antenna connector
-Optional inflight recovery will resume flight functions if the computer is reset due to momentary power loss
+Optional inflight recovery will resume flight functions if the computer is reset due to momentary power loss (user configurable)
 Audible Post-flight max altitude & speed report
-Telemetry over amateur 70cm band (433MHz) or 915MHz ISM band or license-free 915MHz FHSS 
+Telemetry over amateur 70cm band (433MHz) or 915MHz ISM band or license-free 915MHz FHSS (SMA antenna connector)
 Can be mounted in any orientation, self-detects orientation (requires 1-time calibration)
 Separate file for each flight up to 100 flights
 Bench-test mode activated w/ tactile button to simulate flight tests on the ground and test pyro outputs
 USB Serial debugging & status reporting in bench-test & calibration modes
 Built-in self-calibration & orientation detection mode
 User defined flight profile read from SD card
-Compatible with multiple sensors from different manufacturers (read list below)
+Code compatible with multiple sensors from different manufacturers (read list below)
 Configurable GPIO pin and I2C bus options
 Report in SI or Metric units
 Preflight audible reporting options: Perfectflight or Marsa
 One-time hardware configuration via SD card, settings stored in EEPROM
-Inflight power-loss recovery (user configurable)
 
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 3.5 or 3.6 (compatible with provided PCB file) or Teensy 4.1/4.0/3.2 (no PCB file provided)
          9 DoF IMU: LSM9DS1, or LSM303 & L3GD20H combo
 100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
    Pressure Sensor: MS5611, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
-              GNSS: UBLOX M6, M7, M8, M9 (NEO-M8N/Q footprint supported in PCB file)
+              GNSS: UBLOX M6, M7, M8, M9 (NEO footprint supported in PCB file)
     LoRa Telemetry: RFM96W 433MHz (USA: Amateur License Required, EUR: License Free) or RFM95W 915MHz (USA: FHSS License Free or Amateur License without FHSS)
    Tactile Buttons: 0.2 in spacing
                PCB: Create your own or use the provided design file for PCBexpress
@@ -81,7 +78,7 @@ Adafruit Feather LoRa: ATMega 32u4 w/ RFM96W 433MHz (USA: Ham License Required, 
      10K Ohm Resistor: 1/8 Watt
 
 --------ADDITIONAL LIBRARIES REQUIRED----------
-SDFat
+SDFat V1.1.4 (V2.1 is not compatible)
 TinyGPS++
 RadioHead
 
@@ -95,7 +92,7 @@ Note: All of the above components were purchased through Digikey.  Other
 sources for the same components should work, but are untested and may not
 fit the provided PCB
 
-Note: 1.25in x 3.8in size board.  Will fit in a 38mm coupler tube.
+Note: 1.25in x 4.0in size board.  Will fit in a 38mm coupler tube.
 Components mount on both sides.  See provided pictures for examples.
 
 Note: Estimated Flight Computer Cost = $150
