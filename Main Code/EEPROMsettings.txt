@@ -6,44 +6,46 @@ accelZ = +Z
 ------i2c Bus--------
 i2c = 2
 -------GPIO---------
-pyro1cont = 14
-pyro1fire = 39
+pyro1cont = 39
+pyro1fire = 38
 pyro2cont = 16
-pyro2fire = 15
+pyro2fire = 14
 pyro3cont = 18
 pyro3fire = 17
 pyro4cont = 22
 pyro4fire = 19
 nullPin = 56
 beepPin = 23
-battPin = 33
+battPin = 34
 testGnd = 2
 testRead = 5
-radioCS = 9
-radioIRQ = 28
-radioRST = 34
+radioCS = 15
+radioIRQ = 32
+radioRST = 37
 radioEN = 56
-highG-CS = 10
+highG-CS = 56
 -----Sensors------
 accel/mag = 2
 gyro = 2
 highG = 2
-baro = 5
+baro = 2
 radio = 1
-GPS = 3
+GPS = 2
 ----Control Outputs----
 servo 1 pin = 6
 servo 2 pin = 7
-servo 3 pin = 20
-servo 4 pin = 21
-servo 5 pin = 38
-servo 6 pin = 37
-servo 7 pin = 36
-servo 8 pin = 35
+servo 3 pin = 21
+servo 4 pin = 20
+servo 5 pin = 35
+servo 6 pin = 36
+servo 7 pin = 29
+servo 8 pin = 30
 ----Ham Radio Call Sign----
 callSign = KK4ELF
 -----Magnetometer-----
 calibrateMode = 0
+-----Hardware ID-----
+HWid = 321
 ________________________________
 i2c Bus Legend
 ________________________________
