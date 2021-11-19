@@ -135,7 +135,7 @@ boolean rapidReset(){
   beginGyro();
   beginHighG('F');
   beginBaro();
-  if(settings.radioTXenable){
+  if(settings.TXenable && settings.inflightRecover > 0){
     rf95.init();
     //Set the radio output power & frequency
     rf95.setTxPower(settings.TXpwr, false);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
@@ -153,7 +153,7 @@ boolean rapidReset(){
   pyro4.func = settings.pyro4Func; pyro4.contPin = pins.pyro4Cont; pyro4.firePin = pins.pyro4Fire; pyro4.fireStatus = false; pyro4.fireStart = 0UL;
 
   //setup the radio
-  if(!settings.radioTXenable){
+  if(!settings.TXenable){
     if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, LOW);}
     if(settings.testMode){Serial.println(F("Telemetry OFF!"));}}
   else{

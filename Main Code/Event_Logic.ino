@@ -15,6 +15,7 @@ void checkEvents(){
     events.postFlight = true;
     events.inFlight = false;
     radio.event = 26;
+    if(settings.fltProfile == 'B'){radio.event = 31;}
     if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
     radioInterval = RIpostFlight;
     RIsyncOffset = 600000UL;
@@ -39,6 +40,7 @@ void checkEvents(){
       fltTime.timeCurrent = 0UL;
       fltTime.gyro = 0UL;
       radio.event = 0;
+      if(settings.fltProfile == 'B'){radio.event = 30;}
       pktPosn = 0;
       radio.packetnum = 0;
       baroApogee = 0;
@@ -315,9 +317,11 @@ void checkEvents(){
     radioInterval = RIpostFlight;
     RIsyncOffset = 600000UL;
     radio.event = 27;
+    if(settings.fltProfile == 'B'){radio.event = 29;}
     if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
     touchdownHour = GPS.time.hour();
     touchdownMin = GPS.time.minute();
     touchdownSec = GPS.time.second();
     touchdownMili = GPS.time.centisecond();}
+
  }//end check events

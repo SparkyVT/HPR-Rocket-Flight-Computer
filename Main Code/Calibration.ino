@@ -432,6 +432,8 @@ void setOrientation(){
 
 void baroCalibrate(){
 
+  char serialInput;
+  
   //exit the beeping
   digitalWrite(pins.beep, LOW);
   beep_counter = 8;
@@ -440,7 +442,7 @@ void baroCalibrate(){
   Serial.println(F("Barometer Calibration mode initiated"));
   
   //clear the user input
-  while(Serial.available() > 0){char input = Serial.read();}
+  while(Serial.available() > 0){serialInput = Serial.read();}
 
   //Display the user temperature instructions
   Serial.println(F("Enter the current ambient room temperature in degrees and tenths of a degree C, or enter e to exit: "));
@@ -449,9 +451,9 @@ void baroCalibrate(){
   while(Serial.available() == 0){delay(100);}
   strPosn = 0;
   while(Serial.available() > 0){
-    char input = Serial.read();
-    dataString[strPosn] = input; strPosn++;
-    if(input == 'e'){Serial.println(F("Exiting calibration")); return;}}
+    serialInput = Serial.read();
+    dataString[strPosn] = serialInput; strPosn++;
+    if(serialInput == 'e'){Serial.println(F("Exiting calibration")); return;}}
   dataString[strPosn] = '\0';
 
   //parse the data

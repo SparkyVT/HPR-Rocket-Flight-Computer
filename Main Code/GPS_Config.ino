@@ -44,8 +44,8 @@ void configGPS() {
   //10Hz Max data rate for NEO-M8Q, MAX-M8Q/W, SAM-M8Q
   if(sensors.GPS == 2){setDataRate[6] = 0x64; setDataRate[12] = 0x7A; setDataRate[13] = 0x12;}
   
-  //19Hz Max data rate for NEO-M9N
-  if(sensors.GPS == 3){setDataRate[6] = 0x33; setDataRate[12] = 0x49; setDataRate[13] = 0xEC;}
+  //25Hz Max data rate for NEO-M9N
+  if(sensors.GPS == 3){setDataRate[6] = 0x28; setDataRate[12] = 0x3E; setDataRate[13] = 0xAA;}
 
   //Faster Baud Rate for the higher update rates
   byte setBaudRate[] = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x23, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xAF, 0x70};
@@ -63,9 +63,14 @@ void configGPS() {
   byte setJam[] = {0xB5, 0x62, 0x06, 0x39, 0x08, 0x00, 0xF3, 0xAC, 0x62, 0xAD, 0x1E, 0x43, 0x00, 0x00, 0x56, 0x45};
   // byte setJam[] = {0xB5, 0x62, 0x06, 0x39, 0x00, 0x00, 0xF3, 0xAC, 0x62, 0xAD, 0x1E, 0xD3, 0x00, 0x00, 0xE6, 0xF5};
 
-  //from https://portal.u-blox.com/s/question/0D52p00008HKEEYCA5/ublox-gps-galileo-enabling-for-ubx-m8 to just enable Galileo
+  //set the constellations used
+  //Just add Galileo, from https://portal.u-blox.com/s/question/0D52p00008HKEEYCA5/ublox-gps-galileo-enabling-for-ubx-m8
   byte setSat[] = {0xB5, 0x62, 0x06, 0x3E, 0x0C, 0x00, 0x00, 0x00, 0x20, 0x01, 0x02, 0x04, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x82, 0x56};
-
+  if(sensors.GPS == 3){
+    //M9N can use all 4 GNSS constellations so add Galileo and Baidou
+    //setSat[] = {0xB5, 0x62, 0x06, 0x3E, 0x0C, 0x00, 0x00, 0x00, 0x20, 0x01, 0x02, 0x04, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x82, 0x56};
+    }
+  
   //Turn Off NMEA GSA Messages
   while(gpsSetSuccess < 3) {
     if(settings.testMode){Serial.print("Deactivating NMEA GSA Messages... ");}
@@ -98,13 +103,14 @@ void configGPS() {
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Data update mode configuration failed!");}
   gpsSetSuccess = 0;
 
-  //Turn on NMEA4.1 Messages
-  while(gpsSetSuccess < 3) {
-    if(settings.testMode){Serial.print("Turning on NMEA 4.1 Messages... ");}
-    sendUBX(set4_1, sizeof(set4_1));
-    gpsSetSuccess += getUBX_ACK(&set4_1[2]);}
-  if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA 4.1 Message Activation Failed!");}
-  gpsSetSuccess = 0;
+  //Turn on NMEA4.1 Messages for less than M9 versions
+  if(sensors.GPS != 3){
+    while(gpsSetSuccess < 3) {
+      if(settings.testMode){Serial.print("Turning on NMEA 4.1 Messages... ");}
+      sendUBX(set4_1, sizeof(set4_1));
+      gpsSetSuccess += getUBX_ACK(&set4_1[2]);}
+    if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA 4.1 Message Activation Failed!");}
+    gpsSetSuccess = 0;}
 
   //Set Satellite Constellations
   while(gpsSetSuccess < 3) {
@@ -139,7 +145,7 @@ void configGPS() {
   gpsSetSuccess = 0;
   
   //Increase Baud-Rate for faster GPS updates
-  if(sensors.GPS == 2 || sensors.GPS == 3){
+  if(sensors.GPS == 2){
     while(gpsSetSuccess < 3) {
       if(settings.testMode){Serial.print("Setting Ublox Baud Rate 38400... ");}
       sendUBX(setBaudRate, sizeof(setBaudRate));

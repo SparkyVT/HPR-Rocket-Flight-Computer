@@ -67,9 +67,10 @@
 //pressureToAltitude(): converts pressure to altitude
 
 //beginMS5611(): starts sensor
-//getMS5611(): gets sensor data
+//readPromMS5611(): gets the calibration settings in PROM
+//getMS5611(): gets sensor data and manages the readings between temp and press
+//readMS5611(): manages the I2C bus speed before calling I2C helper functions
 //CmdMS56111(): helper function to send commands
-//ReadMS5611(): helper function to read data
 //ConvertTempMS5611(): converts temperature
 //ConvertPressMS5611(): converts pressure
 //----------------------------
@@ -86,6 +87,7 @@
 //29 Oct 20: Added code for MS5611 sensor
 //04 AUG 21: Added variable gain for LSM9DS1 accelerometer
 //10 Aug 21: Removed variable gain after testing showed no expected improvement
+//12 NOV 21: Corrected MS5611 bugs and added SPI support for H3LIS331DL
 //--------Supported Sensors---------
 //Accelerometers/Magnetometers:LSM303, LSM9DS1
 //High-G Accelerometers: H3LIS331DL, ADS115 & ADXL377 Combo, ADXL377 & Teensy3.5 ADC combo
@@ -891,11 +893,11 @@ bool beginH3LIS331DL(char DR) {
   //if its not on i2c, check SPI
   if(!i2cBus){
     pinMode(pins.highG_CS, OUTPUT);   
-    spiRead(0xC0 | 0x0F, pins.highG_CS, 1);
+    spiRead(0x8F, pins.highG_CS, 1);
     byte id = rawData[0];
     if(id == 0x32){highG.SPIbus = true;}
     if(settings.testMode){
-      if(id != 0x32){Serial.println("H3LIS331 not found on SPI!");}
+      if(id != 0x32){Serial.print("H3LIS331 not found on SPI! ID: ");Serial.print(id, HEX);}
       else{Serial.println("H3LIS331 OK on SPI");}}}
 
   high1G = 21;
@@ -1176,6 +1178,8 @@ void getMPL3115A2() {
 
   //initiate next reading
   write8(0x26, MPL3115A2_ADDRESS, 0b00011010);
+
+  newBaro = newTemp = true;
 }
 
 float pressureToAltitude(float seaLevel, float atmospheric) {
@@ -1542,6 +1546,8 @@ void getBMP280() {
   pressure *= 0.01;
 
   Alt = 44330 * (1.0 - pow(pressure / (seaLevelPressure), 0.1903));
+
+  newBaro = newTemp = true;
 }
 
 //***************************************************************************
@@ -1805,6 +1811,7 @@ void getBMP388() {
   pressure *= 0.01;
 
   Alt = 44330 * (1.0 - pow(pressure / (seaLevelPressure), 0.1903));
+  newBaro = newTemp = true;
 }
 
 //***************************************************************************
@@ -1818,26 +1825,33 @@ int32_t MS5611_TEMP;
 
 bool beginMS5611(){
 
-  #define MS5611RdPROM 0xA2
-
   if (!testSensor(MS5611_ADDRESS)) {
-    if (settings.testMode) {
-      Serial.println(F("BMP280 not found!"));
-    } return false;}
+    if (settings.testMode) {Serial.println(F("MS5611 not found!"));} 
+    return false;}
+  else{if(settings.testMode){Serial.println(F("MS5611 OK!"));}}
+
+  //reset
+  CmdMS5611(0x1E);
+  delay(100);
 
   //read PROM
-  for(byte ii = 0; ii < 6; ii++){
-    CmdMS5611(MS5611RdPROM + 2*ii);
-    ReadMS5611(2);
-    MS5611_PROM[ii] = (rawData[0] << 8) | rawData[1];}
+  readPromMS5611();
 
   //get initial temperature
   CmdMS5611(0x58);
   delayMicroseconds(9040);
-  ReadMS5611(3);
-  ConvertTempMS5611();
+  ReadMS5611();
+  temperature = ConvertTempMS5611();
+  if(settings.testMode){Serial.print("Intial Temp Complete: ");Serial.println(temperature, 1);}
 
   //get initial pressure
+  CmdMS5611(0x48);
+  delayMicroseconds(9040);
+  ReadMS5611();
+  pressure = ConvertPressMS5611();
+  if(settings.testMode){Serial.print("Intial Press Complete: ");Serial.println(pressure, 2);}
+
+  //get another pressure
   CmdMS5611(0x48);
   
   return true;}
@@ -1848,30 +1862,57 @@ void getMS5611(){
   static float prevAlt = 0;
 
   //Get pressure
-  if(counter < 11){
+  if(counter < 10){
     
     //D2 at 4096
-    //Read pressure and issue next command
-    ReadMS5611(3);
-    ConvertPressMS5611();
+    //Read pressure
+    ReadMS5611();
+    pressure = ConvertPressMS5611();
+
+    //update the counter
     counter++;
 
     //if we have done 10 pressure readings, then initiate a temperature reading
-    if(counter > 10){CmdMS5611(0x58);}
+    if(counter >= 10){CmdMS5611(0x58);}
     //else issue the next pressure command
     else{CmdMS5611(0x48);}}
 
   //Read temp and issue command for pressure
-  else if(counter == 11){
-    ReadMS5611(3);
+  else if(counter >= 10){
+    ReadMS5611();
     temperature = ConvertTempMS5611();
     CmdMS5611(0x48);
     counter = 0;}
+
+  //set the sampling control rate to 110Hz
+  timeBtwnBaro = 9090UL;
 }
 
+void readPromMS5611(){
+
+  #define prom1MS5611 0xA2
+  #define prom2MS5611 0xA4
+  #define prom3MS5611 0xA6
+  #define prom4MS5611 0xA8
+  #define prom5MS5611 0xAA
+  #define prom6MS5611 0xAC
+  
+  readSensor(MS5611_ADDRESS, prom1MS5611, 2);
+  MS5611_PROM[0] = (rawData[0] << 8 | rawData[1]);
+  readSensor(MS5611_ADDRESS, prom2MS5611, 2);
+  MS5611_PROM[1] = (rawData[0] << 8 | rawData[1]);
+  readSensor(MS5611_ADDRESS, prom3MS5611, 2);
+  MS5611_PROM[2] = (rawData[0] << 8 | rawData[1]);
+  readSensor(MS5611_ADDRESS, prom4MS5611, 2);
+  MS5611_PROM[3] = (rawData[0] << 8 | rawData[1]);
+  readSensor(MS5611_ADDRESS, prom5MS5611, 2);
+  MS5611_PROM[4] = (rawData[0] << 8 | rawData[1]);
+  readSensor(MS5611_ADDRESS, prom6MS5611, 2);
+  MS5611_PROM[5] = (rawData[0] << 8 | rawData[1]);}
+  
 void CmdMS5611(byte cmd){
 
-switch (pins.i2c) {
+  switch (pins.i2c) {
   
     case 0:
       Wire.setRate(F_BUS, 1000000);
@@ -1898,31 +1939,25 @@ switch (pins.i2c) {
       break;}
 }
 
-void ReadMS5611(byte bytes){
+void ReadMS5611(){
   
-switch (pins.i2c) {
+  switch (pins.i2c) {
 
     case 0:
       Wire.setRate(F_BUS, 1000000);
-      Wire.requestFrom(MS5611_ADDRESS, bytes);
-      while (Wire.available() < bytes) {};
-      for (byte i = 0; i < bytes; i++) {rawData[i] = Wire.read();}
+      readSensor(MS5611_ADDRESS, 0x00, 3);
       Wire.setRate(F_BUS, 400000);
       break;
 
    case 1:
       Wire1.setRate(F_BUS, 1000000);
-      Wire1.requestFrom(MS5611_ADDRESS, bytes);
-      while (Wire1.available() < bytes) {};
-      for (byte i = 0; i < bytes; i++) {rawData[i] = Wire1.read();}
+      readSensor(MS5611_ADDRESS, 0x00, 3);
       Wire1.setRate(F_BUS, 400000);
       break;
 
    case 2:
       Wire2.setRate(F_BUS, 1000000);
-      Wire2.requestFrom(MS5611_ADDRESS, bytes);
-      while (Wire2.available() < bytes) {};
-      for (byte i = 0; i < bytes; i++) {rawData[i] = Wire2.read();}
+      readSensor(MS5611_ADDRESS, 0x00, 3);
       Wire2.setRate(F_BUS, 400000);
       break;}
 
@@ -1933,18 +1968,20 @@ float ConvertTempMS5611(){
   uint16_t C6 = MS5611_PROM[5];
   uint16_t C5 = MS5611_PROM[4];
 
-  uint32_t D2 = (rawData[0]<<16) + (rawData[1]<<8) + rawData[2];
+  uint32_t D2 = (rawData[0]<<16) | (rawData[1]<<8) | rawData[2];
 
   MS5611_dT = D2 - (C5*256);
 
   MS5611_TEMP = 2000 + ((MS5611_dT*C6)/8388608);
   
   int32_t T2 = 0L;
-  if(MS5611_TEMP < 2000){T2 = (MS5611_dT  * MS5611_dT)/2147483648;}
+  if(MS5611_TEMP < 2000){T2 = (MS5611_dT * MS5611_dT)/2147483648;}
 
   MS5611_TEMP -= T2;
    
   float finalTemp = ((float)MS5611_TEMP)*0.01;
+
+  newTemp = true;
 
   return finalTemp;}
 
@@ -1955,29 +1992,31 @@ float ConvertPressMS5611(){
   uint16_t C3 = MS5611_PROM[2];
   uint16_t C4 = MS5611_PROM[3];
 
-  int64_t OFF1 = (C2*2^16) + ((C4*MS5611_dT)/128);
-  int64_t SENS = (C1*2^15) + ((C3*MS5611_dT)/256);
-  
+  int64_t OFF1 = ((int64_t)C2<<16) + (((int64_t)C4 * (int64_t)MS5611_dT)>>7);
+  int64_t SENS = ((int64_t)C1<<15) + (((int64_t)C3 * (int64_t)MS5611_dT)>>8);
+    
   int64_t OFF2 = 0;
   int64_t SENS2 = 0;
   if(temperature < 20.0F){
-    OFF2 = 5 * (MS5611_TEMP - 2000) * (MS5611_TEMP - 2000) / 2;
-    SENS2 = 5 * (MS5611_TEMP - 2000) * (MS5611_TEMP - 2000) / 4;}
+    OFF2  = 5 * ((int64_t)(MS5611_TEMP - 2000) * (int64_t)(MS5611_TEMP - 2000)) / 2;
+    SENS2 = 5 * ((int64_t)(MS5611_TEMP - 2000) * (int64_t)(MS5611_TEMP - 2000)) / 4;}
 
   if(temperature < -15.0F){
-    OFF2 += 7*(MS5611_TEMP +1500)*(MS5611_TEMP +1500);
-    SENS2 += 11*(MS5611_TEMP +1500)*(MS5611_TEMP +1500)/2;}
+    OFF2 += 7*(int64_t)(MS5611_TEMP +1500)*(int64_t)(MS5611_TEMP +1500);
+    SENS2 += 11*(int64_t)(MS5611_TEMP +1500)*(int64_t)(MS5611_TEMP +1500)/2;}
 
   OFF1 -= OFF2;
   SENS -= SENS2;
 
-  uint32_t D1 = (rawData[0] << 16) | (rawData[1] << 8) | rawData[2];
+  uint32_t D1 = (uint32_t)(rawData[0] << 16 | (rawData[1] << 8) | rawData[2]);
     
-  int32_t p = (D1*SENS/2097152 - OFF1)/32768;
+  int32_t p = (((D1*SENS)>>21) - OFF1)>>15;
 
-  pressure = (float)p *0.01;
+  pressure = ((float)p) * 0.01;
 
   Alt = 44330 * (1.0 - pow(pressure / (seaLevelPressure), 0.1903));
+
+  newBaro = true;
 
   return pressure;}
   

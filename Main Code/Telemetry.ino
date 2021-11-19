@@ -193,14 +193,14 @@ void radioSendPacket(){
     for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i]; pktPosn++;}
     dataPacket[pktPosn]=lowByte(radio.satNum); pktPosn++;
     dataPacket[pktPosn]=highByte(radio.satNum); pktPosn++;
-    if(sensors.radio == 2){
+    if(sensors.radio == 2 && settings.FHSS){
       dataPacket[pktPosn]=nextChnl; pktPosn++;
       dataPacket[pktPosn]=nextChnl2; pktPosn++;}
     TX = rf95.send((uint8_t *)dataPacket, pktPosn);
     TXdataStart = micros();
     pktPosn = 0;
     if(radioDebug && settings.testMode){
-      if(TX){Serial.println(F("PreFlight Packet Sent"));}
+      if(TX){Serial.println(F("PreFlight Packet Sent"));Serial.print("Alt: ");Serial.println(Alt);}
       else if(!TX){Serial.println(F("PreFlight Packet Failed!"));}}
     if(settings.FHSS && sensors.radio == 2){
       hopNum = nextHop;
@@ -220,7 +220,7 @@ void radioSendPacket(){
     
     //hop frequency if needed
     if(sensors.radio == 2 && settings.FHSS && hopFreq && sampNum >= packetSamples){hopTXfreq();}
-    
+
     //event
     dataPacket[pktPosn] = radio.event; pktPosn++;//1
     //time
@@ -231,7 +231,7 @@ void radioSendPacket(){
     dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//4
     dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//5
     //altitude
-    radio.alt = (int16_t)Alt;
+    radio.alt = (int16_t)(Alt);
     dataPacket[pktPosn] = lowByte(radio.alt);pktPosn++;//6
     dataPacket[pktPosn] = highByte(radio.alt);pktPosn++;//7
     //Roll data

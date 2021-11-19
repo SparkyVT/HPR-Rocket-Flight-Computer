@@ -1,7 +1,7 @@
 //HPR Rocket Flight Computer
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //This is built for the Teensy3.5 or 3.6
-//Code Line Count: 2360 main + 651 Calibration + 319 Event_Logic + 285 GPSconfig + 571 Inflight_Recover + 372 Rotation + 287 SD + 2072 SensorDrivers + 625 SpeedTrig + 372 Telemetry = 7914 lines of code
+//Code Line Count: 2379 main + 653 Calibration + 327 Event_Logic + 291 GPSconfig + 571 Inflight_Recover + 372 Rotation + 316 SD + 2138 SensorDrivers + 625 SpeedTrig + 372 Telemetry = 8044 lines of code
 //-----------Change Log------------
 //V4_0_0 combines all previous versions coded for specific hardware setups; now compatible across multiple hardware configurations and can be mounted in any orientation
 //V4_1_0 adds upgrades for airstart capability, more flight event codes, improved settings file, PWM Pyro firing, quaternion rotation, improved continuity reporting, and timer interrupts for the radios
@@ -19,8 +19,9 @@
 //V4_3_3 creates an user interface over serial to calibrate the barometer, extends gyro orientation integration through the entire flight
 //V4_3_3_1 is a bridge to fix instability in the initial V4_3_4 code
 //V4_3_4 enables active stabilization, creates basic fin trim code, and enables auto-adjusting gain on the IMU accelerometer
-//V4_3_5 removes auto-adjusting gain (no benefit in testing), improved calibration routines, extends baro calibration to all sensors, removed high-G axis mode from user settings, adds H3LIS331DL SPI bus support
+//V4_3_5 removes auto-adjusting gain (no benefit in testing), improved calibration routines, extends baro calibration to all sensors, removed high-G axis mode from user settings, adds H3LIS331DL SPI bus support, added Ublox M9N support, fixed MS5611 bugs, added all settings to SD footer
 //--------FEATURES----------
+//Approx 50,000 samples per second recorded to SD card
 //1400Hz 3-axis digital 24G and 100G accelerometer data logging
 //1400Hz 3-axis digital 2000dps gyroscope data logging
 //1400Hz of flight events & continuity data logging
@@ -28,7 +29,7 @@
 //100Hz of pitch, yaw, roll rotation
 //40Hz of of magnetic data logging and magnetic roll
 //30Hz-100Hz of digital barometric data logging (Altitude, pressure, temperature)
-//30Hz of main battery voltage (1400Hz during events)
+//30Hz of main battery voltage (1400Hz during pyro events)
 //20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS altitude, GNSS position, packet number)
 //5Hz-25Hz of GNSS data logging (chip-dependent data rates & constellations)
 //4 programmable high-current pyro outputs with continuity checks
@@ -57,11 +58,11 @@
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
+//3D position physics model
 //Remote Arm & Shutdown Commands over LoRa
 //Ground Station Bluetooth Datalink to smartphone
 //Smartphone App
 //------TO DO LIST------
-//Test MS5611 code
 //Bench test inflight recovery routines
 //Consolidate BMP180 into a general getBaro routine
 //Verify testing of new airstart code
@@ -76,13 +77,13 @@
 #include <RH_RF95.h>
 #include <TinyGPS++.h>
 #include <PWMServo.h>
-
+  
 //Teensy 3.5 Hardware Serial for GPS
 HardwareSerial HWSERIAL(Serial1);
 
 // GPS Setup
 TinyGPSPlus GPS;
-
+  
 //Servo Setup
 PWMServo canardYaw1;
 PWMServo canardYaw2;
@@ -93,19 +94,16 @@ PWMServo actionServo6;
 PWMServo actionServo7;
 PWMServo actionServo8;
 
-//SDIO Setup: requires SDFat v2.1 or greater, is actually slower than V1.1.4
+//SDIO Setup: still having crashing issues with version 2.1, suspect interrupt conflicts with Radiohead RFM95 library.
 //SdFs SD;
 //FsFile outputFile;
 //FsFile settingsFile;
 //#define USE_UTF8_LONG_NAMES 1
 
-//SDIO Setup, requires SDFat v1.1.4, V2.0.0 is incompatible with RadioHead library
+//SDIO Setup, requires SDFat v1.1.4, V2.X is incompatible with RadioHead library
 SdFatSdioEX SD;
 File outputFile;
 File settingsFile;
-
-//ADC Setup
-//ADC *adc = new ADC(); // adc object;
 
 //GLOBAL VARIABLES
 //-----------------------------------------
@@ -202,7 +200,7 @@ typedef struct{
     int pyro3Func = 137;
     int pyro2Func = 138;
     int pyro1Func = 139;
-    int radioTXenable = 140;
+    int TXenable = 140;
     int TXpwr = 141;
     int TXfreq = 142;//4
     int FHSS = 146;
@@ -236,7 +234,9 @@ typedef struct{
     int Ki = 190;//4
     int Kd = 194;//4
     int highG_CS = 198;//1
-    int serialNum = 199;//4
+    int HWversion = 199;//1
+    int HWsubVersion = 200;//1
+    int unitNum = 201;//1
 } EEPROM_map;
 EEPROM_map eeprom;
 //-----------------------------------------
@@ -319,6 +319,7 @@ typedef struct {
   boolean calibrationMode = false;
   //--------flight settings----------------
   char rocketName[20] = ""; //Maximum of 20 characters
+  char HWid[7] = "";
   char fltProfile = 'S';
   char units = 'S';
   char reportStyle = 'P';
@@ -341,7 +342,7 @@ typedef struct {
   char pyro1Func = 'N';
   //--------telemetry settings----------------
   char callSign[7]= ""; 
-  boolean radioTXenable = true;//false turns off radio transmissions
+  boolean TXenable = true;//false turns off radio transmissions
   byte TXpwr = 13;
   float TXfreq = 433.250;
   boolean FHSS = false;
@@ -605,6 +606,7 @@ unsigned long lastBMP = 0UL;
 unsigned long lastBaro = 0UL;
 unsigned long timeBtwnBaro = 50000UL;
 boolean newBaro = false;
+boolean newTemp = false;
 float seaLevelPressure = 1013.25;
 float pressureAvg = 0;
 float pressureAvg5[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
@@ -824,11 +826,10 @@ float Kd = 0.0F;
 //-----------------------------------------
 //debug
 //-----------------------------------------
-long debugStart;
-long debugTime;
 boolean GPSecho = false;
 boolean radioDebug = false;
 boolean disp = false;
+boolean TXdataFile = true;
 
 //any routines called in the main flight loop need to be as fast as possible, so set them as "always inline" for the compiler
 inline void checkEvents(void) __attribute__((always_inline));
@@ -841,6 +842,7 @@ inline void writeIntData(void) __attribute__((always_inline));
 inline void writeBoolData(void) __attribute__((always_inline));
 inline void writeLongData(void) __attribute__((always_inline));
 inline void writeULongData(void) __attribute__((always_inline));
+inline void updateStrPosn(void) __attribute__((always_inline));
 
 void setup(void) {
   
@@ -862,9 +864,6 @@ void setup(void) {
     if(rapidReset()){
       //exit setup and immediately re-enter the loop
       return;}}
-
-  //Start Harware Serial communication
-  HWSERIAL.begin(9600);
   
   //Start SDIO Comms with the SD card
   if(!SD.begin()){Serial.println(F("SD card failed!"));}//SDFat v1.4
@@ -933,10 +932,17 @@ void setup(void) {
     //read whether or not to put the unit into magnetometer calibration mode
     //-----------------------------------------------------------------
     magCalibrateMode = (byte)parseNextVariable(true);//Sets Magnetometer Calibration Mode, not stored in EEPROM
+    //-----------------------------------------------------------------
+    //read hardware ID into EEPROM
+    //-----------------------------------------------------------------
+    parseNextVariable(false);
+    EEPROM.update(eeprom.HWversion, (char)dataString[0]);
+    EEPROM.update(eeprom.HWsubVersion, (char)dataString[1]);
+    EEPROM.update(eeprom.unitNum, (char)dataString[2]);
     settingsFile.close();
     SD.remove("EEPROMsettings.txt");
     Serial.println(F("Complete!"));}
-
+    
   //Read pin settings from EEPROM
   Serial.print(F("Reading EEPROM..."));
   pins.i2c = EEPROM.read(eeprom.i2cBus);
@@ -973,6 +979,14 @@ void setup(void) {
   pins.servo6 = EEPROM.read(eeprom.servo6pin);
   pins.servo7 = EEPROM.read(eeprom.servo7pin);
   pins.servo8 = EEPROM.read(eeprom.servo8pin);
+  for(byte i = 0; i < sizeof(settings.callSign); i++){settings.callSign[i] = EEPROM.read(eeprom.callSign+i);}
+  settings.callSign[sizeof(settings.callSign)-1] = '\0';
+  settings.HWid[0] = (char)EEPROM.read(eeprom.HWversion);
+  settings.HWid[1] = '.';
+  settings.HWid[2] = (char)EEPROM.read(eeprom.HWsubVersion);
+  settings.HWid[3] = '.';
+  settings.HWid[4] = (char)EEPROM.read(eeprom.unitNum);
+  settings.HWid[5] = '\0';
   Serial.println(F("complete!"));
   
   //Set the mode of the output pins
@@ -988,13 +1002,19 @@ void setup(void) {
   pinMode(pins.pyro4Fire, OUTPUT);   
   pinMode(pins.beep, OUTPUT);            
   pinMode(pins.testRead, INPUT_PULLUP);   
-  pinMode(pins.testGnd, OUTPUT);        
+  pinMode(pins.testGnd, OUTPUT); 
+  pinMode(pins.radioCS, OUTPUT);       
   //Set the pyro firing pins to LOW for safety
   digitalWrite(pins.pyro1Fire, LOW);
   digitalWrite(pins.pyro2Fire, LOW);
   digitalWrite(pins.pyro3Fire, LOW);
   digitalWrite(pins.pyro4Fire, LOW);
+  digitalWrite(pins.radioCS, HIGH);
   Serial.println("Set Pins Low");
+
+  //Start Harware Serial communication
+  if(sensors.GPS == 3){HWSERIAL.begin(38400);Serial.println("Starting HWSerial at 38400 baud");}
+  else{HWSERIAL.begin(9600);Serial.println("Starting HWSerial at 9600 baud");}
   
   //check if the test mode button is being held
   digitalWrite(pins.testGnd, LOW);
@@ -1044,8 +1064,8 @@ void setup(void) {
   beginBaro();
 
   //Start the radio
-  //RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
-  RH_RF95 rf95(pins.radioCS);
+  //Radio Setup
+  RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
   pinMode(pins.radioRST, OUTPUT);
   digitalWrite(pins.radioRST, HIGH);
   delay(100);
@@ -1091,7 +1111,7 @@ void setup(void) {
   parseNextVariable(false); settings.pyro3Func = dataString[0];
   parseNextVariable(false); settings.pyro2Func = dataString[0];
   parseNextVariable(false); settings.pyro1Func = dataString[0];
-  settings.radioTXenable = (boolean)parseNextVariable(true);
+  settings.TXenable = (boolean)parseNextVariable(true);
   settings.TXpwr = (byte)(parseNextVariable(true));
   settings.TXfreq = (float)(parseNextVariable(true));
   settings.FHSS = (boolean)parseNextVariable(true);
@@ -1143,7 +1163,7 @@ void setup(void) {
   EEPROM.update(eeprom.pyro2Func, settings.pyro2Func);
   EEPROM.update(eeprom.pyro3Func, settings.pyro3Func);
   EEPROM.update(eeprom.pyro4Func, settings.pyro4Func);
-  EEPROM.update(eeprom.radioTXenable, settings.radioTXenable);
+  EEPROM.update(eeprom.TXenable, settings.TXenable);
   EEPROM.update(eeprom.TXpwr, settings.TXpwr);
   floatUnion.val = settings.TXfreq;
   for(byte i=0; i<4; i++){EEPROM.update(eeprom.TXfreq + i, floatUnion.Byte[i]);}
@@ -1204,10 +1224,10 @@ void setup(void) {
   if(settings.testMode && settings.silentMode){pins.beep = pins.nullCont; Serial.println(F("Silent Mode Confirmed"));}
   
   //if telemetry is disabled and silent mode is on, then use the LED to signal the beeps
-  if(settings.testMode && settings.silentMode && !settings.radioTXenable){pins.beep = 13; pinMode(pins.beep, OUTPUT);}
+  if(settings.testMode && settings.silentMode && !settings.TXenable){pins.beep = 13; pinMode(pins.beep, OUTPUT);}
 
   //setup the radio
-  if(!settings.radioTXenable){
+  if(!settings.TXenable){
     if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, LOW);}
     if(settings.testMode){Serial.println(F("Telemetry OFF!"));}}
   else{
@@ -1803,12 +1823,11 @@ void setup(void) {
   //initialize the radio timing
   radioInterval = RIpreLiftoff;
   lastTX = micros();
+  if(settings.fltProfile == 'B'){radio.event = 30;}
   
 }//end setup
 
 void loop(void){
-  //RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
-  RH_RF95 rf95(pins.radioCS);
 
   //Sample the Accelerometer & Gyro w/ timestamps
   getAccel();
@@ -1820,8 +1839,7 @@ void loop(void){
       getBaro();
       lastBaro = micros();
       prevBaroTime = baroTime;
-      baroTime = lastBaro;
-      newBaro=true;}
+      baroTime = lastBaro;}
 
   //Get a BMP180 barometric event if needed
   //See if a new temp is needed
@@ -1836,6 +1854,7 @@ void loop(void){
     if(readTemp && micros() - tempReadStart > tmpRdTime){
       initiatePressure(&temperature);
       pressReadStart = micros();
+      newTemp = true;
       readTemp = false;
       readPress = true;}
 
@@ -1877,7 +1896,7 @@ void loop(void){
     radio.event = 1;
     radio.alt = 0;
     radioInterval = RIinflight;
-    if(settings.radioTXenable){lastTX = micros() - radioInterval;}
+    if(settings.TXenable){lastTX = micros() - radioInterval;}
     liftoffHour = GPS.time.hour();
     liftoffMin = GPS.time.minute();
     liftoffSec = GPS.time.second();
@@ -1992,8 +2011,7 @@ void loop(void){
       if (controlTime - timeLastControl >= controlInterval) {
         disp=true;
         setCanards();
-        timeLastControl = controlTime;
-      }}
+        timeLastControl = controlTime;}}
     
     //if required update the quaternion rotation
     else if(fltTime.timeCurrent - lastRotn > rotnRate){
@@ -2074,7 +2092,7 @@ void loop(void){
 
   //radio handling
   uint32_t timeNow = micros();
-  if(settings.radioTXenable && !syncFreq && timeNow - lastTX >= radioInterval){lastTX += ((timeNow-lastTX) - (timeNow-lastTX)%radioInterval); radioSendPacket();}
+  if(settings.TXenable && !syncFreq && timeNow - lastTX >= radioInterval){lastTX += ((timeNow-lastTX) - (timeNow-lastTX)%radioInterval); radioSendPacket();}
   if(syncFreq && timeNow - TXdataStart > (140000UL + RIsyncOffset)){syncPkt();}//only used for 915MHz FHSS
   
   //pre-flight continuity alarm beep
@@ -2188,14 +2206,14 @@ void loop(void){
   if(settings.testMode && GPSecho && !events.liftoff && msgRX){serialBuffer[serialPosn] = '\0'; Serial.print(serialBuffer); msgRX = false; serialPosn = 0;}
     
   radio.satNum = GPS.satellites.value();
-  if(micros() - timeLastGPS > 2000000UL){gpsFix = false;}
+  if(micros() - timeLastGPS > 2000000UL){gpsFix = 0;}
   if (GPS.location.isUpdated() || GPS.altitude.isUpdated()) {
         timeLastGPS = micros();
         fixCount++;
         gpsFix = 1;
         if(!configGPSflight && fixCount > 40){
           configGPS();
-          gpsFix = false;
+          gpsFix = 0;
           configGPSflight = true; 
           configGPSdefaults = false;}
         gpsWrite = true;
@@ -2347,7 +2365,7 @@ void readEEPROMsettings(){
   settings.pyro2Func = (char)EEPROM.read(eeprom.pyro2Func);
   settings.pyro3Func = (char)EEPROM.read(eeprom.pyro3Func);
   settings.pyro4Func = (char)EEPROM.read(eeprom.pyro4Func);
-  settings.radioTXenable = (boolean)EEPROM.read(eeprom.radioTXenable);
+  settings.TXenable = (boolean)EEPROM.read(eeprom.TXenable);
   settings.TXpwr = (byte)EEPROM.read(eeprom.TXpwr);
   for(byte i=0; i<4; i++){floatUnion.Byte[i] = (byte)EEPROM.read(eeprom.TXfreq + i);}
   settings.TXfreq = floatUnion.val; 
