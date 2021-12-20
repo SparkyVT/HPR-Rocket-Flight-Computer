@@ -1,104 +1,97 @@
 
-
-void preflightPacket(){
+void preflightPacket(byte rxPacket[]){
   
 /*---------------------------------------------------
               PREFLIGHT PACKET
  -----------------------------------------------------*/
     
         //Read data from pre-flight packet
-        pktPosn=1;
-        GPSlock = (byte)dataPacket[pktPosn];pktPosn++;
-        contCode = (byte)dataPacket[pktPosn];pktPosn++;
-        for(byte i=0;i<20;i++){rocketName[i] = (byte)dataPacket[pktPosn];pktPosn++;}
-        baseAlt = (byte)dataPacket[pktPosn];pktPosn++;
-        baseAlt += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
-        baseGPSalt = (byte)dataPacket[pktPosn];pktPosn++;
-        baseGPSalt += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
-        charGPSlat = (byte)dataPacket[pktPosn];pktPosn++;
-        for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)dataPacket[pktPosn];pktPosn++;}
+        pktPosn=0;
+        event = (byte)rxPacket[pktPosn];pktPosn++;//1
+        GPSlock = (byte)rxPacket[pktPosn];pktPosn++;//2
+        contCode = (byte)rxPacket[pktPosn];pktPosn++;//3
+        for(byte i=0;i<20;i++){rocketName[i] = (byte)rxPacket[pktPosn];pktPosn++;}//23
+        radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//24
+        radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//25
+        baseAlt = radioInt.unionInt;
+        radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//26
+        radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//27
+        baseGPSalt = radioInt.unionInt;
+        charGPSlat = (int8_t)rxPacket[pktPosn];pktPosn++;//28
+        for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)rxPacket[pktPosn];pktPosn++;}//32
         GPSlatitude=radioUnion.GPScoord;
-        charGPSlon = (byte)dataPacket[pktPosn];pktPosn++;
-        for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)dataPacket[pktPosn];pktPosn++;}
+        charGPSlon = (byte)rxPacket[pktPosn];pktPosn++;//33
+        for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)rxPacket[pktPosn];pktPosn++;}//37
         GPSlongitude=radioUnion.GPScoord;
-        satNum = (byte)dataPacket[pktPosn];pktPosn++;
-        satNum += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
-        if(debugSerial){Serial.println(F("Ground Packet Received"));}
-        if(FHSS){
-          nextChnl = dataPacket[pktPosn];pktPosn++;
-          nextChnl2 = dataPacket[pktPosn];
-          //set the next channel
-          syncFreq = false;
-          if(debugSerial){
-            dispPktInfo();
-            Serial.print(F("Hopping Freq: "));}
-          chnlUsed = 0;
-          hopFreq();}
-
+        radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//38
+        radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//39
+        satNum = radioInt.unionInt;
         //capture the last good GPS coordinates to potentially store later in EEPROM
-        if(GPSlock){captureGPS();}
+        if(GPSlock == 1){
+          lastGPSlat = GPSlatitude;
+          lastGPSlon = GPSlongitude;}}
 
-        //display to LCD
-        if(lcdON){preflightLCD();}
-        }
-
-void inflightPacket(){
+void inflightPacket(byte rxPacket[]){
         
 /*---------------------------------------------------
               INFLIGHT PACKET
  -----------------------------------------------------*/     
-
-        //write the last pre-flight packet to the SD card
-        if (preFlightWrite && SDon){writePreflightData();}
-
-        //parse the GPS data and packet number first, then the samples
-        pktPosn = samples * 13;
-        packetnum = (byte)dataPacket[pktPosn];pktPosn++;//53
-        packetnum += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//54
-        if(FHSS){
-          nextChnl = (byte)dataPacket[pktPosn];pktPosn++;
-          nextChnl2 = (byte)dataPacket[pktPosn];pktPosn++;}
-        GPSalt = (byte)dataPacket[pktPosn];pktPosn++;//55
-        GPSalt += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//56
-        for(byte j=0;j<4;j++){radioUnion.unionByte[j]=(byte)dataPacket[pktPosn];pktPosn++;}//60
-        GPSlatitude=radioUnion.GPScoord;
-        for(byte j=0;j<4;j++){radioUnion.unionByte[j]=(byte)dataPacket[pktPosn];pktPosn++;}//64
-        GPSlongitude=radioUnion.GPScoord;
         
+        //parse the GPS data and packet number first, then the samples
+        pktPosn = 52;
+        radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//53
+        radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//54
+        packetnum = radioInt.unionInt;
+
+        if(debugSerial){Serial.print(F("Inflight Packet Received, PktNum: "));Serial.println(packetnum);}
+        
+        if(FHSS){
+          nextChnl = (byte)rxPacket[pktPosn];pktPosn++;
+          nextChnl2 = (byte)rxPacket[pktPosn];pktPosn++;}
+        radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//55
+        radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//56
+        GPSalt = radioInt.unionInt;
+        for(byte j=0;j<4;j++){radioUnion.unionByte[j]=(byte)rxPacket[pktPosn];pktPosn++;}//60
+        GPSlatitude=radioUnion.GPScoord;
+        for(byte j=0;j<4;j++){radioUnion.unionByte[j]=(byte)rxPacket[pktPosn];pktPosn++;}//64
+        GPSlongitude=radioUnion.GPScoord;
+      
         //determine GPS lock from the packet length
-        if(len < samples * 13 + 12){GPSlock = 0;}
+        if(len < 60){GPSlock = 0;}
         else{GPSlock = 1; lastGPSfix = micros();}
         
         //parse inflight packet of 4 samples
         pktPosn = 0;
-        for(byte i=0;i<samples;i++){
+        for(byte i=0;i<4;i++){
                       
           //parse the samples
-          event = (byte)dataPacket[pktPosn];pktPosn++;//1
+          event = (byte)rxPacket[pktPosn];pktPosn++;//1
           if(!apogee && event >=4 && event <=6){apogee = true;}
-          sampleTime = (byte)dataPacket[pktPosn];pktPosn++;//2
-          sampleTime += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//3
-          velocity = (byte)dataPacket[pktPosn];pktPosn++;//4
-          velocity += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//5
-          if(!apogee && velocity > maxVelocity){maxVelocity = velocity;}
-          Alt = (byte)dataPacket[pktPosn];pktPosn++;//6
-          Alt += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//7
+          sampleTime = (byte)rxPacket[pktPosn];pktPosn++;//2
+          sampleTime += ((byte)rxPacket[pktPosn] << 8);pktPosn++;//3
+          radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//4
+          radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//5
+          velocity = radioInt.unionInt;
+          radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//6
+          radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//7
+          Alt = radioInt.unionInt;
           if(!apogee && Alt > maxAltitude){maxAltitude = Alt;}
-          spin = (byte)dataPacket[pktPosn];pktPosn++;//8
-          spin += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//9
-          offVert = (byte)dataPacket[pktPosn];pktPosn++;//10
-          offVert += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//11
-          accel = (byte)dataPacket[pktPosn];pktPosn++;//12
-          accel += ((byte)dataPacket[pktPosn] << 8);pktPosn++;//13
-          if(!apogee && accel > maxG){maxG = accel;}
+          radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//8
+          radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//9
+          spin = radioInt.unionInt;
+          radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//10
+          radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//11
+          offVert = radioInt.unionInt;
+          radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//12
+          radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//13
+          accel = radioInt.unionInt;
+          if(!apogee && accel > maxG){maxG = accel;Serial.print("maxG: ");Serial.println(maxG);}
+          
+          
           //write to the SD card
-          if(SDon){writeInflightData();}
-          }
+          if(SDinit){writeInflightData();}}
 
-        //sync the SD card
-        if(SDon){myFile.sync();}
-
-        if(debugSerial){Serial.print(F("Inflight Packet Received, PktNum: "));Serial.println(packetnum);}
+        if(debugSerial){Serial.println("Inflight Data Written");}
         //set the next channel
         if(FHSS){
           syncFreq = false;
@@ -110,96 +103,44 @@ void inflightPacket(){
             hopFreq();}}
 
         //capture the last good GPS coordinates to potentially store later in EEPROM
-        if(GPSlock == 1){captureGPS();}
-          
-        //display to LCD
-        if(lcdON){inflightLCD();}
-        }
+        if(GPSlock == 1){
+          lastGPSlat = GPSlatitude;
+          lastGPSlon = GPSlongitude;}}
 
-void postflightPacket(){
+void postflightPacket(byte rxPacket[]){
           
 /*---------------------------------------------------
               POSTFLIGHT PACKET
  -----------------------------------------------------*/
         pktPosn = 1;
-        maxAltitude = (byte)dataPacket[pktPosn];pktPosn++;
-        maxAltitude += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
-        maxVelocity = (byte)dataPacket[pktPosn];pktPosn++;
-        maxVelocity += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
-        maxG = (byte)dataPacket[pktPosn];pktPosn++;
-        maxG += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
-        maxGPSalt = (byte)dataPacket[pktPosn];pktPosn++;
-        maxGPSalt += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
-        GPSlock = (byte)dataPacket[pktPosn];pktPosn++;
-        GPSalt = (byte)dataPacket[pktPosn];pktPosn++;
-        GPSalt += ((byte)dataPacket[pktPosn] << 8);pktPosn++;
-        charGPSlat = (byte)dataPacket[pktPosn];pktPosn++;
-        for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)dataPacket[pktPosn];pktPosn++;}
+        maxAltitude = (byte)rxPacket[pktPosn];pktPosn++;
+        maxAltitude += ((byte)rxPacket[pktPosn] << 8);pktPosn++;
+        maxVelocity = (byte)rxPacket[pktPosn];pktPosn++;
+        maxVelocity += ((byte)rxPacket[pktPosn] << 8);pktPosn++;
+        maxG = (byte)rxPacket[pktPosn];pktPosn++;
+        maxG += ((byte)rxPacket[pktPosn] << 8);pktPosn++;
+        maxGPSalt = (byte)rxPacket[pktPosn];pktPosn++;
+        maxGPSalt += ((byte)rxPacket[pktPosn] << 8);pktPosn++;
+        GPSlock = (byte)rxPacket[pktPosn];pktPosn++;
+        GPSalt = (byte)rxPacket[pktPosn];pktPosn++;
+        GPSalt += ((byte)rxPacket[pktPosn] << 8);pktPosn++;
+        charGPSlat = (byte)rxPacket[pktPosn];pktPosn++;
+        for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)rxPacket[pktPosn];pktPosn++;}
         GPSlatitude=radioUnion.GPScoord;
-        charGPSlon = (byte)dataPacket[pktPosn];pktPosn++;
-        for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)dataPacket[pktPosn];pktPosn++;}
+        charGPSlon = (byte)rxPacket[pktPosn];pktPosn++;
+        for(byte i=0;i<4;i++){radioUnion.unionByte[i]=(byte)rxPacket[pktPosn];pktPosn++;}
         GPSlongitude=radioUnion.GPScoord;
 
         //capture the last good GPS coordinates to potentially store later in EEPROM
-        captureGPS();
-
-        if(FHSS){
-          syncFreq = false;
-          if(debugSerial){
-            Serial.print(F("Post-flight Packet Received, Chnl: "));Serial.println(chnl);
-            dispPktInfo();}}
-        
+        if(GPSlock == 1){
+          lastGPSlat = GPSlatitude;
+          lastGPSlon = GPSlongitude;}
+          
         //write to the SD card
-        if(postFlightWrite && SDon){writePostflightData();}
+        if(SDinit && parseSustainer && sustainerPostFlightWrite){writePostflightData();}
+        if(SDinit && parseBooster && boosterPostFlightWrite){writePostflightData();}
 
-        //display to LCD
-        if(lcdON){postflightLCD();}
-        }
-
-void hopFreq(){
-
-  byte hopChnl;
-
-  chnlUsed++;
-  if(chnlUsed == 1){hopChnl = nextChnl;if(debugSerial){Serial.println(hopChnl);}}
-  else if(chnlUsed == 2){hopChnl = nextChnl2;if(debugSerial){Serial.println(hopChnl);}}
-  else if(chnlUsed >= 3){hopChnl = hailChnl;if(debugSerial){Serial.print(F("Moving to sync chnl: ")); Serial.println(hopChnl); syncFreq = true;}}
-  chnl = hopChnl;
-  rf95.setModeIdle();
-  rf95.setFrequency(getFreq(chnl));
-  lastHopTime = micros();
+        //sync the SD card
+        if(SDinit && parseSustainer){sustainerFile.flush();}
+        if(SDinit && parseBooster){boosterFile.flush();}
 }
-
-void syncPkt(){
-
-  byte currentChnl = chnl;
-  syncFreq = false;
-  //parse packet
-  chnl = (byte)dataPacket[1];
-  nextChnl = (byte)dataPacket[2];
-  nextChnl2= (byte)dataPacket[3];
-  chnlUsed = 0;
-  hopFreq();
-  if(debugSerial){
-    Serial.print("------ Sync Packet Recieved ------");Serial.println(currentChnl);Serial.print("------ ");
-    dispPktInfo();}}
-      
-void captureGPS(){
-  //capture the GPS data as the last good position
-  if(GPSlock == 1){
-    lastGPSlat = GPSlatitude;
-    lastGPSlon = GPSlongitude;}}
-
-void dispPktInfo(){
-  freq = getFreq(chnl);
-  if(debugSerial){
-    Serial.print(F("Current Chnl: "));Serial.print(chnl);
-    Serial.print(F(", "));Serial.print(freq);Serial.println(F("MHz"));
-    Serial.print(F("Next Chnl: "));Serial.print(nextChnl);Serial.print(F(", Next Freq: "));}
-  freq = getFreq(nextChnl);
-  if(debugSerial){Serial.print(freq, 3); Serial.println("MHz");}
-}
-
-float getFreq(byte chnl){
-  float frq = 902.300F + 0.200F * chnl;
-  return frq;}
