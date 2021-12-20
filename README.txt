@@ -67,7 +67,7 @@ One-time hardware configuration via SD card, settings stored in EEPROM
 
 --------GROUND STATION COMPONENTS----------
 Adafruit Feather LoRa: ATMega 32u4 w/ RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
-                  LCD: 20X4 LCD
+                  LCD: 20X4 Sparkfun LCD
               SD Card: SD Card breakout board
               Antenna: 433Mhz 5-element Yagi (Ham Only) or 900Mhz (License Free)
                  Case: https://www.alliedelec.com/hammond-manufacturing-1591xxcgy/70165817/
@@ -95,7 +95,7 @@ fit the provided PCB
 Note: 1.25in x 4.0in size board.  Will fit in a 38mm coupler tube.
 Components mount on both sides.  See provided pictures for examples.
 
-Note: Estimated Flight Computer Cost = $150
+Note: Estimated Flight Computer Cost = $135
 Note: Estimated Ground Station Cost = $130-$180 (configuration dependent)
 Note: Estimated build time = 3hrs
 Note: Estimated programming, setup, calibration, & debugging time = 4hrs
