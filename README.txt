@@ -11,7 +11,7 @@ This flight computer is designed for rockets 38mm in diameter or greater, and wi
 Dimensions are 4.0in x 1.25in x 0.5in, not including antenna
 It has similar capability as a TeleMega, but without a smart-phone app or advanced interfaces  
 It has flown on multiple M-powered supersonic flights to over 24K feet and Mach 2.0.  
-For large or high-power projects, an independent backup computer such as the PerfectFlite StratoLogger is strongly recommended.  
+For large or high-power projects, an independent backup computer such as the PerfectFlite StratoLogger, MissileWorks RRC2, or EggTimer Quark is strongly recommended.  
 
 --------FEATURES----------
 High data logging rate: 52,000 data points per second, 3-5 million data points per flight is typical
