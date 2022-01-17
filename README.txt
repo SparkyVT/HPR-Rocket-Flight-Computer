@@ -17,7 +17,7 @@ For large or high-power projects, an independent backup computer such as the Per
 High data logging rate: 52,000 data points per second, 3-5 million data points per flight is typical
 1400Hz 3-axis digital 24G and 100G accelerometer data logging
 1400Hz 3-axis digital 2000dps gyroscope data logging
-1400Hz of flight events
+1400Hz of flight events across 13 distict parameters
 1400Hz of integrated speed and altitude
 1400Hz of pyro status (continuity detection, closed/open circuit, firing status, and pin debugging)
 100Hz of pitch, yaw, roll rotation calculations using quaternion differentials
@@ -56,9 +56,9 @@ One-time hardware configuration via SD card, settings stored in EEPROM
 
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 3.5 or 3.6 (compatible with provided PCB file) or Teensy 4.1/4.0/3.2 (no PCB file provided)
-         9 DoF IMU: LSM9DS1, or LSM303 & L3GD20H combo
+         9 DoF IMU: LSM9DS1, LSM6DS33, or LSM303 & L3GD20H combo
 100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
-   Pressure Sensor: MS5611, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
+   Pressure Sensor: MS5611, MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
               GNSS: UBLOX M6, M7, M8, M9 (NEO footprint supported in PCB file)
     LoRa Telemetry: RFM96W 433MHz (USA: Amateur License Required, EUR: License Free) or RFM95W 915MHz (USA: FHSS License Free or Amateur License without FHSS)
    Tactile Buttons: 0.2 in spacing
@@ -66,14 +66,17 @@ One-time hardware configuration via SD card, settings stored in EEPROM
            Battery: 2-cell 400mAh 20C LiPo recommended (DO NOT EXCEED 10V with provided PCB)
 
 --------GROUND STATION COMPONENTS----------
-Adafruit Feather LoRa: ATMega 32u4 w/ RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
+                  MCU: Teensy 3.2: 
+            Telemetry: RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
+                  GPS: Ublox SAM-M8Q
+                  IMU: Sparkfun LSM9DS1 breakout
                   LCD: 20X4 Sparkfun LCD
-              SD Card: SD Card breakout board
+              SD Card: Adafruit SD Card breakout board
               Antenna: 433Mhz 5-element Yagi (Ham Only) or 900Mhz (License Free)
-                 Case: https://www.alliedelec.com/hammond-manufacturing-1591xxcgy/70165817/
+                 Case: File provided for 3D printed case
            BNC to SMA: 6-inch cable
-           SMA to uFl: 6-inch cable
-              Battery: Standard 9V
+            SMA cable: 6-inch cable
+              Battery: Recommended 7.4V 2-cell LiPo 450MAh
       1K Ohm Resistor: 1/8 Watt
      10K Ohm Resistor: 1/8 Watt
 
@@ -95,7 +98,7 @@ fit the provided PCB
 Note: 1.25in x 4.0in size board.  Will fit in a 38mm coupler tube.
 Components mount on both sides.  See provided pictures for examples.
 
-Note: Estimated Flight Computer Cost = $135
-Note: Estimated Ground Station Cost = $130-$180 (configuration dependent)
+Note: Estimated Flight Computer Cost = $154
+Note: Estimated Ground Station Cost = $137 (does not include antenna)
 Note: Estimated build time = 3hrs
 Note: Estimated programming, setup, calibration, & debugging time = 4hrs
