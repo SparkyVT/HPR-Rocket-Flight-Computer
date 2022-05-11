@@ -28,7 +28,7 @@ High Data-Capture rate: approximately 50,000 samples per second recorded to SD c
 --40Hz of of magnetic data logging and magnetic roll
 --30Hz-100Hz of digital barometric data logging (Altitude, pressure, temperature)
 --30Hz of main battery voltage (1400Hz during pyro events)
---20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS altitude, GNSS position, signal strength, packet number)
+--20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS position, signal strength)
 --5Hz-25Hz of GNSS data logging (chip-dependent data rates & constellations)
 --Separate data file for each flight up to 100 flights
 Simple, easy-to-use configuration interface through the SD card
