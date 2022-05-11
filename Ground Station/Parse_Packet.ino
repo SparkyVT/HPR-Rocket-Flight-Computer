@@ -72,6 +72,7 @@ void inflightPacket(byte rxPacket[]){
           radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//4
           radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//5
           velocity = radioInt.unionInt;
+          if(!apogee && velocity > maxVelocity){maxVelocity = velocity;}
           radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//6
           radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//7
           Alt = radioInt.unionInt;
@@ -85,8 +86,7 @@ void inflightPacket(byte rxPacket[]){
           radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//12
           radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//13
           accel = radioInt.unionInt;
-          if(!apogee && accel > maxG){maxG = accel;Serial.print("maxG: ");Serial.println(maxG);}
-          
+          if(!apogee && accel > maxG){maxG = accel;}
           
           //write to the SD card
           if(SDinit){writeInflightData();}}

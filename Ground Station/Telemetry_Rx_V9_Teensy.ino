@@ -46,16 +46,21 @@ RH_RF95 radio1(radio1CS, radio1IRQ);
 RH_RF95 radio2(radio2CS, radio2IRQ);
 
 // Software SPI pins
-#define ENABLE_SOFTWARE_SPI_CLASS 1
+//#define ENABLE_SOFTWARE_SPI_CLASS 1
+#define SPI_DRIVER_SELECT 2
 #define SOFT_MISO_PIN   2
 #define SOFT_MOSI_PIN   1 
 #define SOFT_SCK_PIN    3 
 #define SOFT_CS_PIN     0 
 
+
 // SdFat software SPI template
-SdFatSoftSpi<SOFT_MISO_PIN, SOFT_MOSI_PIN, SOFT_SCK_PIN> SD;
-File sustainerFile;
-File boosterFile;
+SoftSpiDriver<SOFT_MISO_PIN, SOFT_MOSI_PIN, SOFT_SCK_PIN> softSPi;
+#define SD_CONFIG SdSpiConfig(SOFT_CS_PIN, DEDICATED_SPI, SD_SCK_MHZ(0), &softSpi)
+//#define SD_CONFIG SdSpiConfig(SOFT_CS_PIN, SHARED_SPI, SD_SCK_MHZ(0), &softSpi)
+SdFs SD;
+FsFile sustainerFile;
+FsFile boosterFile;
 
 //LCD Setup
 SerLCD lcd;
@@ -381,7 +386,7 @@ void setup() {
   charGPSlon = EEPROM.read(29);
 
   //Set display units
-  if((byte)EEPROM.read(62)==1){unitConvert = 3.2808;}
+  if((byte)EEPROM.read(62)==1){unitConvert = 3.28084;}
 
   //Set enabling of BlueTooth
   if((byte)EEPROM.read(65)==1){blueTooth = true;}

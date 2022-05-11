@@ -10,7 +10,7 @@ void startupLCD(){
   Wire.setClock(400000); //Optional - set I2C SCL to High Speed Mode of 400kHz
   //Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, 400000);
   lcd.begin(Wire);
-  lcd.setBacklight(125, 125, 125); //Set backlight to bright white
+  lcd.setBacklight(0, 0, 0); //Set backlight to bright med at (125, 125, 125)
   lcd.setContrast(50); //Set contrast. Lower to 0 for higher contrast.
   lcd.clear();
 
