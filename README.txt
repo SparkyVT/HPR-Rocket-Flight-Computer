@@ -15,10 +15,10 @@ For large or high-power projects, a commercially avialble backup computer is str
 
 --------FEATURES----------
 Full-featured dual deploy/multi-stage/airstart rocket flight computer capable to 100,000ft or more
-Advanced MEMS sensor package: GNSS, accelerometers, gyroscope, magnetometer, barometric pressure sensor, and LoRa radio
 Tilt-sensing lockout for ignition of second stages and/or airstarts
 Live telemetry over 433MHz or 915MHz LoRa (433MHz: USA amateur 70cm band, EUR licencse free) (915MHz: USA licence free) 
 4 high-current pyro outputs with continuity checks
+Advanced MEMS sensor package: GNSS, accelerometers, gyroscope, magnetometer, barometer, and LoRa radio
 High Data-Capture rate: approximately 50,000 samples per second recorded to SD card
 --1400Hz 3-axis digital 24G and 100G accelerometer data logging
 --1400Hz 3-axis digital 2000dps gyroscope data logging
