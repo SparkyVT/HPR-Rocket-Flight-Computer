@@ -39,8 +39,6 @@ Simple, easy-to-use configuration interface through the SD card
 --User selectable telemetry frequency & power settings
 --8 configurable servo outputs (4 powered, 4 un-powered)
 --User selectable inflight brownout recovery
---User selectable active stabilization for roll, pitch, and yaw correction
---User selectable return-to-pad controlled recovery
 Mach immune, sensor-fusion based apogee event
 Barometric based main deploy event
 Audible pre-flight continuity report
