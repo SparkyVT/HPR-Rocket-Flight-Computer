@@ -43,14 +43,13 @@ Mach immune, sensor-fusion based apogee event
 Barometric based main deploy event
 Audible pre-flight continuity report
 Audible Post-flight max altitude & speed report
-Mount in any orientation, automatic orientation detection during calibration
+Mount in any orientation, automatic orientation detection with built-in self calibration mode
 Bench-test mode activated w/ tactile button; user configurable status messages over USB Serial
-Built-in self-calibration mode 
 Report in SI or Metric units
 Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
---Base code is compatible with many different sensors over I2C or SPI
---Base code configurable to use different pin input/outputs and hardware I2C/SPI bus options
---GPS can be wired to any available HW Serial port
+--Connect any sensor to any available I2C or SPI bus
+--Create your own custom setup with configurable continuity/firing/servo pins
+--Connect UBLOX GPS unit to any available HW Serial port
 
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 3.5 or 3.6 (compatible with provided PCB file) or Teensy 4.1/4.0/3.2 (no PCB file provided)
