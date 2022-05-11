@@ -15,7 +15,7 @@ For large or high-power projects, an independent backup computer such as the Per
 
 --------FEATURES----------
 Full-featured dual deploy/multi-stage/airstart rocket flight computer capable to 100,000ft or more
-Multitple programmable events: dual-deploy apogee drogue & main chute, 2-stage & airstart capable w/ Tilt lockout
+Tilt-sensing lockout for ignition of second stages and/or airstarts
 Live telemetry over 433MHz or 915MHz LoRa (433MHz: USA amateur 70cm band, EUR licencse free) (915MHz: USA licence free) 
 4 high-current pyro outputs with continuity checks
 High Data-Capture rate: approximately 50,000 samples per second recorded to SD card
@@ -41,7 +41,6 @@ Simple, easy-to-use configuration interface through the SD card
 --User selectable inflight brownout recovery
 --User selectable active stabilization for roll, pitch, and yaw correction
 --User selectable return-to-pad controlled recovery
-Tilt-sensing lockout for ignition of second stages and/or airstarts
 Mach immune, sensor-fusion based apogee event
 Barometric based main deploy event
 Audible pre-flight continuity report
