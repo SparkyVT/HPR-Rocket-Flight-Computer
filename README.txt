@@ -49,7 +49,7 @@ Bench-test mode activated w/ tactile button; user configurable status messages o
 Report in SI or Metric units
 Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
 --Connect any sensor to any available I2C or SPI bus
---Create your own custom setup with configurable continuity/firing/servo pins
+--Create your own custom setup with configurable pins for continuity, firing, and servos
 --Connect UBLOX GPS unit to any available HW Serial port
 
 --------FLIGHT COMPUTER COMPONENTS----------
