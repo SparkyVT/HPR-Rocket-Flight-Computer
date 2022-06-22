@@ -1,7 +1,7 @@
 //----------------------------
 //LIST OF FUNCTIONS & ROUTINES
 //----------------------------
-//restoreGPSdefaults(): overrides command settings and restores factory settings
+//restoreGPSdefaults(): overrides command settings and restores factory settings (not currently used)
 //configGPS(): sends UBX commands to update navigation, data rate, GNSS constellations, reduce NMEA sentences, interference thresholds, and baud rate
 //GPSpowerSaveMode(): after touchdown reduce the power consumption and update rate
 //sendUBX(): helper function to send serial data
@@ -52,24 +52,17 @@ void configGPS() {
   
   //Generate the configuration string for NMEA messages
   byte setGLL[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x2B};
-  //byte setGSA[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x32};
   byte setGSA[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x31};
   byte setGSV[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x39};
-  //byte setRMC[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x40};
   byte setVTG[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x46};
   byte set4_1[] = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x75, 0x57};
 
   //Generate the configuration string for interference resistance settings
   byte setJam[] = {0xB5, 0x62, 0x06, 0x39, 0x08, 0x00, 0xF3, 0xAC, 0x62, 0xAD, 0x1E, 0x43, 0x00, 0x00, 0x56, 0x45};
-  // byte setJam[] = {0xB5, 0x62, 0x06, 0x39, 0x00, 0x00, 0xF3, 0xAC, 0x62, 0xAD, 0x1E, 0xD3, 0x00, 0x00, 0xE6, 0xF5};
 
   //set the constellations used
-  //Just add Galileo, from https://portal.u-blox.com/s/question/0D52p00008HKEEYCA5/ublox-gps-galileo-enabling-for-ubx-m8
+  //For M8, just add Galileo, from https://portal.u-blox.com/s/question/0D52p00008HKEEYCA5/ublox-gps-galileo-enabling-for-ubx-m8
   byte setSat[] = {0xB5, 0x62, 0x06, 0x3E, 0x0C, 0x00, 0x00, 0x00, 0x20, 0x01, 0x02, 0x04, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x82, 0x56};
-  if(sensors.GPS == 3){
-    //M9N can use all 4 GNSS constellations so add Galileo and Baidou
-    //setSat[] = {0xB5, 0x62, 0x06, 0x3E, 0x0C, 0x00, 0x00, 0x00, 0x20, 0x01, 0x02, 0x04, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x82, 0x56};
-    }
   
   //Turn Off NMEA GSA Messages
   while(gpsSetSuccess < 3) {
@@ -104,16 +97,15 @@ void configGPS() {
   gpsSetSuccess = 0;
 
   //Turn on NMEA4.1 Messages for less than M9 versions
-  if(sensors.GPS != 3){
-    while(gpsSetSuccess < 3) {
-      if(settings.testMode){Serial.print("Turning on NMEA 4.1 Messages... ");}
-      sendUBX(set4_1, sizeof(set4_1));
-      gpsSetSuccess += getUBX_ACK(&set4_1[2]);}
-    if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA 4.1 Message Activation Failed!");}
-    gpsSetSuccess = 0;}
+  while(sensors.GPS < 3 && gpsSetSuccess < 3) {
+    if(settings.testMode){Serial.print("Turning on NMEA 4.1 Messages... ");}
+    sendUBX(set4_1, sizeof(set4_1));
+    gpsSetSuccess += getUBX_ACK(&set4_1[2]);}
+  if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA 4.1 Message Activation Failed!");}
+  gpsSetSuccess = 0;
 
-  //Set Satellite Constellations
-  while(gpsSetSuccess < 3) {
+  //Turn on Galileo for M8 versions since it is not enabled by default
+  while(sensors.GPS < 3 && gpsSetSuccess < 3) {
     if(settings.testMode){Serial.print("Setting Satellite Constellations... ");}
     sendUBX(setSat, sizeof(setSat));
     gpsSetSuccess += getUBX_ACK(&setSat[2]);}
@@ -144,17 +136,16 @@ void configGPS() {
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA GLL Message Deactivation Failed!");}
   gpsSetSuccess = 0;
   
-  //Increase Baud-Rate for faster GPS updates
-  if(sensors.GPS == 2){
-    while(gpsSetSuccess < 3) {
-      if(settings.testMode){Serial.print("Setting Ublox Baud Rate 38400... ");}
-      sendUBX(setBaudRate, sizeof(setBaudRate));
-      gpsSetSuccess += getUBX_ACK(&setBaudRate[2]);}
-    if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Ublox Baud Rate 38400 Failed!");}
-    else{
-      HWSERIAL.end();
-      HWSERIAL.clear();
-      HWSERIAL.begin(38400);}}
+  //Increase Baud-Rate on M8Q for faster GPS updates
+  while(sensors.GPS == 2 && gpsSetSuccess < 3) {
+    if(settings.testMode){Serial.print("Setting Ublox Baud Rate 38400... ");}
+    sendUBX(setBaudRate, sizeof(setBaudRate));
+    gpsSetSuccess += getUBX_ACK(&setBaudRate[2]);}
+  if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Ublox Baud Rate 38400 Failed!");}
+  else{
+    HWSERIAL->end();
+    HWSERIAL->clear();
+    HWSERIAL->begin(38400);}
   
   }//end configGPS
 
@@ -173,7 +164,7 @@ void GPSpowerSaveMode(){
   byte setPwr2[] = {0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x01, 0x22, 0x92}; 
 
   //Generate configuration string to put receiver into 1Hz update mode
-  byte setDataRate1Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};//once per second
+  //byte setDataRate1Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};//once per second
   byte setDataRate01Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x10, 0x27, 0x01, 0x00, 0x01, 0x00, 0x4D, 0xDD};//once per 10 seconds
 
   //Config GNSS
@@ -206,7 +197,8 @@ void GPSpowerSaveMode(){
     sendUBX(setDataRate01Hz, sizeof(setDataRate01Hz));  //Send UBX Packet
     gpsSetSuccess += getUBX_ACK(&setDataRate01Hz[2]);}
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Data update mode configuration failed!");}
-  gpsSetSuccess = 0;}
+  gpsSetSuccess = 0;
+}//End PowerSave Mode
 
 void calcChecksum(byte *checksumPayload, byte payloadSize) {
   byte CK_A = 0, CK_B = 0;
@@ -221,11 +213,11 @@ void calcChecksum(byte *checksumPayload, byte payloadSize) {
 
 void sendUBX(byte *UBXmsg, byte msgLength) {
   for(int i = 0; i < msgLength; i++) {
-    HWSERIAL.write(UBXmsg[i]);
-    HWSERIAL.flush();}
+    HWSERIAL->write(UBXmsg[i]);
+    HWSERIAL->flush();}
     
-  HWSERIAL.println();
-  HWSERIAL.flush();}
+  HWSERIAL->println();
+  HWSERIAL->flush();}
 
 byte getUBX_ACK(byte *msgID) {
   byte CK_A = 0, CK_B = 0;
@@ -234,8 +226,8 @@ byte getUBX_ACK(byte *msgID) {
   byte ackPacket[10] = {0xB5, 0x62, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   int i = 0;
   while (1) {
-    if (HWSERIAL.available()) {
-      incoming_char = HWSERIAL.read();
+    if (HWSERIAL->available()) {
+      incoming_char = HWSERIAL->read();
       if (incoming_char == ackPacket[i]) {
         i++;}
       else if (i > 2) {

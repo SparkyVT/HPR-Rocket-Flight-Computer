@@ -38,31 +38,24 @@ void checkEvents(){
       //reset the key triggers
       events = resetEvents;
       fltTime.timeCurrent = 0UL;
-      fltTime.gyro = 0UL;
       radio.event = 0;
       if(settings.fltProfile == 'B'){radio.event = 30;}
       pktPosn = 0;
       radio.packetnum = 0;
-      baroApogee = 0;
-      baroApogeePosn = 0;
-      for(byte i=0;i<5;i++){baroLast5[i]=0;}
+      sampNum = 0;
+      radioInterval = RIpreLiftoff;
       highGsmooth = 0;
       highGsum = 0;
       for(byte i=0; i<10; i++){highGfilter[i]=0;}
-      baroTouchdown = 0;
       accelVel = 0;
-      accelAlt = 0;
-      radio.packetnum = 0;
-      sampNum = 0;
-      baroVelPosn = 10;
-      radioInterval = RIpreLiftoff;}
+      accelAlt = 0;}
   }//end falseLiftoffCheck
 
   //check for booster burnout: if the z acceleration is negative
   if (!events.boosterBurnout && events.liftoff && accel.z <= 0) {
     events.boosterBurnout = true;
     radio.event = 2;
-    if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
+    if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}
     events.boosterBurnoutCheck = true;
     fltTime.boosterBurnout = fltTime.timeCurrent;}
     
@@ -80,7 +73,7 @@ void checkEvents(){
     fltTime.boosterSeparation = fltTime.timeCurrent;
     firePyros('B');
     radio.event = 8;
-    if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+    if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
 
     //Fire second stage
     if (!events.sustainerFireCheck && (!events.apogee || settings.testMode) && events.liftoff && events.boosterBurnout && events.boosterSeparation && !pyroFire && fltTime.timeCurrent - fltTime.boosterSeparation > settings.sustainerFireDelay) {
@@ -92,7 +85,7 @@ void checkEvents(){
         events.sustainerFire = true;
         firePyros('I');
         radio.event = 9;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK && !altOK){postFlightCode = 4; radio.event = 20;}
       else if (!rotnOK) {postFlightCode = 3; radio.event = 18;}
       else if (!altOK) {postFlightCode = 2; radio.event = 19;}}
@@ -100,14 +93,14 @@ void checkEvents(){
     // Check for sustainer ignition
     if(!events.apogee && !events.sustainerIgnition && events.sustainerFire && accelNow > 10.0){
       radio.event = 10; 
-      if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
+      if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}
       events.sustainerIgnition = true; 
       fltTime.sustainerIgnition = fltTime.timeCurrent;}
     
     //Check for sustainer burnout
     if(!events.apogee && !events.sustainerBurnout && events.sustainerIgnition && accelNow < 0.0 && fltTime.timeCurrent - fltTime.sustainerIgnition > 100000UL){
       radio.event = 11; 
-      if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
+      if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}
       events.sustainerBurnout = true; 
       fltTime.sustainerBurnout = fltTime.timeCurrent;}
     
@@ -127,19 +120,19 @@ void checkEvents(){
         fltTime.airStart1Fire = fltTime.timeCurrent;
         firePyros('1');
         radio.event = 12;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK && !altOK){
         postFlightCode = 4; 
         radio.event = 20;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK) {
         postFlightCode = 3; 
         radio.event = 18;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!altOK) {
         postFlightCode = 2; 
         radio.event = 19;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}}
     
     //AirStart motor 1 if event 1 is main booster burnout
     if(settings.airStart1Event == 'B' && events.boosterBurnout && !events.airStart1Check && fltTime.timeCurrent > (fltTime.boosterBurnout + settings.airStart1Delay)){
@@ -152,26 +145,26 @@ void checkEvents(){
         fltTime.airStart1Fire = fltTime.timeCurrent;
         firePyros('1');
         radio.event = 12;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK && !altOK){
         postFlightCode = 4; 
         radio.event = 20;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK) {
         postFlightCode = 3; 
         radio.event = 18;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!altOK) {
         postFlightCode = 2; 
         radio.event = 19;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}}
 
     //Look for AirStart 1 Ignition
     if(events.airStart1Fire && !events.apogee && !events.airStart1Ignition && accelNow > 10.0){
       events.airStart1Ignition = true; 
       fltTime.airStart1Ignition = fltTime.timeCurrent; 
       radio.event = 13;
-      if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+      if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
 
     //Look for AirStart 1 Burnout with a check for a motor burp
     if(!events.airStart1Burnout && events.airStart1Ignition){
@@ -180,7 +173,7 @@ void checkEvents(){
       if(events.airStart1BurnoutCheck && fltTime.timeCurrent > (fltTime.airStart1Burnout + boosterBurpTime)){
         events.airStart1BurnoutCheck = false; events.airStart1Burnout = true; 
         radio.event = 14;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}}
     
     //AirStart motor 2 if event 2 is airstart1 motor ignition
     if(settings.airStart2Event == 'I' && !events.apogee && !events.airStart2Check && events.airStart1Ignition && fltTime.timeCurrent > fltTime.airStart1Ignition + settings.airStart2Delay){
@@ -193,19 +186,19 @@ void checkEvents(){
         fltTime.airStart2Fire = fltTime.timeCurrent;
         firePyros('2');
         radio.event = 15;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK && !altOK){
         postFlightCode = 4; 
         radio.event = 20;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK) {
         postFlightCode = 3; 
         radio.event = 18;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!altOK) {
         postFlightCode = 2; 
         radio.event = 19;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}}
       
     //Airstart motor 2 if event 2 is airstart1 motor burnout
     if(settings.airStart2Event == 'B' && !events.apogee && !events.airStart2Check && events.airStart1Burnout && fltTime.timeCurrent > (fltTime.airStart1Burnout + settings.airStart2Delay)){
@@ -218,26 +211,26 @@ void checkEvents(){
         fltTime.airStart2Fire = fltTime.timeCurrent;
         firePyros('2');
         radio.event = 15;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK && !altOK){
         postFlightCode = 4; 
         radio.event = 20;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!rotnOK) {
         postFlightCode = 3; 
         radio.event = 18;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
       else if (!altOK) {
         postFlightCode = 2; 
         radio.event = 19;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}}
 
     //Look for AirStart 2 Ignition
     if(events.airStart2Fire && !events.apogee && !events.airStart2Ignition && accelNow > 10.0){
       events.airStart2Ignition = true; 
       fltTime.airStart2Ignition = fltTime.timeCurrent; 
       radio.event = 16;
-      if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+      if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
 
     //Look for AirStart 2 Burnout
     if(!events.airStart2Burnout && events.airStart2Ignition){
@@ -247,17 +240,17 @@ void checkEvents(){
         events.airStart2BurnoutCheck = false; 
         events.airStart2Burnout = true; 
         radio.event = 17;
-        if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}}
+        if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}}
   }//End Airstart Flight Mode
 
   //Check for apogee if the accelerometer velocity or barometric velocity < 0
   //Above 9000 meters, only use accelerometer velocity for apogee trigger
-  if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (accelVel < 0 || (baroVel < 0 && accelVel < 70 && (Alt + baseAlt) < 9000) || fusionVel < 0)) {
+  if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (accelVel < 0 || (baro.Vel < 0 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 9000) || fusionVel < 0)) {
     events.apogee = true;
     fltTime.apogee = fltTime.timeCurrent;
     radio.event = 3;
     if(settings.fltProfile == 'B'){radio.event = 21;}
-    if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+    if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
     
   //Fire apgogee charge if the current time > apogeeTime + apogeeDelay
   if (!events.apogeeFire && events.apogee && fltTime.timeCurrent - fltTime.apogee >= settings.apogeeDelay) {
@@ -266,10 +259,10 @@ void checkEvents(){
     firePyros('A');
     radio.event = 4;
     if(settings.fltProfile == 'B'){radio.event = 22;}
-    if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+    if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
     
   //Write the data to the card 3s after apogeeFire in case of crash or powerloss
-  if(events.apogeeFire && !syncApogee && !settings.testMode && fltTime.timeCurrent - fltTime.apogeeFire >= 3000000UL){outputFile.sync();syncApogee = true;}
+  if(events.apogeeFire && !syncApogee && !settings.testMode && fltTime.timeCurrent - fltTime.apogeeFire >= 3000000UL){syncSD();syncApogee = true;}
 
   //Detect separation after apogee
   if(events.apogeeFire && !events.mainDeploy && accel.z > 4*g && fltTime.timeCurrent - fltTime.apogeeFire <= 2000000UL){
@@ -277,25 +270,25 @@ void checkEvents(){
     fltTime.apogeeSeparation = fltTime.timeCurrent; 
     radio.event = 5;
     if(settings.fltProfile == 'B'){radio.event = 23;}
-    if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+    if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
 
   //Fire main chute charge if the baro altitude is lower than the threshold and at least 1s has passed since apogee
-  if (!events.mainDeploy && events.apogeeFire && Alt < settings.mainDeployAlt && fltTime.timeCurrent - fltTime.apogeeFire >= 1000000UL) {
+  if (!events.mainDeploy && events.apogeeFire && baro.Alt < settings.mainDeployAlt && fltTime.timeCurrent - fltTime.apogeeFire >= 1000000UL) {
     events.mainDeploy = true;
     fltTime.mainDeploy = fltTime.timeCurrent;
     firePyros('M');
     radio.event = 6;
     if(settings.fltProfile == 'B'){radio.event = 24;}
-    if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+    if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
 
   //Detect deployment of the mains
   if(events.mainDeploy && fltTime.timeCurrent - fltTime.mainDeploy > 50000UL && fltTime.timeCurrent - fltTime.mainDeploy < 3000000UL && accelNow > 50.0){
       radio.event = 7; 
       if(settings.fltProfile == 'B'){radio.event = 25;}
-      if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}}
+      if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
 
   //Write the data to the card 3s after mainDeploy in case of crash or powerloss
-  if(events.mainDeploy && !syncMains && !settings.testMode && fltTime.timeCurrent - fltTime.mainDeploy >= 3000000UL){outputFile.sync();syncMains = true;}
+  if(events.mainDeploy && !syncMains && !settings.testMode && fltTime.timeCurrent - fltTime.mainDeploy >= 3000000UL){syncSD();syncMains = true;}
   
   //Turn off the pyros after the allotted time
   if (pyroFire) {
@@ -309,7 +302,7 @@ void checkEvents(){
     if(!pyro1.fireStatus && !pyro2.fireStatus && !pyro3.fireStatus && !pyro4.fireStatus){pyroFire = false;}}
 
   //Check for touchdown
-  if (!events.touchdown && events.mainDeploy && !pyroFire && !settings.testMode && baroTouchdown > touchdownTrigger && Alt < 46) {
+  if (!events.touchdown && events.mainDeploy && !pyroFire && !settings.testMode && baroTouchdown > touchdownTrigger && baro.Alt < 46) {
     events.touchdown = true;
     events.inFlight = false;
     events.postFlight = true;
@@ -318,7 +311,7 @@ void checkEvents(){
     RIsyncOffset = 600000UL;
     radio.event = 27;
     if(settings.fltProfile == 'B'){radio.event = 29;}
-    if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
+    if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}
     touchdownHour = GPS.time.hour();
     touchdownMin = GPS.time.minute();
     touchdownSec = GPS.time.second();
