@@ -20,10 +20,10 @@ Live telemetry over 433MHz or 915MHz LoRa (433MHz: USA amateur 70cm band, EUR li
 4 high-current pyro outputs with continuity checks
 Advanced MEMS sensor package: GNSS, accelerometers, gyroscope, magnetometer, barometer, and LoRa radio
 High Data-Capture rate: approximately 50,000 samples per second recorded to SD card
---1400Hz 3-axis digital 24G and 100G accelerometer data logging
---1400Hz 3-axis digital 2000dps gyroscope data logging
---1400Hz of flight events & continuity data logging
---1400Hz of sensor-fuzed speed & altitude
+--1000Hz 3-axis digital 24G and 100G accelerometer data logging
+--1000Hz 3-axis digital 2000dps gyroscope data logging
+--1000Hz of flight events & continuity data logging
+--1000Hz of sensor-fuzed speed & altitude
 --100Hz of pitch, yaw, roll rotation
 --40Hz of of magnetic data logging and magnetic roll
 --30Hz-100Hz of digital barometric data logging (Altitude, pressure, temperature)
