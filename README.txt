@@ -95,7 +95,7 @@ fit the provided PCB
 Note: 1.25in x 4.0in size board.  Will fit in a 38mm coupler tube.
 Components mount on both sides.  See provided pictures for examples.
 
-Note: Estimated Flight Computer Cost = $150
+Note: Estimated Flight Computer Cost = $135
 Note: Estimated Ground Station Cost = $140 (does not include antenna)
 Note: Estimated build time = 3hrs
 Note: Estimated programming, setup, calibration, & debugging time = 4hrs
