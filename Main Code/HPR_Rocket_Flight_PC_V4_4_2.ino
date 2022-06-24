@@ -80,7 +80,6 @@
 //stuck-in-a-loop detection and breakout
 //-------CODE START--------
 #include <EEPROM.h>
-//#include <RHHardwareSPI1.h>
 #include <RH_RF95.h>
 #include <TinyGPS++.h>
 #include <PWMServo.h>
@@ -889,6 +888,43 @@ boolean GPSecho = false;
 boolean radioDebug = false;
 boolean disp = false;
 boolean TXdataFile = true;
+//--------------------------------------------
+//Radio event codes to eliminate magic numbers
+//--------------------------------------------
+enum{
+  Preflight           = 0,
+  Liftoff             = 1,
+  Booster_Burnout     = 2,
+  Apogee              = 3,
+  Fire_Apogee         = 4,
+  Separation          = 5,
+  Fire_Mains          = 6,
+  Under_Chute         = 7,
+  Eject_Booster       = 8,
+  Fire_Sustainer      = 9,
+  Sustainer_Ignition  = 10,
+  Sustainer_Burnout   = 11,
+  Fire_Airstart1      = 12,
+  Airstart1_Ignition  = 13,
+  Airstart1_Burnout   = 14,
+  Fire_Airstart2      = 15,
+  Airstart2_Ignition  = 16,
+  Airstart2_Burnout   = 17,
+  NoFire_Rotn_Limit   = 18,
+  NoFire_Alt_Limit    = 19,
+  NoFire_RotnAlt_Limit= 20,
+  Booster_Apogee      = 21,
+  Fire_Booster_Apogee = 22,
+  Booster_Separation  = 23,
+  Fire_Booster_Mains  = 24,
+  Booster_Under_Chute = 25,
+  Time_Limit          = 26,
+  Touchdown           = 27,
+  Power_Loss_Restart  = 28,
+  Booster_Touchdown   = 29,
+  Booster_Preflight   = 30,
+  Booster_Time_Limit  = 31,
+  Booster_Power_Loss  = 32};
 
 //any routines called in the main flight loop need to be as fast as possible, so set them as "always inline" for the compiler
 inline void checkEvents(void) __attribute__((always_inline));
@@ -902,7 +938,6 @@ inline void writeBoolData(void) __attribute__((always_inline));
 inline void writeLongData(void) __attribute__((always_inline));
 inline void writeULongData(void) __attribute__((always_inline));
 inline void updateStrPosn(void) __attribute__((always_inline));
-inline void setActiveBus(void) __attribute__((always_inline));
 inline void burstRead(void) __attribute__((always_inline));
 
 void setup(void) {
@@ -1673,7 +1708,7 @@ void setup(void) {
   //initialize the radio timing
   radioInterval = RIpreLiftoff;
   lastTX = micros();
-  if(settings.fltProfile == 'B'){radio.event = 30;}
+  if(settings.fltProfile == 'B'){radio.event = Booster_Preflight;}
   
 }//end setup
 
