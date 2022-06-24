@@ -586,7 +586,7 @@ float cosSmallAngle(float rad){
     cosine = cosf(rad);
     return cosine;}
   
-}
+}//end CosSmallAngle
 
 float sinSmallAngle(float rad){
   

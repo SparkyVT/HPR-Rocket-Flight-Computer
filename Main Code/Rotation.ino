@@ -8,88 +8,89 @@
 //-----------CHANGE LOG------------
 //17 JUL 21: initial breakout created
 //02 AUG 21: revision of PID control system, fixed bugs in DCM2D
+//26 DEC 21: initial coding of return system
 //---------------------------------
 
 void getQuatRotn(float dx, float dy, float dz){
 
-//Local Vectors
-float QuatDiff[5];
-float Rotn1[4];
-float Rotn2[4];
-float Rotn3[4];
-
-//Local rotation holders
-static long prevRollZ = 0;
-static long quatRollZ = 0;
-static long fullRollZ = 0;
-
-//Compute quaternion derivative
-QuatDiff[1] = 0.5 * (-1 * dx * Quat[2] - dy * Quat[3] - dz * Quat[4]);
-QuatDiff[2] = 0.5 * (     dx * Quat[1] - dy * Quat[4] + dz * Quat[3]);
-QuatDiff[3] = 0.5 * (     dx * Quat[4] + dy * Quat[1] - dz * Quat[2]);
-QuatDiff[4] = 0.5 * (-1 * dx * Quat[3] + dy * Quat[2] + dz * Quat[1]);
-
-//Update the quaternion
-Quat[1] += QuatDiff[1];
-Quat[2] += QuatDiff[2];
-Quat[3] += QuatDiff[3];
-Quat[4] += QuatDiff[4];
-
-//re-normalize
-float quatLen = powf( Quat[1]*Quat[1] + Quat[2]*Quat[2] + Quat[3]*Quat[3] + Quat[4]*Quat[4], -0.5);
-Quat[1] *= quatLen;
-Quat[2] *= quatLen;
-Quat[3] *= quatLen;
-Quat[4] *= quatLen;
-    
-//compute the components of the rotation matrix
-float a = Quat[1];
-float b = Quat[2];
-float c = Quat[3];
-float d = Quat[4];
-float a2 = a*a;
-float b2 = b*b;
-float c2 = c*c;
-float d2 = d*d;
-float ab = a*b;
-float ac = a*c;
-float ad = a*d;
-float bc = b*c;
-float bd = b*d;
-float cd = c*d;
-    
-//Compute rotation matrix
-Rotn1[1] = a2 + b2 - c2 - d2;
-//Rotn1[2] = 2 * (bc - ad);
-//Rotn1[3] = 2 * (bd + ac);
-Rotn2[1] = 2 * (bc + ad);
-//Rotn2[2] = a2 - b2 + c2 - d2;
-//Rotn2[3] = 2 * (cd - ab);
-Rotn3[1] = 2 * (bd - ac);
-Rotn3[2] = 2 * (cd + ab);
-Rotn3[3] = a2 - b2 - c2 + d2;
-
-//compute 3D orientation
-pitchX = speedAtan2(Rotn3[2], Rotn3[3]);
-yawY = speedArcSin(-1*Rotn3[1]);
-
-prevRollZ = quatRollZ;
-quatRollZ = speedAtan2(Rotn2[1], Rotn1[1]);
-if(quatRollZ - prevRollZ > 1800){fullRollZ--;}
-else if(quatRollZ - prevRollZ < -1800){fullRollZ++;}
-rollZ = (fullRollZ*3600 + quatRollZ)*.1;
-
-//Compute angle off vertical
-float tanYaw = speedTan(yawY);
-float tanPitch = speedTan(pitchX);
-
-float hyp1 = tanYaw*tanYaw + tanPitch*tanPitch;
-float hyp2 = powf(hyp1, 0.5);
-offVert = speedArcTan(hyp2);
-
-//check to see if the maximum angle has been exceeded
-if (!rotationFault && offVert > settings.maxAngle) {rotnOK = false;}
-if (!rotationFault && offVert > 450){rotationFault = true; rotnOK = false;}
+  //Local Vectors
+  float QuatDiff[5];
+  float Rotn1[4];
+  float Rotn2[4];
+  float Rotn3[4];
+  
+  //Local rotation holders
+  static long prevRollZ = 0;
+  static long quatRollZ = 0;
+  static long fullRollZ = 0;
+  
+  //Compute quaternion derivative
+  QuatDiff[1] = 0.5 * (-1 * dx * Quat[2] - dy * Quat[3] - dz * Quat[4]);
+  QuatDiff[2] = 0.5 * (     dx * Quat[1] - dy * Quat[4] + dz * Quat[3]);
+  QuatDiff[3] = 0.5 * (     dx * Quat[4] + dy * Quat[1] - dz * Quat[2]);
+  QuatDiff[4] = 0.5 * (-1 * dx * Quat[3] + dy * Quat[2] + dz * Quat[1]);
+  
+  //Update the quaternion
+  Quat[1] += QuatDiff[1];
+  Quat[2] += QuatDiff[2];
+  Quat[3] += QuatDiff[3];
+  Quat[4] += QuatDiff[4];
+  
+  //re-normalize
+  float quatLen = powf( Quat[1]*Quat[1] + Quat[2]*Quat[2] + Quat[3]*Quat[3] + Quat[4]*Quat[4], -0.5);
+  Quat[1] *= quatLen;
+  Quat[2] *= quatLen;
+  Quat[3] *= quatLen;
+  Quat[4] *= quatLen;
+      
+  //compute the components of the rotation matrix
+  float a = Quat[1];
+  float b = Quat[2];
+  float c = Quat[3];
+  float d = Quat[4];
+  float a2 = a*a;
+  float b2 = b*b;
+  float c2 = c*c;
+  float d2 = d*d;
+  float ab = a*b;
+  float ac = a*c;
+  float ad = a*d;
+  float bc = b*c;
+  float bd = b*d;
+  float cd = c*d;
+      
+  //Compute rotation matrix
+  Rotn1[1] = a2 + b2 - c2 - d2;
+  //Rotn1[2] = 2 * (bc - ad);
+  //Rotn1[3] = 2 * (bd + ac);
+  Rotn2[1] = 2 * (bc + ad);
+  //Rotn2[2] = a2 - b2 + c2 - d2;
+  //Rotn2[3] = 2 * (cd - ab);
+  Rotn3[1] = 2 * (bd - ac);
+  Rotn3[2] = 2 * (cd + ab);
+  Rotn3[3] = a2 - b2 - c2 + d2;
+  
+  //compute 3D orientation
+  pitchX = speedAtan2(Rotn3[2], Rotn3[3]);
+  yawY = speedArcSin(-1*Rotn3[1]);
+  
+  prevRollZ = quatRollZ;
+  quatRollZ = speedAtan2(Rotn2[1], Rotn1[1]);
+  if(quatRollZ - prevRollZ > 1800){fullRollZ--;}
+  else if(quatRollZ - prevRollZ < -1800){fullRollZ++;}
+  rollZ = (fullRollZ*3600 + quatRollZ)*.1;
+  
+  //Compute angle off vertical
+  float tanYaw = speedTan(yawY);
+  float tanPitch = speedTan(pitchX);
+  
+  float hyp1 = tanYaw*tanYaw + tanPitch*tanPitch;
+  float hyp2 = powf(hyp1, 0.5);
+  offVert = speedArcTan(hyp2);
+  
+  //check to see if the maximum angle has been exceeded
+  if (!rotationFault && offVert > settings.maxAngle) {rotnOK = false;}
+  if (!rotationFault && offVert > 450){rotationFault = true; rotnOK = false;}
 }//end getQuatRotn
 
 //made global since these variables are also used by setCanards
@@ -101,8 +102,7 @@ void getDCM2DRotn(long dx, long dy, long dz){
   static float rawX = 0.0F;
   static float rawY = 0.0F;
   static float rawZ = 0.0F;
-  float deg2rad = 3.141592653589793238462 / 180;
-  float rad2deg = 1/deg2rad;
+  const float deg2rad = 3.141592653589793238462 / 180;
   
   //Calculate new Z angle from gyro data
   rawZ += dz;
@@ -190,7 +190,7 @@ void setCanards(){
 
   //Calculate air density
   const float R = 287.05; //R value for dry air
-  float airDensity = (pressure * 100) / (R * (temperature + 273.15));
+  float airDensity = (baro.pressure * 100) / (R * (baro.temperature + 273.15));
 
   //Calculate the fin drag force
   const float Cd = 0.5; //estimate of the fin Cd
@@ -329,6 +329,31 @@ void setCanards(){
     Serial.print("PitchInput:");Serial.print(pitchTorqueInput);Serial.print("\t");
     Serial.print("YawInput:");Serial.println(yawTorqueInput);}
 }//end setCanards()
+
+void setRTB(){
+
+  //calculate the bearing to the return point using GPS coordinates
+  //A = current position
+  //B = desired position
+  //X = cos(latitudeB) * sin(longitudeB - longitudeA)
+  //Y = cos(latitudeA) * sin(latitudeB) - sin(latitudeA) * cos(latitudeB) * cos(longitudeB - longitudeA)
+  /*Variables
+  liftoffLatitude
+  liftoffLongitude 
+  gpsLongitude
+  gpsLatitude*/
+  
+  float x = speedCos(liftoffLatitude) * speedSin(liftoffLongitude - gpsLongitude);
+  float y = speedCos(gpsLatitude) * speedSin(liftoffLatitude) - speedSin(gpsLatitude) * speedCos(liftoffLatitude) * speedCos(liftoffLongitude - gpsLongitude);
+
+  float bearingSetpoint = speedAtan2(x, y);
+  float bearingCurrent = speedAtan2(mag.y, mag.x);
+
+  //set the roll to the bearing with fins 1 & 3
+
+  //aim the vehicle body twoards the return point with fins 2 & 4
+  
+}//end setRTB
 
 void magRotn(){
 
