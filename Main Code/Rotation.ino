@@ -88,9 +88,12 @@ void getQuatRotn(float dx, float dy, float dz){
   float hyp2 = powf(hyp1, 0.5);
   offVert = speedArcTan(hyp2);
   
-  //check to see if the maximum angle has been exceeded
-  if (!rotationFault && offVert > settings.maxAngle) {rotnOK = false;}
+  //as long as the rocket never exceeded 45 degrees, set the rotnOK variable to whether or not the current off-vertical rotation is within the allowable cone
+  rotnOK = (!rotationFault && offVert < settings.maxAngle) ? true : false;
+  
+  //if the rocket goes outside a 45 degree cone, then permanently shut-down all airstart events.  The rocket is probably skywriting or experienced a failure
   if (!rotationFault && offVert > 450){rotationFault = true; rotnOK = false;}
+  
 }//end getQuatRotn
 
 //made global since these variables are also used by setCanards
