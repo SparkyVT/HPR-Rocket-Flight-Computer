@@ -1,67 +1,114 @@
-EEPROM for version 4.3.5
-----accel to high-G----
-accelX = -X
+EEPROM for version 4.4.1
+Place this file into the root folder of the SD card
+At startup the flight computer will read it and update the EEPROM
+Once finished, the flight computer will delete this file
+-----Device ID Code------
+accel = 2
+mag = 2
+gyro = 2
+highG = 2
+baro = 5
+radio = 1
+GPS = 2
+SD = 1
+------Device Buses--------
+accel = I2
+mag = I2
+gyro = I2
+highG = S0
+baro = I2
+radio = S0
+GPS = U1
+SD = IO
+----Sensor Orientation to Board----
+accelX = +X
 accelY = +Y
 accelZ = +Z
-------i2c Bus--------
-i2c = 2
+gyroX = +X
+gyroY = +Y
+gyroZ = +Z
+highGx = -X
+highGy = +Y
+highGz = +Z
+magX = +X
+magY = +Y
+magZ = +Z
 -------GPIO---------
-pyro1cont = 39
-pyro1fire = 38
+pyro1cont = 14
+pyro1fire = 39
 pyro2cont = 16
-pyro2fire = 14
+pyro2fire = 15
 pyro3cont = 18
 pyro3fire = 17
 pyro4cont = 22
 pyro4fire = 19
 nullPin = 56
 beepPin = 23
-battPin = 34
+battVoltPin = 33
 testGnd = 2
 testRead = 5
-radioCS = 15
-radioIRQ = 32
-radioRST = 37
+radioIRQ = 28
+radioRST = 34
 radioEN = 56
-highG-CS = 56
------Sensors------
-accel/mag = 2
-gyro = 2
-highG = 2
-baro = 2
-radio = 1
-GPS = 2
-----Control Outputs----
+radioCS = 9
+accelCS = 56
+gyroCS = 56
+highG-CS = 10
+magCS = 56
+baroCS = 56
+sdCS = 56
+----Servo Control Pins----
 servo 1 pin = 6
 servo 2 pin = 7
-servo 3 pin = 21
-servo 4 pin = 20
-servo 5 pin = 35
-servo 6 pin = 36
-servo 7 pin = 29
-servo 8 pin = 30
+servo 3 pin = 20
+servo 4 pin = 21
+servo 5 pin = 38
+servo 6 pin = 37
+servo 7 pin = 36
+servo 8 pin = 35
 ----Ham Radio Call Sign----
 callSign = KK4ELF
 -----Magnetometer-----
 calibrateMode = 0
 -----Hardware ID-----
-HWid = 321
+HWid = 331
 ________________________________
-i2c Bus Legend
+Device ID Legend
 ________________________________
-0: bus0, SDA: 18, SCL: 19
-1: bus1, SDA: 37, SCL: 38
-2: bus2, SDA: 03, SCL: 04
-3: bus0, SDA: 07, SCL: 08
-4: bus0, SDA: 17, SCL: 16
-5: bus0, SDA: 34, SCL: 33
-6: bus0, SDA: 48, SCL: 47
-________________________________
-Sensor Legend
-________________________________
-Accel/Mag: LSM303 = 1, LSM9DS1 = 2
-Gyro: L3GD20H = 1, LSM9DS1 = 2
-highG: ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3
-baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4, MS5611 = 5
+Accel: LSM303 = 1, LSM9DS1 = 2, LSM6DS33 = 3
+Gyro: L3GD20H = 1, LSM9DS1 = 2, LSM6DS33 = 3
+Mag: LSM303 = 1, LSM9DS1 = 2, LIS3MDL = 3
+highG: none = 0, ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3
+baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4, MS5611 = 5, MS5607 = 6
 radio: RFM96W 433MHz = 1, RFM95W 915MHz = 2
-GPS: NEO-M8N = 1, SAM/MAX/NEO-M8Q = 2, NEO-M9N = 3
+GPS: NEO-M8N = 1, SAM/MAX/NEO-M8Q/W = 2, NEO-M9N = 3
+SD: SDcard present = 1, no SDcard = 0
+________________________________
+Device Bus Legend
+________________________________
+I0: I2C bus0, SDA: 18, SCL: 19 (All Versions - default)
+I1: I2C bus1, SDA: 37, SCL: 38 (Teensy 3.5/6 - default)
+I1: I2C bus1, SDA: 30, SCL: 29 (Teensy 3.2   - default)
+I1: I2C bus1, SDA: 17, SCL: 16 (Teensy 4.0/1 - default)
+I2: I2C bus2, SDA: 03, SCL: 04 (Teensy 3.5/6 - default)
+I2: I2C bus2, SDA: 25, SCL: 24 (Teensy 4.0/1 - default)
+I3: I2C bus3, SDA: 56, SCL: 57 (Teensy 3.6   - default)
+I4: I2C bus0, SDA: 17, SCL: 16 (Teensy 3.2/5/6 - altPins)
+I5: I2C bus0, SDA: 07, SCL: 08 (Teensy 3.5/6 - altPins)
+I6: I2C bus0, SDA: 34, SCL: 33 (Teensy 3.5/6 - altPins)
+I7: I2C bus0, SDA: 48, SCL: 47 (Teensy 3.5/6 - altPins)
+S0: SPI bus0, SCK: 13, MISO: 12, MOSI: 11 (All Versions)
+S1: SPI bus1, SCK: 32, MISO:  1, MOSI:  0 (Teensy 3.5/6)
+S1: SPI bus1, SCK: 27, MISO: 39, MOSI: 26 (Teensy 4.1)
+S2: SPI bus2, SCK: 46, MISO: 45, MOSI: 44 (Teensy 3.5/6)
+IO: SDIO default bus for Teensy 3.5, 3.6, 4.1
+U1,U2,U3: Hardware Serial Bus (All Versions)
+U4,U5,U6: Hardware Serial Bus Teensy 3.5/6/4.0/4.1
+U7: Hardware Serial Bus Teensy 4.0/4.1
+U8: Hardware Serial Bus Teensy 4.1
+________________________________
+Hardware ID (HWid) Legend
+________________________________
+1st digit: Generation
+2nd digit: Revision
+3rd digit: Unit#
