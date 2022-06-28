@@ -36,7 +36,7 @@ FHSS = 0
 IGNORED UNLESS FLIGHT PROFILE IS 2
 **********************************
 boosterSeparationDelay = 0.5
-ignitionDelay = 0.5
+sustainerIgnitionDelay = 0.5
 **********************************
 --------Airstart Settings---------
 IGNORED UNLESS FLIGHT PROFILE IS A
@@ -80,34 +80,33 @@ serialDebug = 1
        mainDeployAlt: altitude to deploy mains, 100ft to 1500ft (30m to 458m)
         apogee delay: # of seconds after apogee to fire charge, between 0.0 and 5.0
        maxRecordTime: if touchdown is not detected, recording will stop after this many seconds, between 300 and 4294
-   highG 3-axis mode: 1 enable, 0 disable, if enabled all high-G accelerometer axes are sampled at reduced overall sample rate
       silentTestMode: 1 enable, 0 disable, if enabled the audible beeper is silent during testMode
      magSwitchEnable: 1 enable, 0 disable, if enabled startup will not proceed until magnet is sensed.  Very useful for 2-stage mode.
     inflightRecovery: 0 - disabled, 1 - inflight brownout recovery w/out pyros, 2 - inflight brownout recovery with pyros
 ---------------------------------------------
          Telemetry Configuration
 ---------------------------------------------
-            TXenable: 1 enable telemetry, 0 disable telemetry
-               TXpwr: telemetry TX power; integers between 0 and 23; 13=20mW, 15=30mW, 17=50mW, 20=100mW
-	      TXfreq: Radio frequency for 433MHz band or 915MHz band
+          TXenable: 1 enable telemetry, 0 disable telemetry
+             TXpwr: telemetry TX power; integers between 0 and 23; 13=20mW, 15=30mW, 17=50mW, 20=100mW
+	      TXfreq: Radio frequency for 433MHz band or 915MHz band (power limit of 2mW on 915MHz band without FHSS)
 	        FHSS: Frequency Hopping Spread Spectrum implementation for 915MHz ISM band (no FCC license required)
 ---------------------------------------------
          Pyro Channel Configuration
 ---------------------------------------------
-      pyroFiringTime: total seconds spent sending current to pyro charge, between 0.2 and 1.0
-       pyroFunctions: Any single character setting below is acceptable
+  pyroFiringTime: total seconds spent sending current to pyro charge, between 0.2 and 1.0
+   pyroFunctions: Any single character setting below is acceptable
 		   M: Main deployment.  Fires when post-apogee altitude reaches mainDeployAlt 
 		   A: Apogee deployment.  Fires on apogee detection with a delay of apogeeDelay seconds
 		   I: 2-stage Mode - Sustainer ignition.  Fires 2-stage sustainer provided all saftey conditions are met.
-		   B: 2-stage Mode - Booster separation.  Fires separation charge on burnout detection with a delay of boosterSeparateDelay.
-		   1: AirStart Mode - 1st AirStart.  Fires 1st Airstart after designated trigger event plus delay.
-                   2: AirStart Mode - 2nd AirStart.  Fires 2nd Airstart after designated trigger event plus delay.
-                   N: Pyro not used; no output funtion.  Nothing should be attached to the output.
+		   B: 2-stage Mode - Booster separation.  Fires 1st stage separation charge on burnout detection with a delay of boosterSeparateDelay.
+		   1: AirStart Mode - 1st AirStart.  Fires 1st Airstart after designated trigger event plus delay if safety conditions are met.
+               2: AirStart Mode - 2nd AirStart.  Fires 2nd Airstart after designated trigger event plus delay if safety conditions are met.
+               N: Pyro not used; no output funtion.  Nothing should be attached to the output.
 ---------------------------------------------
          2 Stage Rocket Settings
 ---------------------------------------------
- 2stageIgnitionDelay: seconds after booster separation to light 2nd stage, between 0.0 and 8.0
-boosterSeparateDelay: seconds after booster burnout to separate 1st stage booster, between 0.0 and 3.0
+ 2stageIgnitionDelay: Fires 2nd stage this many seconds after booster separation, between 0.0 and 8.0
+boosterSeparateDelay: Fires 1st stage separation charge this many seconds after booster burnout, between 0.0 and 3.0
 ---------------------------------------------
             Air Start Settings
 ---------------------------------------------

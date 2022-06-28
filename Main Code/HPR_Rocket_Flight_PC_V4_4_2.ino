@@ -1211,10 +1211,15 @@ void setup(void) {
     //Set the radio output power & frequency
     if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, HIGH);}
     rf95.setTxPower(settings.TXpwr, false);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
+    //915MHz FHSS
     if (sensors.radio == 2 && settings.FHSS){
       settings.TXfreq = 902.300; 
       RIpreLiftoff = 600000UL;
       if(settings.testMode){Serial.println("FHSS Active!");}}//sync freq
+    //915MHz dedicated frequency (no FHSS)
+    if (sensors.radio == 2 && !settings.FHSS){
+      rf95.setTxPower(2, false);//minimum power due to FCC regulations
+      if(settings.testMode){Serial.println(F("Dedicated ISM band frequency. Power limit 2mW"));}}
     rf95.setFrequency(settings.TXfreq);
     if(settings.testMode){
       Serial.print("Radio Freq: ");Serial.println(settings.TXfreq, 3);
