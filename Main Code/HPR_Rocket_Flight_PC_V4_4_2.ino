@@ -187,8 +187,8 @@ struct{
     int magBusNum = 77;
     int highGBusType = 78;
     int highGBusNum = 79;
-    int baroPressOffset = 80;//80-83 : barometer pressure offset
-    int baroTempOffset = 84;//84-87  : barometer temperature offset
+    int baroPressOffset = 80;//80-83 : barometer pressure offset, stays in this position so I don't have to recalibrate all my flight computers
+    int baroTempOffset = 84;//84-87  : barometer temperature offset, stays in this position so I don't have to recalibrate all my flight computers
     int baroBusType = 88;
     int baroBusNum = 89;
     int radioBusType = 90;
@@ -502,7 +502,6 @@ boolean syncFreq = false;
 byte pktPosn=0;
 uint16_t sampNum = 0;
 byte packetSamples = 4;
-boolean radioInterference = false;
 boolean gpsTransmit = false;
 unsigned long TXnow = 0UL;
 byte TXnum = 0;
@@ -1766,10 +1765,13 @@ void loop(void){
     if(abs(mag.x) > magTrigger || abs(mag.y) > magTrigger || abs(mag.z) > magTrigger){n=1;}
     while(n==1){digitalWrite(pins.beep, HIGH);delay(1000);}}
 
+  //set timestamp
+  fltTime.tmClock = micros();
+
   //detect liftoff
   if (!events.liftoff && accel.z > settings.gTrigger && !events.touchdown && !events.timeOut) {
     if(settings.testMode){Serial.println(' ');Serial.println(F("Simulated Liftoff Detected!"));}
-    fltTime.padTime = fltTime.tmClockPrev = micros();
+    fltTime.padTime = fltTime.tmClockPrev = fltTime.tmClock;
     events.preLiftoff = false;
     events.liftoff = true;
     events.inFlight = true;
@@ -1795,7 +1797,6 @@ void loop(void){
     if(settings.testMode){cyclesBtwn++;}
 
     //set cycle timestamp
-    fltTime.tmClock = micros();
     fltTime.dt = fltTime.tmClock - fltTime.tmClockPrev;
     fltTime.timeCurrent += fltTime.dt;
     fltTime.tmClockPrev = fltTime.tmClock;
