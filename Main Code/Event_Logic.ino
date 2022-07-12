@@ -246,13 +246,18 @@ void checkEvents(){
         if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}}
   }//End Airstart Flight Mode
 
-  //Check for apogee if the accelerometer velocity or barometric velocity < 0
-  //Above 9000 meters, only use accelerometer velocity for apogee trigger
-  if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (accelVel < 0 || (baro.Vel < 0 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 9000) || fusionVel < 0)) {
+  //Accelerometer based apogee detection
+  boolean accelApogee = (accelVel < 0) ? true : false;
+  //Barometric based apogee detection: rocket must be below 9000m and barometric velocity < 0 and accelometer velocity < 70 (needed for Mach proofing)
+  boolean baroApogee = (baro.Vel < 0 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 9000) ? true : false;
+  //Sensor fusion based apogee detection
+  boolean fusionApogee = (fusionVel < 0) ? true : false;
+  //Check for apogee event
+  if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (accelApogee || baroApogee || fusionApogee)) {
     events.apogee = true;
     fltTime.apogee = fltTime.timeCurrent;
     radio.event = Apogee;
-    if(settings.fltProfile == 'B'){radio.event = Booster_Apogee;}
+    if(settings.fltProfile == 'B'){radio.event = Booster_Apogee;} 
     if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}
     
   //Fire apgogee charge if the current time > apogeeTime + apogeeDelay

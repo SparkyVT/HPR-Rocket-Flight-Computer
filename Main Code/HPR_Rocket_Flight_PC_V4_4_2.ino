@@ -1439,7 +1439,7 @@ void setup(void) {
     thresholdVel = 15.5F;
     settings.magSwitchEnable = false;}
 
- // Rename the data file to FLIGHT01.txt
+  // Rename the data file to FLIGHT01.txt
   dataString[0] ='F';
   dataString[1] ='L';
   dataString[2] ='I';
@@ -2332,7 +2332,6 @@ void processBaroSamp(){
   //----------------------------
   static float rawAltSum = 0.0;
   static float rawAltBuff[10] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  static float altMoveAvg = 0.0;
   static byte rawAltPosn = 0;
   //Update the rolling sum
   rawAltSum -= rawAltBuff[rawAltPosn];
@@ -2362,7 +2361,7 @@ void processBaroSamp(){
     baroVelPosn = altAvgPosn - 10;
     if(baroVelPosn < 0){baroVelPosn = (int)((sizeof(altAvgBuff)/sizeof(altAvgBuff[0])) - (10 - altAvgPosn));}}
   //calculate the barometric derived velocity from the moving averages
-  baro.Vel = (altMoveAvg - altAvgBuff[baroVelPosn])/((float)(baro.timeLastSamp - baroTimeBuff[baroVelPosn])*mlnth);
+  baro.Vel = (baro.smoothAlt - altAvgBuff[baroVelPosn])/((float)(baro.timeLastSamp - baroTimeBuff[baroVelPosn])*mlnth);
   //update variables
   if(baro.Vel > baro.maxVel){baro.maxVel = baro.Vel;}
   radio.vel = baro.Vel;
