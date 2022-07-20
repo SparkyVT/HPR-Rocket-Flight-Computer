@@ -38,6 +38,7 @@ void checkEvents(){
       //reset the key triggers
       events = resetEvents;
       fltTime.timeCurrent = 0UL;
+      radio.fltTime = 0;
       radio.event = Preflight;
       if(settings.fltProfile == 'B'){radio.event = Booster_Preflight;}
       pktPosn = 0;

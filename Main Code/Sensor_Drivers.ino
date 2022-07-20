@@ -1310,39 +1310,39 @@ boolean beginBMP180() {
   //establish contact
   if (!testSensor(BMP180_ADDRESS)) {
     if (settings.testMode) {
-      Serial.println(F("BMP180 not found!"));}
+      Serial.println(F("BMP180 no contact!"));}
     return false;}
 
   //check whoami
   byte id = read8(0xD0);
-  if (id != 0x58) {
+  if (id != 0x55) {
     Serial.println(F("BMP180 not found!"));
     return false;}
   Serial.println(F("BMP180 OK!"));
 
   //Read calibration coefficients
   burstRead(BMP180_REGISTER_CAL_AC1, 2);
-  _BMP180_coeffs.ac1 = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.ac1 = (int16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_AC2, 2);
-  _BMP180_coeffs.ac2 = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.ac2 = (int16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_AC3, 2);
-  _BMP180_coeffs.ac3 = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.ac3 = (int16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_AC4, 2);
-  _BMP180_coeffs.ac4 = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.ac4 = (uint16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_AC5, 2);
-  _BMP180_coeffs.ac5 = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.ac5 = (uint16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_AC6, 2);
-  _BMP180_coeffs.ac6 = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.ac6 = (uint16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_B1, 2);
-  _BMP180_coeffs.b1 = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.b1 =  (int16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_B2, 2);
-  _BMP180_coeffs.b2 = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.b2 =  (int16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_MB, 2);
-  _BMP180_coeffs.mb = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.mb =  (int16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_MC, 2);
-  _BMP180_coeffs.mc = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.mc =  (int16_t)((rawData[0] << 8) | rawData[1]);
   burstRead(BMP180_REGISTER_CAL_MD, 2);
-  _BMP180_coeffs.md = (rawData[0] << 8) | rawData[1];
+  _BMP180_coeffs.md =  (int16_t)((rawData[0] << 8) | rawData[1]);
 
   //since everthing happens in a timed sequence, we need to check it every cycle
   baro.timeBtwnSamp = 0;
@@ -1368,15 +1368,14 @@ void getBMP180() {
     readTemp = true;}
 
   if (readTemp && micros() - tempReadStart > tmpRdTime) {
-    initiatePressure(&baro.temperature);
+    initiatePressure();
     pressReadStart = micros();
     baro.newTemp = true;
     readTemp = false;
     readPress = true;}
 
   if (readPress && micros() - pressReadStart > bmpRdTime) {
-    getPressure(&baro.pressure);
-
+    getPressure();
     baro.rawAlt = pressureToAltitude(baro.seaLevelPressure, baro.pressure);
     readPress = false;
     getTemp = true;
@@ -1394,7 +1393,7 @@ void initiateTemp() {
   //send command
   write8(BMP180_REGISTER_CONTROL, BMP180_REGISTER_READTEMPCMD);}
 
-void initiatePressure(float *temp) {
+void initiatePressure() {
   int32_t  ut = 0;
   int32_t X1, X2;     // following ds convention
   float t;
@@ -1408,7 +1407,7 @@ void initiatePressure(float *temp) {
   
   //read data
   burstRead(BMP180_REGISTER_TEMPDATA, 2);
-  rt = rawData[0] | (rawData[1] >> 8);
+  rt = (uint16_t)((rawData[0] << 8) | rawData[1]);
   ut = rt;
 
   //Calculate true temperature
@@ -1417,13 +1416,13 @@ void initiatePressure(float *temp) {
   _BMP180_coeffs.b5 = X1 + X2;
   t = (_BMP180_coeffs.b5 + 8) >> 4;
   t /= 10;
-  *temp = t - baro.tempOffset;
+  baro.temperature = t - baro.tempOffset;
 
   //Initiate Pressure
   write8(BMP180_REGISTER_CONTROL, BMP180_REGISTER_READPRESSURECMD + (_BMP180Mode << 6));
 }//end initiate pressure
 
-void getPressure(float *pressure) {
+void getPressure() {
 
   uint8_t  p8;
   uint16_t p16;
@@ -1441,7 +1440,7 @@ void getPressure(float *pressure) {
   burstRead(BMP180_REGISTER_PRESSUREDATA, 3);
 
   //assemble data
-  p16 = rawData[0] | (rawData[1] >> 8);
+  p16 = (uint16_t)((rawData[0] << 8) | rawData[1]);
   up = (uint32_t)p16 << 8;
   p8 = rawData[2];
   up += p8;
@@ -1468,8 +1467,7 @@ void getPressure(float *pressure) {
   compp = p + ((x1 + x2 + 3791) >> 4);
 
   /* Assign compensated pressure value */
-  *pressure = compp / 100.0F - baro.pressOffset;
-}
+  baro.pressure = compp / 100.0F - baro.pressOffset;}
 
 //***************************************************************************
 //BMP280 Barometric Pressure Sensor

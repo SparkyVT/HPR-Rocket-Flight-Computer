@@ -41,6 +41,7 @@ void accelCalibrate(){
     highG.ptrX = &highG.rawX;
     highG.ptrY = &highG.rawY;
     highG.ptrZ = &highG.rawZ;
+    //resetting the direction pointers isn't necessary because everything is now 1
     accel.dirX = accel.dirY = accel.dirZ = 1;
     gyro.dirX = gyro.dirY = gyro.dirZ = 1;
     mag.dirX = mag.dirY = mag.dirZ = 1;
@@ -96,7 +97,7 @@ void accelCalibrate(){
     writeCalibration(highG.biasZ, eeprom.highGbiasZ);
         
     digitalWrite(pins.beep, LOW);
-    Serial.println(F("Calibration complete!  Calculated values are:"));
+    Serial.println(F("Calculated values are:"));
     Serial.print(F("accel.biasX: "));Serial.println(accel.biasX);
     Serial.print(F("accel.biasY: "));Serial.println(accel.biasY);
     Serial.print(F("accel.biasZ: "));Serial.println(accel.biasZ);
@@ -264,139 +265,62 @@ void setOrientation(){
 
       Serial.println("Flight Computer Z-axis is pointed to the tail");
 
-      //flip the direction of Z
-      accel.dirZ *= -1;
-      gyro.dirZ *= -1;
-      mag.dirZ *= -1;
-      highG.dirZ *= -1;
-      //flip the direction of Y
-      accel.dirY *= -1;
-      gyro.dirY *= -1;
-      mag.dirY *= -1;
-      highG.dirY *= -1;
       //all axes are still aligned
+      
+      //flip the direction of Z
+      flipAxis('Z');
+      
+      //flip the direction of Y
+      flipAxis('Y');      
       
       break;
 
     case 3: //Flight Computer Y-axis is pointed to the nose
 
       Serial.println("Flight Computer Y-axis is pointed to the nose");
-    
-      //align IMU axes
-      //exchange Y and Z axes
-      tempAxisY = accel.orientY;
-      tempAxisZ = accel.orientZ;
-      accel.orientY = tempAxisZ;
-      accel.orientZ = tempAxisY;
-      tempAxisY = gyro.orientY;
-      tempAxisZ = gyro.orientZ;
-      gyro.orientY = tempAxisZ;
-      gyro.orientZ = tempAxisY;
-      tempAxisY = mag.orientY;
-      tempAxisZ = mag.orientZ;
-      mag.orientY = tempAxisZ;
-      mag.orientZ = tempAxisY;
-      tempAxisY = highG.orientY;
-      tempAxisZ = highG.orientZ;
-      highG.orientY = tempAxisZ;
-      highG.orientZ = tempAxisY;
-      
-      //flip the direction of Z
-      accel.dirZ *= -1;
-      gyro.dirZ *= -1;
-      mag.dirZ *= -1;
-      highG.dirZ *= -1;
 
+      //flip the direction of Z
+      flipAxis('Z');
+      
+      //exchange Y and Z axes
+      exchangeAxes('Y','Z');
+      
       break;
 
     case 4: //Flight Computer Y-axis is pointed to the tail
 
       Serial.println("Flight Computer Y-axis is pointed to the tail");
-    
-      //exchange Y and Z axes
-      tempAxisY = accel.orientY;
-      tempAxisZ = accel.orientZ;
-      accel.orientY = tempAxisZ;
-      accel.orientZ = tempAxisY;
-      tempAxisY = gyro.orientY;
-      tempAxisZ = gyro.orientZ;
-      gyro.orientY = tempAxisZ;
-      gyro.orientZ = tempAxisY;
-      tempAxisY = mag.orientY;
-      tempAxisZ = mag.orientZ;
-      mag.orientY = tempAxisZ;
-      mag.orientZ = tempAxisY;
-      tempAxisY = highG.orientY;
-      tempAxisZ = highG.orientZ;
-      highG.orientY = tempAxisZ;
-      highG.orientZ = tempAxisY;
-      
+
       //flip the direction of Y
-      accel.dirY *= -1;
-      gyro.dirY *= -1;
-      mag.dirY *= -1;
-      highG.dirY *= -1;
+      flipAxis('Y');
+      
+      //exchange Y and Z axes
+      exchangeAxes('Y','Z');
       
       break;
 
     case 5: //Flight Computer X-axis is pointed to the nose
 
       Serial.println("Flight Computer IMU X-axis is pointed to the nose");
-    
-      //exchange X and Z axes
-      tempAxisX = accel.orientX;
-      tempAxisZ = accel.orientZ;
-      accel.orientX = tempAxisZ;
-      accel.orientZ = tempAxisX;
-      tempAxisX = gyro.orientX;
-      tempAxisZ = gyro.orientZ;
-      gyro.orientX = tempAxisZ;
-      gyro.orientZ = tempAxisX;
-      tempAxisX = mag.orientX;
-      tempAxisZ = mag.orientZ;
-      mag.orientX = tempAxisZ;
-      mag.orientZ = tempAxisX;
-      tempAxisX = highG.orientX;
-      tempAxisZ = highG.orientZ;
-      highG.orientX = tempAxisZ;
-      highG.orientZ = tempAxisX;
 
       //flip the direction of Z
-      accel.dirZ *= -1;
-      gyro.dirZ *= -1;
-      mag.dirZ *= -1;
-      highG.dirZ *= -1;
+      flipAxis('Z'); 
       
+      //exchange X and Z axes
+      exchangeAxes('X','Z');
+    
       break;
 
     case 6: //Flight Computer X-axis is pointed to the tail
 
       Serial.println("Flight Computer X-axis is pointed to the tail");
-    
-      //exchange X and Z axes
-      tempAxisX = accel.orientX;
-      tempAxisZ = accel.orientZ;
-      accel.orientX = tempAxisZ;
-      accel.orientZ = tempAxisX;
-      tempAxisX = gyro.orientX;
-      tempAxisZ = gyro.orientZ;
-      gyro.orientX = tempAxisZ;
-      gyro.orientZ = tempAxisX;
-      tempAxisX = mag.orientX;
-      tempAxisZ = mag.orientZ;
-      mag.orientX = tempAxisZ;
-      mag.orientZ = tempAxisX;
-      tempAxisX = highG.orientX;
-      tempAxisZ = highG.orientZ;
-      highG.orientX = tempAxisZ;
-      highG.orientZ = tempAxisX;
 
       //flip the direction of X
-      accel.dirX *= -1;
-      gyro.dirX *= -1;
-      mag.dirX *= -1;
-      highG.dirX *= -1;
+      flipAxis('X');
       
+      //exchange X and Z axes
+      exchangeAxes('X','Z');
+    
       break;
 
     default: //error has occured
@@ -448,6 +372,86 @@ void setOrientation(){
 
   }//end void
 
+void exchangeAxes(char A, char B){
+
+  //accelerometer
+  if(accel.orientX == A){
+    accel.orientX = B;
+    if(accel.orientY == B){accel.orientY = A;}
+    if(accel.orientZ == B){accel.orientZ = A;}}
+  else if(accel.orientY == A){
+    accel.orientY = B;
+    if(accel.orientX == B){accel.orientX = A;}
+    if(accel.orientZ == B){accel.orientZ = A;}}
+  else if(accel.orientZ == A){
+    accel.orientZ == B;
+    if(accel.orientX == B){accel.orientX = A;}
+    if(accel.orientY == B){accel.orientY = A;}}
+
+  //gyroscope
+  if(gyro.orientX == A){
+    gyro.orientX = B;
+    if(gyro.orientY == B){gyro.orientY = A;}
+    if(gyro.orientZ == B){gyro.orientZ = A;}}
+  else if(gyro.orientY == A){
+    gyro.orientY = B;
+    if(gyro.orientX == B){gyro.orientX = A;}
+    if(gyro.orientZ == B){gyro.orientZ = A;}}
+  else if(gyro.orientZ == A){
+    gyro.orientZ == B;
+    if(gyro.orientX == B){gyro.orientX = A;}
+    if(gyro.orientY == B){gyro.orientY = A;}}
+
+  //magnetometer
+  if(mag.orientX == A){
+    mag.orientX = B;
+    if(mag.orientY == B){mag.orientY = A;}
+    if(mag.orientZ == B){mag.orientZ = A;}}
+  else if(mag.orientY == A){
+    mag.orientY = B;
+    if(mag.orientX == B){mag.orientX = A;}
+    if(mag.orientZ == B){mag.orientZ = A;}}
+  else if(mag.orientZ == A){
+    mag.orientZ == B;
+    if(mag.orientX == B){mag.orientX = A;}
+    if(mag.orientY == B){mag.orientY = A;}}
+
+  //high-G accelerometer
+  if(highG.orientX == A){
+    highG.orientX = B;
+    if(highG.orientY == B){highG.orientY = A;}
+    if(highG.orientZ == B){highG.orientZ = A;}}
+  else if(highG.orientY == A){
+    highG.orientY = B;
+    if(highG.orientX == B){highG.orientX = A;}
+    if(highG.orientZ == B){highG.orientZ = A;}}
+  else if(highG.orientZ == A){
+    highG.orientZ == B;
+    if(highG.orientX == B){highG.orientX = A;}
+    if(highG.orientY == B){highG.orientY = A;}}
+}//end exchangeAxes
+
+void flipAxis(char A){
+
+  //accelerometer
+  if(accel.orientX == A){accel.dirX *= -1;}
+  if(accel.orientY == A){accel.dirY *= -1;}
+  if(accel.orientZ == A){accel.dirZ *= -1;}
+  //gyroscope
+  if(gyro.orientX == A){gyro.dirX *= -1;}
+  if(gyro.orientY == A){gyro.dirY *= -1;}
+  if(gyro.orientZ == A){gyro.dirZ *= -1;}
+  //magnetometer
+  if(mag.orientX == A){mag.dirX *= -1;}
+  if(mag.orientY == A){mag.dirY *= -1;}
+  if(mag.orientZ == A){mag.dirZ *= -1;}
+  //high-G accelerometer
+  if(highG.orientX == A){highG.dirX *= -1;}
+  if(highG.orientY == A){highG.dirY *= -1;}
+  if(highG.orientZ == A){highG.dirZ *= -1;}
+  
+}//end flipAxis
+
 void readOrientation(){
 
   //EEPROM stores the pointers and directions for the real-world axes as determined from calibration
@@ -465,40 +469,40 @@ void readOrientation(){
       accel.ptrXsign = &accel.dirX;
       break;
     case 'Y':
-      accel.ptrX = &accel.rawY;
-      accel.ptrXsign = &accel.dirY;
+      accel.ptrY = &accel.rawX;
+      accel.ptrYsign = &accel.dirX;
       break;
     case 'Z':
-      accel.ptrX = &accel.rawZ;
-      accel.ptrXsign = &accel.dirZ;
+      accel.ptrZ = &accel.rawX;
+      accel.ptrZsign = &accel.dirX;
       break;}
   //Y-Axis
   accel.orientY = (char)EEPROM.read(eeprom.accelYptr);
   accel.dirY = (int8_t)EEPROM.read(eeprom.accelYsign);
   switch(accel.orientY){
     case 'X':
-      accel.ptrY = &accel.rawX;
-      accel.ptrYsign = &accel.dirX;
+      accel.ptrX = &accel.rawY;
+      accel.ptrXsign = &accel.dirY;
       break;
     case 'Y':
       accel.ptrY = &accel.rawY;
       accel.ptrYsign = &accel.dirY;
       break;
     case 'Z':
-      accel.ptrY = &accel.rawZ;
-      accel.ptrYsign = &accel.dirZ;
+      accel.ptrZ = &accel.rawY;
+      accel.ptrZsign = &accel.dirY;
       break;}
   //Z-Axis
   accel.orientZ = (char)EEPROM.read(eeprom.accelZptr);
   accel.dirZ = (int8_t)EEPROM.read(eeprom.accelZsign);
   switch(accel.orientZ){
     case 'X':
-      accel.ptrZ = &accel.rawX;
-      accel.ptrZsign = &accel.dirX;
+      accel.ptrX = &accel.rawZ;
+      accel.ptrXsign = &accel.dirZ;
       break;
     case 'Y':
-      accel.ptrZ = &accel.rawY;
-      accel.ptrZsign = &accel.dirY;
+      accel.ptrY = &accel.rawZ;
+      accel.ptrYsign = &accel.dirZ;
       break;
     case 'Z':
       accel.ptrZ = &accel.rawZ;
@@ -517,40 +521,40 @@ void readOrientation(){
       gyro.ptrXsign = &gyro.dirX;
       break;
     case 'Y':
-      gyro.ptrX = &gyro.rawY;
-      gyro.ptrXsign = &gyro.dirY;
+      gyro.ptrY = &gyro.rawX;
+      gyro.ptrYsign = &gyro.dirX;
       break;
     case 'Z':
-      gyro.ptrX = &gyro.rawZ;
-      gyro.ptrXsign = &gyro.dirZ;
+      gyro.ptrZ = &gyro.rawX;
+      gyro.ptrZsign = &gyro.dirX;
       break;}
   //Y-Axis
   gyro.orientY = (char)EEPROM.read(eeprom.gyroYptr);
   gyro.dirY = (int8_t)EEPROM.read(eeprom.gyroYsign);
   switch(gyro.orientY){
     case 'X':
-      gyro.ptrY = &gyro.rawX;
-      gyro.ptrYsign = &gyro.dirX;
+      gyro.ptrX = &gyro.rawY;
+      gyro.ptrXsign = &gyro.dirY;
       break;
     case 'Y':
       gyro.ptrY = &gyro.rawY;
       gyro.ptrYsign = &gyro.dirY;
       break;
     case 'Z':
-      gyro.ptrY = &gyro.rawZ;
-      gyro.ptrYsign = &gyro.dirZ;
+      gyro.ptrZ = &gyro.rawY;
+      gyro.ptrZsign = &gyro.dirY;
       break;}
   //Z-Axis
   gyro.orientZ = (char)EEPROM.read(eeprom.gyroZptr);
   gyro.dirZ = (int8_t)EEPROM.read(eeprom.gyroZsign);
   switch(gyro.orientZ){
     case 'X':
-      gyro.ptrZ = &gyro.rawX;
-      gyro.ptrZsign = &gyro.dirX;
+      gyro.ptrX = &gyro.rawZ;
+      gyro.ptrXsign = &gyro.dirZ;
       break;
     case 'Y':
-      gyro.ptrZ = &gyro.rawY;
-      gyro.ptrZsign = &gyro.dirY;
+      gyro.ptrY = &gyro.rawZ;
+      gyro.ptrYsign = &gyro.dirZ;
       break;
     case 'Z':
       gyro.ptrZ = &gyro.rawZ;
@@ -569,40 +573,40 @@ void readOrientation(){
       mag.ptrXsign = &mag.dirX;
       break;
     case 'Y':
-      mag.ptrX = &mag.rawY;
-      mag.ptrXsign = &mag.dirY;
+      mag.ptrY = &mag.rawX;
+      mag.ptrYsign = &mag.dirX;
       break;
     case 'Z':
-      mag.ptrX = &mag.rawZ;
-      mag.ptrXsign = &mag.dirZ;
+      mag.ptrZ = &mag.rawX;
+      mag.ptrZsign = &mag.dirX;
       break;}
   //Y-Axis
   mag.orientY = (char)EEPROM.read(eeprom.magYptr);
   mag.dirY = (int8_t)EEPROM.read(eeprom.magYsign);
   switch(mag.orientY){
     case 'X':
-      mag.ptrY = &mag.rawX;
-      mag.ptrYsign = &mag.dirX;
+      mag.ptrX = &mag.rawY;
+      mag.ptrXsign = &mag.dirY;
       break;
     case 'Y':
       mag.ptrY = &mag.rawY;
       mag.ptrYsign = &mag.dirY;
       break;
     case 'Z':
-      mag.ptrY = &mag.rawZ;
-      mag.ptrYsign = &mag.dirZ;
+      mag.ptrZ = &mag.rawY;
+      mag.ptrZsign = &mag.dirY;
       break;}
   //Z-Axis
   mag.orientZ = (char)EEPROM.read(eeprom.magZptr);
   mag.dirZ = (int8_t)EEPROM.read(eeprom.magZsign);
   switch(mag.orientZ){
     case 'X':
-      mag.ptrZ = &mag.rawX;
-      mag.ptrZsign = &mag.dirX;
+      mag.ptrX = &mag.rawZ;
+      mag.ptrXsign = &mag.dirZ;
       break;
     case 'Y':
-      mag.ptrZ = &mag.rawY;
-      mag.ptrZsign = &mag.dirY;
+      mag.ptrY = &mag.rawZ;
+      mag.ptrYsign = &mag.dirZ;
       break;
     case 'Z':
       mag.ptrZ = &mag.rawZ;
@@ -621,46 +625,46 @@ void readOrientation(){
       highG.ptrXsign = &highG.dirX;
       break;
     case 'Y':
-      highG.ptrX = &highG.rawY;
-      highG.ptrXsign = &highG.dirY;
+      highG.ptrY = &highG.rawX;
+      highG.ptrYsign = &highG.dirX;
       break;
     case 'Z':
-      highG.ptrX = &highG.rawZ;
-      highG.ptrXsign = &highG.dirZ;
+      highG.ptrZ = &highG.rawX;
+      highG.ptrZsign = &highG.dirX;
       break;}
   //Y-Axis
   highG.orientY = (char)EEPROM.read(eeprom.highGyPtr);
   highG.dirY = (int8_t)EEPROM.read(eeprom.highGySign);
   switch(highG.orientY){
     case 'X':
-      highG.ptrY = &highG.rawX;
-      highG.ptrYsign = &highG.dirX;
+      highG.ptrX = &highG.rawY;
+      highG.ptrXsign = &highG.dirY;
       break;
     case 'Y':
       highG.ptrY = &highG.rawY;
       highG.ptrYsign = &highG.dirY;
       break;
     case 'Z':
-      highG.ptrY = &highG.rawZ;
-      highG.ptrYsign = &highG.dirZ;
+      highG.ptrZ = &highG.rawY;
+      highG.ptrZsign = &highG.dirY;
       break;}
   //Z-Axis
   highG.orientZ = (char)EEPROM.read(eeprom.highGzPtr);
   highG.dirZ = (int8_t)EEPROM.read(eeprom.highGzSign);
   switch(highG.orientZ){
     case 'X':
-      highG.ptrZ = &highG.rawX;
-      highG.ptrZsign = &highG.dirX;
+      highG.ptrX = &highG.rawZ;
+      highG.ptrXsign = &highG.dirZ;
       break;
     case 'Y':
-      highG.ptrZ = &highG.rawY;
-      highG.ptrZsign = &highG.dirY;
+      highG.ptrY = &highG.rawZ;
+      highG.ptrYsign = &highG.dirZ;
       break;
     case 'Z':
       highG.ptrZ = &highG.rawZ;
       highG.ptrZsign = &highG.dirZ;
       break;}
-}
+}//end readOrientation
 
 void baroCalibrate(){
 

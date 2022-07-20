@@ -65,7 +65,7 @@
 //V4_3_6 adds return-to-base functionality (beta testing), adds support for LSM6DS33, LIS3MDL, and MS5607, updates code for separate mag sensors, update for no high-G accelerometer, added sensor calibration checks & warnings, I2C bus & SDFat compatible with Teensy 3.2, 4.0, and 4.1
 //V4_4_0 creates flexible I2C and SPI bus routines so that any device can work on any bus.  Supports all I2C and/or SPI buses across Teensy3.X and Teensy4.X platforms
 //V4_4_1 builds on the unsuccessful 4_4_0 and attempts to fix bus management through simpler interface functions, overhauls orientation method for simplicity 
-//V4_4_2 further streamlines the bus management functions with more efficient pointers, overclocks I2C speed on some sensors, implements controlled sampling of all sensors, continuously checks pre-flight continuity, improved barometric smoothing
+//V4_4_2 further streamlines the bus management functions with more efficient pointers, overclocks I2C speed on some sensors, implements controlled sampling of all sensors, continuously checks pre-flight continuity, improved barometric smoothing, fixed orientation bugs
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
@@ -517,8 +517,8 @@ boolean radioTX = false;
 struct{
   int16_t packetnum = 0;
   uint8_t event = 0;
-  uint16_t fltTime;
-  uint16_t timeStamp = 0;
+  uint16_t fltTime = 0;
+  uint32_t dt = 0;
   int16_t baseAlt = 0;
   int16_t alt;
   int16_t accel;
@@ -651,7 +651,6 @@ int highGfilter[30] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 byte sizeHighGfilter = 30;
 byte filterPosn = 0;
 float highGsmooth;
-float A2D;//analog to digital gain conversion
 union {
    int16_t calValue; 
    byte calByte[2];
@@ -1595,16 +1594,26 @@ void setup(void) {
     Serial.println(mag.z0);}
 
   //Calibrate the analog accelerometer to the digital one
-  A2D = highG.gainZ / accel.gainZ;
+  float A2D = highG.gainZ / accel.gainZ;//.64599
   if(settings.testMode){
     Serial.println(F("Re-calibrating high-G accelerometer..."));
-    Serial.print(F("Old Bias: "));Serial.println(highG.biasX);
     Serial.print(F("HighG.Z0: "));Serial.println(highG.z0);}
-  if(highG.orientX == 'Z'){highG.biasX += highG.dirX*(highG.z0 - (int)((float)accel.z0 / (float)A2D));}
-  if(highG.orientY == 'Z'){highG.biasY += highG.dirY*(highG.z0 - (int)((float)accel.z0 / (float)A2D));}
-  if(highG.orientZ == 'Z'){highG.biasZ += highG.dirZ*(highG.z0 - (int)((float)accel.z0 / (float)A2D));}
+  if(highG.orientX == 'Z'){
+    //Z0 + correction = correctZ0
+    //correctZ0 = accel.z0/A2D
+    //correction = correctZ0 - Z0
+    if(settings.testMode){Serial.print("Old Biasi: ");Serial.println(highG.biasX);}
+    highG.biasX -= highG.dirX*(highG.z0 - (int)((float)accel.z0 / (float)A2D));
+    if(settings.testMode){Serial.print(F("New Bias: "));Serial.println(highG.biasX);}}
+  if(highG.orientY == 'Z'){
+    if(settings.testMode){Serial.print("Old Bias: ");Serial.println(highG.biasY);}
+    highG.biasY -= highG.dirY*(highG.z0 - (int)((float)accel.z0 / (float)A2D));
+    if(settings.testMode){Serial.print(F("New Bias: "));Serial.println(highG.biasY);}}
+  if(highG.orientZ == 'Z'){
+    if(settings.testMode){Serial.print("Old Bias: ");Serial.println(highG.biasZ);}
+    highG.biasZ -= highG.dirZ*((int)(highG.z0 - (float)accel.z0 / (float)A2D));
+    if(settings.testMode){Serial.print(F("New Bias: "));Serial.println(highG.biasZ);}}
   //highG.biasX = highGx0 - (int)((float)accel.x0 / (float)A2D) - 27;//old formula is kept for reference
-  if(settings.testMode){Serial.print(F("New Bias: "));Serial.println(highG.biasX);}
   
   //Compute the acceleromter based rotation angle
   if (accel.y0 >= 0) {yawY0 = asin(min(1, (float)accel.y0 / (float)g)) * degRad;}
@@ -1943,7 +1952,12 @@ void loop(void){
 
   //radio handling
   uint32_t timeNow = micros();
-  if(settings.TXenable && !syncFreq && timeNow - lastTX >= radioInterval){lastTX += ((timeNow-lastTX) - (timeNow-lastTX)%radioInterval); radioSendPacket();}
+  if(settings.TXenable && !syncFreq && timeNow - lastTX >= radioInterval){
+    radio.dt = ((timeNow-lastTX) - (timeNow-lastTX)%radioInterval);
+    lastTX += radio.dt; 
+    if(events.liftoff && !events.touchdown && !events.timeOut){
+      radio.fltTime += (uint16_t)(radio.dt/10000);Serial.println(radio.fltTime);}
+      radioSendPacket();}
   if(syncFreq && timeNow - TXdataStart > (140000UL + RIsyncOffset)){syncPkt();}//only used for 915MHz FHSS
   
   //pre-flight continuity alarm beep
@@ -2308,18 +2322,20 @@ void processBaroSamp(){
   //----------------------------
   static float sumBaseAlt = 0.0F;
   static byte baseAltPosn = 0;
-  static float baseAltBuff[30];
+  static float baseAltBuff[30]  = {0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+                                   0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+                                   0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F};
   if(events.preLiftoff || events.touchdown || events.timeOut){
     sumBaseAlt -= baseAltBuff[baseAltPosn];
     sumBaseAlt += baro.rawAlt;
     baseAltBuff[baseAltPosn] = baro.rawAlt;
     baseAltPosn++;
-    static const float sizeBaseAltBuff = sizeof(baseAltBuff) / sizeof(baseAltBuff[0]);
-    if(baseAltPosn >= (byte)sizeBaseAltBuff){baseAltPosn = 0;}        
+    const byte sizeBaseAltBuff = sizeof(baseAltBuff) / sizeof(baseAltBuff[0]);
+    if(baseAltPosn >= sizeBaseAltBuff){baseAltPosn = 0;}        
     baro.baseAlt = sumBaseAlt / sizeBaseAltBuff;
     radio.baseAlt = (int16_t)baro.baseAlt;
     baro.newSamp = false;}
-    
+  
   //--------------------------
   //Update in-flight variables
   //--------------------------
