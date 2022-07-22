@@ -1,4 +1,4 @@
-EEPROM for version 4.4.1
+EEPROM for version 4.4.2
 Place this file into the root folder of the SD card
 At startup the flight computer will read it and update the EEPROM
 Once finished, the flight computer will delete this file
