@@ -3,8 +3,8 @@ Not not delete or change the order of the settings
 ***********************
 ----Flight Settings----
 ***********************
-Rocket Name = Mach Shock
-flightProfile = 2
+Rocket Name = myRocket
+flightProfile = S
 units = S
 reportStyle = P
 startupTime = 10
@@ -22,8 +22,8 @@ inflightRecovery = 1
 pyroFiringTime = 0.5
 pyro4function = M
 pyro3function = A
-pyro2function = I
-pyro1function = B
+pyro2function = N
+pyro1function = N
 ***********************
 --Telemetry Settings---
 ***********************
