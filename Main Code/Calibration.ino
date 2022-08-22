@@ -188,9 +188,6 @@ void magCalibrate(){
 void setOrientation(){
 
   byte orientCase = 0;
-  char tempAxisX;
-  char tempAxisY;
-  char tempAxisZ;
 
   //read from EEPROM the sensor orientations relative to the board
   accel.orientX = (char)EEPROM.read(eeprom.accel2boardXaxis);
@@ -384,7 +381,7 @@ void exchangeAxes(char A, char B){
     if(accel.orientX == B){accel.orientX = A;}
     if(accel.orientZ == B){accel.orientZ = A;}}
   else if(accel.orientZ == A){
-    accel.orientZ == B;
+    accel.orientZ = B;
     if(accel.orientX == B){accel.orientX = A;}
     if(accel.orientY == B){accel.orientY = A;}}
 
@@ -398,7 +395,7 @@ void exchangeAxes(char A, char B){
     if(gyro.orientX == B){gyro.orientX = A;}
     if(gyro.orientZ == B){gyro.orientZ = A;}}
   else if(gyro.orientZ == A){
-    gyro.orientZ == B;
+    gyro.orientZ = B;
     if(gyro.orientX == B){gyro.orientX = A;}
     if(gyro.orientY == B){gyro.orientY = A;}}
 
@@ -412,7 +409,7 @@ void exchangeAxes(char A, char B){
     if(mag.orientX == B){mag.orientX = A;}
     if(mag.orientZ == B){mag.orientZ = A;}}
   else if(mag.orientZ == A){
-    mag.orientZ == B;
+    mag.orientZ = B;
     if(mag.orientX == B){mag.orientX = A;}
     if(mag.orientY == B){mag.orientY = A;}}
 
@@ -426,7 +423,7 @@ void exchangeAxes(char A, char B){
     if(highG.orientX == B){highG.orientX = A;}
     if(highG.orientZ == B){highG.orientZ = A;}}
   else if(highG.orientZ == A){
-    highG.orientZ == B;
+    highG.orientZ = B;
     if(highG.orientX == B){highG.orientX = A;}
     if(highG.orientY == B){highG.orientY = A;}}
 }//end exchangeAxes

@@ -1015,7 +1015,7 @@ bool beginADXL377() {
   return true;}
 
 void getADXL377() {
-
+  
   //measured time is 45 micros per reading
   const uint16_t ADCmidValue = 32768;
   long highGsumX = 0L;
@@ -1052,6 +1052,9 @@ bool beginH3LIS331DL() {
   else {
     highGBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     highGBus.cs = pins.highG_CS;
+    highGBus.writeMask = 0x00;
+    highGBus.readMask = 0x80;
+    highGBus.incMask = 0x40;
     startSPI(&highGBus, sensors.highGBusNum);}
 
   //If I2C, check to see if there is a sensor at this address
@@ -1062,8 +1065,7 @@ bool beginH3LIS331DL() {
 
   //check whoami
   byte id = 0x00;
-  if (sensors.highGBusType == 'I') {id = read8(0x0F);}
-  else {id = read8(0x8F);}
+  id = read8(0x0F);
   if (id != 0x32) {
     Serial.println(F("H3LIS331 not found!"));
     return false;}
@@ -1092,14 +1094,13 @@ void getH3LIS331DL() {
   //setup the bus
   activeBus = &highGBus;
 
-  uint8_t bitMask = 0xC0;
-  if(sensors.highGBusType == 'I'){bitMask = 0x80;}
-
   //get data from all axes and assemble
-  burstRead(bitMask | H3LIS331_REGISTER_OUT_X_L, 6);
+  burstRead(H3LIS331_REGISTER_OUT_X_L, 6);
+  
   highG.rawX = (int16_t)(rawData[0] | (rawData[1] << 8)) >> 4;
   highG.rawY = (int16_t)(rawData[2] | (rawData[3] << 8)) >> 4;
   highG.rawZ = (int16_t)(rawData[4] | (rawData[5] << 8)) >> 4;
+
 }//end getH3LIS331DL
 
 //***************************************************************************
@@ -2041,18 +2042,12 @@ bool beginMS56XX() {
   delayMicroseconds(9040);
   burstRead(0x00, 3);
   baro.temperature = ConvertTempMS56XX();
-  if (settings.testMode) {
-    Serial.print("Intial Temp Complete: ");
-    Serial.println(baro.temperature, 1);}
 
   //get initial pressure
   cmdMS56XX(0x48);
   delayMicroseconds(9040);
   burstRead(0x00, 3);
   baro.pressure = ConvertPressMS56XX();
-  if (settings.testMode) {
-    Serial.print("Intial Press Complete: ");
-    Serial.println(baro.pressure, 2);}
 
   //get another pressure
   cmdMS56XX(0x48);
