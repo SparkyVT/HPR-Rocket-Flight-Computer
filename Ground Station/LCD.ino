@@ -6,25 +6,20 @@ void startupLCD(){
   //-----------------------------------------------------
   //Start I2C
   Wire.begin();
-  
-  Wire.setClock(400000); //Optional - set I2C SCL to High Speed Mode of 400kHz
-  //Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, 400000);
   lcd.begin(Wire);
-  lcd.setBacklight(0, 0, 0); //Set backlight to bright med at (125, 125, 125)
+  delay(50);
+  lcd.setBacklight(75, 75, 75); //Set backlight to bright med at (125, 125, 125)
   lcd.setContrast(50); //Set contrast. Lower to 0 for higher contrast.
   lcd.clear();
 
   //Display the battery voltage
-  //lcd.setCursor(0,0);
   lcd.print(F("Battery: "));
   float dispVolt = battVolt * 3.3 /(0.3125 * 1023.0);
   lcd.print(dispVolt);
   lcd.print('V');
   lcd.print('\r');
-  //lcd.setCursor(0,1);
   if(SDinit){lcd.print(F("SD Card OK!"));}
   else{lcd.print(F("SD Card Failed!"));}
-  //lcd.setCursor(0,2);
   lcd.print('\r');
   byte radioCode = 0;
   if(radio1status && radio2status){radioCode = 1;}
@@ -51,7 +46,6 @@ void startupLCD(){
     default:
       lcd.print(F("LCD Code Error"));
       break;}
-  //lcd.setCursor(0,3);
   lcd.print('\r');
   lcd.print(radio1Freq, 3);
   lcd.print(F("      "));
@@ -100,13 +94,14 @@ void preflightLCD(){
   myString.trim();
   for(byte i = myString.length()+1; i < 21; i++){myString += " ";}
   //line 1
-  if(contCode == 5){myString += "All 3 Pyros Detected";}
-  else if (contCode == 6){myString += "All 4 Pyros Detected";}
-  else if (contCode == 7){myString += "Pyro Apogee Only";}
-  else if (contCode == 8){myString += "Pyro Mains Only";}
-  else if (contCode == 9){myString += "Pyro Mains & Apogee";}
-  else if (contCode == 0){myString += "No Pyros Detected!";}
-  else{myString += "No Cont Pyro ";myString += String(contCode);}
+  //  if(contCode == 5){myString += "All 3 Pyros Detected";}
+  //  else if (contCode == 6){myString += "All 4 Pyros Detected";}
+  //  else if (contCode == 7){myString += "Pyro Apogee Only";}
+  //  else if (contCode == 8){myString += "Pyro Mains Only";}
+  //  else if (contCode == 9){myString += "Pyro Mains & Apogee";}
+  //  else if (contCode == 0){myString += "No Pyros Detected!";}
+  //  else{myString += "No Cont Pyro ";myString += String(contCode);}
+  myString += pyroTable[contCode];
   for(byte i = myString.length()+1; i < 41; i++){myString += " ";}
   //line 2
   if(GPSlock == 1){
@@ -134,11 +129,10 @@ void inflightLCD(){
   //-----------------------------------
   //event - line 1
   //-----------------------------------
-  for(byte i = 0; i < 21; i++){dataString[i]= '\0';}
-  strcpy_P(dataString, (char *)pgm_read_word(&(eventTable[event])));
-  String myString = dataString;
+  String myString = eventTable[event];
   myString.trim();
   for(byte i = myString.length()+1; i < 21; i++){myString += " ";}
+  Serial.println(myString);
 //  //light up the LCD if it has this capability
 //  if(!ledLight){for(byte i = 0; i < sizeof(greenEvents) && !ledLight; i++){
 //    if(event == greenEvents[i]){
@@ -152,7 +146,7 @@ void inflightLCD(){
 //      colorStart = micros();
 //      ledLight = true;
 //      i = sizeof(redEvents);}}}
-    //----------------------------------------
+  //----------------------------------------
   //display altitude - line 2
   //----------------------------------------
   myString += "Altitude: ";
@@ -268,8 +262,9 @@ void signalLostLCD(){
 
 void errorLCD(){
   lcd.clear();
-  lcd.print(F("Pkt Code Error: "));
-  lcd.print(event);}
+  String myString = "Pkt Code Error: ";
+  myString += String(event);
+  lcd.print(myString);}
 
 void changeFreqLCD(){
   lcd.clear();
