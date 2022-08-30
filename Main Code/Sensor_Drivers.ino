@@ -641,8 +641,8 @@ void getL3GD20H() {
 bool beginLSM9DS1_AG() {
 
   //Addresses for the registers
-  #define LSM9DS1_ADDRESS_ACCELGYRO          (0x6B)
-  #define LSM9DS1_XG_ID                      (0b01101000)
+  #define LSM9DS1_ADDRESS_ACCELGYRO            (0x6B)
+  #define LSM9DS1_XG_ID                        (0b01101000)
   #define LSM9DS1_REGISTER_CTRL_REG1_G         (0x10)
   #define LSM9DS1_REGISTER_CTRL_REG5_XL        (0x1F)
   #define LSM9DS1_REGISTER_CTRL_REG6_XL        (0x20)
@@ -656,7 +656,8 @@ bool beginLSM9DS1_AG() {
   else {
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     accelBus.cs = pins.accelCS;
-    startSPI(&accelBus, sensors.accelBusNum);}
+    startSPI(&accelBus, sensors.accelBusNum);
+    accelBus.readMask = 0x80;}
   gyroBus = accelBus;
   
   //if I2C, check if there is a sensor at this address
@@ -757,12 +758,12 @@ void getLSM9DS1_AG() {
   burstRead(LSM9DS1_REGISTER_OUT_X_L_G, 12);
 
   //assemble the data
-  gyro.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
-  gyro.rawY = (int16_t)(rawData[2] | (rawData[3] << 8));
-  gyro.rawZ = (int16_t)(rawData[4] | (rawData[5] << 8));
+  gyro.rawX   = (int16_t)(rawData[0] | (rawData[1] << 8));
+  gyro.rawY   = (int16_t)(rawData[2] | (rawData[3] << 8));
+  gyro.rawZ   = (int16_t)(rawData[4] | (rawData[5] << 8));
   accel.rawX  = (int16_t)(rawData[6] | (rawData[7] << 8));
   accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
-  accel.rawZ  = (int16_t)(rawData[10] | (rawData[11] << 8));}
+  accel.rawZ  = (int16_t)(rawData[10]|(rawData[11] << 8));}
 
 void getLSM9DS1_A() {
 
@@ -821,7 +822,7 @@ void getLSM9DS1_M() {
 bool beginLSM6DS33() {
 
   //Addresses for the registers
-#define LSM6DS33_ADDRESS_ACCELGYRO            (0xD6)
+#define LSM6DS33_ADDRESS_ACCELGYRO            (0xD4)
 #define LSM6DS33_WHOAMI                       (0x0F)
 #define LSM6DS33_REGISTER_CTRL1_XL            (0x10)
 #define LSM6DS33_REGISTER_CTRL2_G             (0x11)
@@ -830,6 +831,7 @@ bool beginLSM6DS33() {
   if (sensors.accelBusType == 'I') {
     accelBus.i2cAddress = gyroBus.i2cAddress = LSM6DS33_ADDRESS_ACCELGYRO;
     accelBus.i2cRate = gyroBus.i2cRate = 400000;
+    accelBus.readMask = 0x80;
     startI2C(&accelBus, sensors.accelBusNum);}
   else {
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
@@ -1052,7 +1054,7 @@ bool beginH3LIS331DL() {
   else {
     highGBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     highGBus.cs = pins.highG_CS;
-    highGBus.writeMask = 0x00;
+    highGBus.writeMask = 0x00;   
     highGBus.readMask = 0x80;
     highGBus.incMask = 0x40;
     startSPI(&highGBus, sensors.highGBusNum);}

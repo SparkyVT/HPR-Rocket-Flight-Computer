@@ -20,6 +20,7 @@
 //03 Jan 22: Created to support Teensy 3.2, 4.0, and 4.1
 //18 APR 22: Updated to support any device on any bus
 //16 JUN 22: Streamlined bus usage with more efficient use of pointers
+//20 AUG 22: Added bitmasking capability to make the sensor drivers easier to read
 //----------------------------
 //LIST OF FUNCTIONS & ROUTINES
 //----------------------------
@@ -28,6 +29,7 @@
 //startSPI(): starts the SPI bus
 //write8(): writes 8 bits to the register 
 //write16(): writes 16 bits to the register
+//burstWrite(): writes a given number of bytes to a device
 //read8(): reads 8 bits from the register
 //burstRead(): reads a given number of bytes from the starting register
 //setHWSERIAL(): sets the active UART bus for the GPS to the user specified bus

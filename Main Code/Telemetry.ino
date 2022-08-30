@@ -225,6 +225,7 @@ void radioSendPacket(){
     //event
     dataPacket[pktPosn] = radio.event; pktPosn++;//1
     //time
+    radio.fltTime = (uint16_t)(fltTime.timeCurrent/10000);
     dataPacket[pktPosn] = lowByte(radio.fltTime);pktPosn++;//2
     dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//3
     //velocity
