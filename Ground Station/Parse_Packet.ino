@@ -1,4 +1,3 @@
-
 void preflightPacket(byte rxPacket[]){
   
 /*---------------------------------------------------
