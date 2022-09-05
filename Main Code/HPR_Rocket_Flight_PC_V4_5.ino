@@ -66,7 +66,7 @@
 //V4_4_0 creates flexible I2C and SPI bus routines so that any device can work on any bus.  Supports all I2C and/or SPI buses across Teensy3.X and Teensy4.X platforms
 //V4_4_1 builds on the unsuccessful 4_4_0 and attempts to fix bus management through simpler interface functions, overhauls orientation method for simplicity 
 //V4_4_2 further streamlines the bus management functions with more efficient pointers, overclocks I2C speed on some sensors, implements controlled sampling of all sensors, continuously checks pre-flight continuity, improved barometric smoothing, fixed orientation bugs
-//V4_5_0 eliminates RadioHead library due to interferences with the PWMServo library, uses an interval timer to control the radio packet handling
+//V4_5_0 eliminates RadioHead library due to interferences with the PWMServo library, uses an interval timer to control the radio packet timing, fixes bugs in the telemetry timestamps
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
@@ -442,7 +442,6 @@ struct {
 //GPIO pin mapping
 //-----------------------------------------
 struct{
-  byte i2c;
   byte nullCont;
   byte nullFire;
   byte beep;
@@ -518,7 +517,6 @@ struct{
   int16_t packetnum = 0;
   uint8_t event = 0;
   uint16_t fltTime = 0;
-  uint32_t dt = 0;
   int16_t baseAlt = 0;
   int16_t alt;
   int16_t accel;
@@ -1815,11 +1813,13 @@ void loop(void){
     events.preLiftoff = false;
     events.liftoff = true;
     events.inFlight = true;
-    fltTime.liftoff = fltTime.timeCurrent;
+    fltTime.liftoff = fltTime.tmClock;
     radio.event = 1;
     radio.alt = 0;
     radioTimer.begin(timerSendPkt, RIinflight);
+    noInterrupts();
     sendPkt = true;
+    interrupts();
     liftoffHour = GPS.time.hour();
     liftoffMin = GPS.time.minute();
     liftoffSec = GPS.time.second();
@@ -1985,10 +1985,10 @@ void loop(void){
   noInterrupts();
   boolean pktFlag = sendPkt;
   interrupts();
-  if(settings.TXenable && !syncFreq && pktFlag){radioSendPacket();}
+  if(settings.TXenable && pktFlag && !syncFreq){radioSendPacket();}
 
   //Radio Synchronization packet when 915MHz FHSS is used
-  if(syncFreq && !TX){syncPkt();}
+  if(syncFreq){syncPkt();}
 
   //Radio clear interrupts
   noInterrupts();

@@ -225,9 +225,12 @@ void radioSendPacket(){
     //event
     dataPacket[pktPosn] = radio.event; pktPosn++;//1
     //time
-    radio.fltTime = (uint16_t)(fltTime.timeCurrent/10000);
+    uint32_t radioTime = radio.packetnum * 200000 + (sampNum-1) * 50000;
+    int32_t timeDiff = (int32_t)radioTime - (int32_t)fltTime.timeCurrent;
+    if(abs(timeDiff) < 50000){radio.fltTime = (int16_t)(radioTime/10000);}
+    else{radio.fltTime = (uint16_t)(fltTime.timeCurrent/10000);}
     dataPacket[pktPosn] = lowByte(radio.fltTime);pktPosn++;//2
-    dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//3
+    dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//3    
     //velocity
     dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//4
     dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//5
@@ -369,7 +372,7 @@ void syncPkt(){
   dataPacket[2] = nextChnl;//3
   dataPacket[3] = nextChnl2;//4
   //send packet
-  radioSendPkt(dataPacket, 4);
+  if(!TX){TX = radioSendPkt(dataPacket, 4);}
   syncFreq = false;}
 
 bool radioBegin(uint8_t radioRST){
@@ -690,5 +693,7 @@ void clearTXdone(){
   
   //clear flag
   write8(RegIrqFlags, 0xFF);
-  
-  clearTX = false;}
+
+  noInterrupts();
+  clearTX = false;
+  interrupts();}
