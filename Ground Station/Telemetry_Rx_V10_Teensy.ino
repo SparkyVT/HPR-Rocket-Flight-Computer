@@ -95,8 +95,6 @@ boolean GPSdebug = false;
 //Data Packet variables
 //---------------------------
 uint8_t len;
-uint8_t len1;
-uint8_t len2;
 byte dataPacket1[66];
 byte dataPacket2[66];
 char dataString[256];
@@ -417,9 +415,8 @@ void setup() {
   //Display the startup screen
   Serial.println("starting LCD");
   startupLCD();
-  
-  len1 = sizeof(dataPacket1);
-  len2 = sizeof(dataPacket2);}//end setup
+
+}//end setup
 
 void loop() {
 
@@ -437,7 +434,6 @@ void loop() {
     lastRX = micros();
 
     //get the packet from the radio
-    len = len1;
     radioCS = radio1CS;
     radioRecvPkt(dataPacket1);
 
@@ -508,7 +504,6 @@ void loop() {
     lastRX = micros();
 
     //get the packet from the radio
-    len = len2;
     radioCS = radio2CS;
     radioRecvPkt(dataPacket2);
 

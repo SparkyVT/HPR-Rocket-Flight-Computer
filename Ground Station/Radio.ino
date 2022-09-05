@@ -220,6 +220,7 @@ bool radioRecvPkt(uint8_t* data){
   //read the number of bytes recieved
   #define RegRxNbBytes 0x13
   uint8_t pktLen = read8(RegRxNbBytes);
+  len = pktLen;
   
   //read the packet
   burstRead(0x00, data, pktLen);
