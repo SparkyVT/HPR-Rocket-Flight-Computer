@@ -12,8 +12,6 @@
 //----------------------------
 
 boolean rapidReset(){
-
-  RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
       
   //Read pin settings from EEPROM
   Serial.print(F("Reading EEPROM..."));
@@ -161,11 +159,11 @@ boolean rapidReset(){
   beginHighG();
   beginBaro();
   if(settings.TXenable && settings.inflightRecover > 0){
-    rf95.init();
+    radioBegin(pins.radioRST);
     //Set the radio output power & frequency
-    rf95.setTxPower(settings.TXpwr, false);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
+    setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
     if (sensors.radio == 2 && settings.FHSS){settings.TXfreq = 902.300; RIpreLiftoff = 600000UL;}//sync freq
-    rf95.setFrequency(settings.TXfreq);
+    setRadioFreq(settings.TXfreq);
     radioInterval = RIpreLiftoff;}
   
   //setup the ADC for sampling the battery
@@ -183,9 +181,9 @@ boolean rapidReset(){
     if(settings.testMode){Serial.println(F("Telemetry OFF!"));}}
   else{
     //Set the radio output power & frequency
-    rf95.setTxPower(settings.TXpwr, false);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
+    setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
     if (sensors.radio == 2 && settings.FHSS){settings.TXfreq = 902.300; RIpreLiftoff = 600000UL;}//sync freq
-    rf95.setFrequency(settings.TXfreq);
+    setRadioFreq(settings.TXfreq);
     if(settings.testMode){
       Serial.print("Radio Freq: ");Serial.println(settings.TXfreq, 3);
       Serial.print("Radio Power: ");Serial.println(settings.TXpwr);}
