@@ -395,4 +395,6 @@ void magRotn(){
   magPitch = magOffVert * speedCos(tempRoll);
 
   //compute yaw
-  magYaw = magOffVert * speedSin(tempRoll);}
+  magYaw = magOffVert * speedSin(tempRoll);
+  
+}

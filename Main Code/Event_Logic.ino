@@ -17,7 +17,9 @@ void checkEvents(){
     radio.event = Time_Limit;
     if(settings.fltProfile == 'B'){radio.event = Booster_Time_Limit;}
     if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
-    radioTimer.begin(timerSendPkt, RIpostFlight);
+    radioInterval = RIpostFlight;
+    RIsyncOffset = 600000UL;
+    lastTX = micros();
     fltTime.touchdown = fltTime.timeCurrent;
     touchdownHour = GPS.time.hour();
     touchdownMin = GPS.time.minute();
@@ -42,7 +44,7 @@ void checkEvents(){
       pktPosn = 0;
       radio.packetnum = 0;
       sampNum = 0;
-      radioTimer.begin(timerSendPkt, RIpreLiftoff);
+      radioInterval = RIpreLiftoff;
       highGsmooth = 0;
       highGsum = 0;
       for(byte i=0; i<10; i++){highGfilter[i]=0;}

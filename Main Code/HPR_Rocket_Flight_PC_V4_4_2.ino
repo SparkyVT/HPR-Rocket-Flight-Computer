@@ -947,7 +947,9 @@ void setup(void) {
   //if so, then we need to rapidly get the system back up and going
   //call the rapidReset routine and immediately exit void setup
   byte lastEvent = EEPROM.read(eeprom.lastEvent);
-  if(lastEvent != 27){EEPROM.update(eeprom.lastEvent, 27);}
+  if(lastEvent != 27){
+    EEPROM.update(eeprom.lastEvent, 27);
+    lastEvent = 27;}
   if(lastEvent == (byte)255){
     lastEvent = 27;
     EEPROM.write(eeprom.lastEvent, lastEvent);}
@@ -1052,7 +1054,9 @@ void setup(void) {
   digitalWrite(pins.pyro2Fire, LOW);
   digitalWrite(pins.pyro3Fire, LOW);
   digitalWrite(pins.pyro4Fire, LOW);
-  Serial.println("Set Pins Low");
+  //Set the device CS pins to HIGH
+  digitalWrite(pins.highG_CS, HIGH);
+  Serial.println("Set Pins");
 
   //Start Harware Serial communication
   setHWSERIAL();
@@ -1204,6 +1208,8 @@ void setup(void) {
   //setup the radio
   if(!settings.TXenable){
     if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, LOW);}
+    digitalWrite(pins.radioCS, HIGH);
+    rf95.sleep();
     if(settings.testMode){Serial.println(F("Telemetry OFF!"));}}
   else{
     //Set the radio output power & frequency

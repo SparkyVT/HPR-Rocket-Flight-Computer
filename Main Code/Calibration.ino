@@ -699,8 +699,7 @@ void baroCalibrate(){
   baro.tempOffset = 0.0F;
   for(int i = 0; i < 300; i++){
     getBaro();
-    if(baro.newTemp){tempSum += baro.temperature;baro.newTemp = false;Serial.println(baro.temperature, 1);}
-    else{i--;}
+    tempSum += baro.temperature;
     delayMicroseconds(baro.timeBtwnSamp);}
   
   baro.tempOffset = (tempSum / 300) - userInput;
@@ -733,8 +732,7 @@ void baroCalibrate(){
   float baroSum = 0.0F;
   for(int i = 0; i < 300; i++){
     getBaro();
-    if(baro.newSamp){baroSum += baro.pressure;baro.newSamp = false;Serial.println(baro.pressure, 2);}
-    else{i--;};    
+    baroSum += baro.pressure;
     delayMicroseconds(baro.timeBtwnSamp);}
 
   baro.pressOffset = (baroSum / 300) - userInput;

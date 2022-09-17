@@ -327,7 +327,7 @@ void writeSDflightData(){
     writeBoolData(mag.newSamp);
     writeBoolData(baro.newSamp);
     writeBoolData(baro.newTemp);
-    writeBoolData(SDradioTX);
+    writeBoolData(radioTX);
     writeBoolData(gpsWrite);
     dataString[strPosn] = cs;strPosn++;
     writeULongData(sampleTime);
@@ -421,7 +421,7 @@ void writeSDflightData(){
     dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;
     dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;}
   //update the radio packet number
-  if (SDradioTX){writeIntData(radio.packetnum);SDradioTX = false;}
+  if (radioTX){writeIntData(radio.packetnum);radioTX = false;}
   else{dataString[strPosn]=cs;strPosn++;}
   //end of sample - carriage return, newline, and null value
   dataString[strPosn] = '\r';strPosn++;
