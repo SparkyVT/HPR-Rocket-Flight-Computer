@@ -17,8 +17,6 @@ bool TX = false;
 
 bool radioBegin(uint8_t CS, uint8_t radioRST){
 
-  SPI.begin();
-
   radioCS = CS;
 
   uint8_t debugVal;
@@ -222,6 +220,7 @@ bool radioRecvPkt(uint8_t* data){
   //read the number of bytes recieved
   #define RegRxNbBytes 0x13
   uint8_t pktLen = read8(RegRxNbBytes);
+  len = pktLen;
   
   //read the packet
   burstRead(0x00, data, pktLen);
@@ -291,13 +290,12 @@ bool radioSetMode(uint8_t mode){
   //set radio mode
   write8(RegOpMode, mode);
   radioMode = mode;
-  Serial.println(mode, HEX);
 
   delay(1);
   
   //check mode
   uint8_t val = read8(RegOpMode);
-  if(val != (LoRaMode | mode)){Serial.println(val, HEX);return false;}
+  if(val != (LoRaMode | mode)){Serial.print("Set Mode Failed: ");Serial.println(val, HEX);return false;}
 
   //set the IRQ to fire on TX sent
   if(mode == TXmode){

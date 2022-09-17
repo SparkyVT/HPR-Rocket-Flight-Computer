@@ -75,7 +75,8 @@
 void writeInflightData(){
   strPosn = 0;
   writeIntData(event);
-  writeFloatData((float)(sampleTime) * 0.01, 2);
+  //writeFloatData((float)(sampleTime) * 0.01, 2);
+  writeTimeStamp(sampleTime);
   writeFloatData((float)(accel) * 0.029927521, 4);
   writeIntData(velocity);
   writeIntData(Alt);
@@ -160,6 +161,36 @@ void writeFloatData(float dataValue, byte decimals){
     itoa(fracInt, dataString + strPosn, 10);
     while(dataString[strPosn]!= '\0'){strPosn++;}
     dataString[strPosn]=','; strPosn++;}}
+
+void writeTimeStamp(int dataValue){
+
+  writeIntData(dataValue);  
+
+  //add 2 zeroes
+  if(dataValue < 10){
+    dataString[strPosn+2] = dataString[strPosn-1];//comma
+    dataString[strPosn+1] = dataString[strPosn-2];
+    dataString[strPosn] = '0';
+    dataString[strPosn-1]='.';
+    dataString[strPosn-2]='0';
+    strPosn+=3;}
+
+  //add 1 zero
+  else if(dataValue < 100){
+    dataString[strPosn+1] = dataString[strPosn-1];
+    dataString[strPosn] = dataString[strPosn-2];
+    dataString[strPosn-1]=dataString[strPosn-3];
+    dataString[strPosn-2]='.';
+    dataString[strPosn-3]='0';
+    strPosn+=2;}
+  
+  //parse as normal
+  else{
+    dataString[strPosn]=dataString[strPosn-1];
+    dataString[strPosn-1] = dataString[strPosn-2];
+    dataString[strPosn-2] = dataString[strPosn-3];
+    dataString[strPosn-3] = '.';
+    strPosn++;}}
 
 void updateStrPosn(){
   while(dataString[strPosn]!= '\0'){strPosn++;}

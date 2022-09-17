@@ -45,9 +45,9 @@ byte dataPkt[80];
 volatile boolean processIRQ = false;
 uint32_t timeLastPkt = 0UL;
 uint32_t debugTime;
-uint8_t pktRssi;
-float radio1Freq = 433.250;
-float radio2Freq = 433.500;
+int16_t pktRssi;
+float radio1Freq = 433.500;
+float radio2Freq = 433.250;
 
 //RegOpMode
 enum {
@@ -95,8 +95,6 @@ boolean GPSdebug = false;
 //Data Packet variables
 //---------------------------
 uint8_t len;
-uint8_t len1;
-uint8_t len2;
 byte dataPacket1[66];
 byte dataPacket2[66];
 char dataString[256];
@@ -312,6 +310,9 @@ byte radioCS;
 
 void setup() {
 
+  //start SPI
+  SPI.begin();
+    
   //Primary Serial Port
   Serial.begin(9600);
   Serial2.begin(9600);
@@ -329,7 +330,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(radio2IRQ), clearIRQ2, RISING);
   
   //Radio1 setup
-  delay(100);
+  delay(500);
   radio1status = radioBegin(radio1CS, radio1RST);
   if(!radio1status){Serial.println(F("Radio1 Failed"));}
   else{Serial.println(F("Radio1 OK!"));}
@@ -339,6 +340,8 @@ void setup() {
   radio2status = radioBegin(radio2CS, radio2RST);
   if(!radio2status){Serial.println(F("Radio2 Failed"));}
   else{Serial.println(F("Radio2 OK!"));}
+
+  if(!radio1status){radio1status = radioBegin(radio1CS, radio1RST);}
 
   //read the band from EEPROM
   if((byte)EEPROM.read(63) == 1){band433 = true;}
@@ -412,9 +415,8 @@ void setup() {
   //Display the startup screen
   Serial.println("starting LCD");
   startupLCD();
-  
-  len1 = sizeof(dataPacket1);
-  len2 = sizeof(dataPacket2);}//end setup
+
+}//end setup
 
 void loop() {
 
@@ -432,7 +434,6 @@ void loop() {
     lastRX = micros();
 
     //get the packet from the radio
-    len = len1;
     radioCS = radio1CS;
     radioRecvPkt(dataPacket1);
 
@@ -503,7 +504,6 @@ void loop() {
     lastRX = micros();
 
     //get the packet from the radio
-    len = len2;
     radioCS = radio2CS;
     radioRecvPkt(dataPacket2);
 

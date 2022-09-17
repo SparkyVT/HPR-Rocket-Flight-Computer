@@ -67,6 +67,7 @@ void startupLCD(){
   //GPS Latitude - Line 3
   //----------------------------------------
   lcd.print('\r');
+  if(isnan(lastGPSlat) || lastGPSlat == 0.0){lastGPSlat = 1234.5678;}
   parseCoord(lastGPSlat);
   lcd.print(dataString);
   lcd.print((char)39);
@@ -75,7 +76,7 @@ void startupLCD(){
   //GPS Latitude - Line 4
   //----------------------------------------
   lcd.print('\r');
-  //lcd.print(lastGPSlon,4);
+  if(isnan(lastGPSlon) || lastGPSlon == 0.0){lastGPSlon = 1234.5678;}
   parseCoord(lastGPSlon);
   lcd.print(dataString);
   lcd.print((char)39);
@@ -86,7 +87,8 @@ void preflightLCD(){
   //-----------------------------------------------------
   //PreFlight Display
   //-----------------------------------------------------
-  if(flightPhase != 1){lcd.clear(); flightPhase = 1;}
+  if(flightPhase != 1){lcd.clear();flightPhase = 1;}
+  
   //Setup Display Text
   //-------------------------------------------------
   //line 0: Display rocket name
@@ -178,6 +180,7 @@ void postflightLCD(){
   //Postflight Code
   //-----------------------------------------------------------
   if(flightPhase != 3){lcd.clear(); flightPhase = 3;}
+  
   //----------------------------------------
   //barometric altitude - line 1
   //----------------------------------------
@@ -229,6 +232,7 @@ void signalLostLCD(){
     //----------------------------------------
     //GPS Latitude - Line 2
     //----------------------------------------
+    if(isnan(lastGPSlat) || lastGPSlat == 0.0){lastGPSlat = 1234.5678;}
     parseCoord(lastGPSlat);
     myString += dataString;
     myString.trim();
@@ -238,6 +242,7 @@ void signalLostLCD(){
     //----------------------------------------
     //GPS Latitude - Line 2
     //----------------------------------------
+    if(isnan(lastGPSlon) || lastGPSlon == 0.0){lastGPSlon = 1234.5678;}
     parseCoord(lastGPSlon);
     myString += dataString;
     myString.trim();
@@ -261,12 +266,14 @@ void signalLostLCD(){
     if(debugSerial){Serial.println(myString);}}
 
 void errorLCD(){
+  flightPhase = 0;
   lcd.clear();
   String myString = "Pkt Code Error: ";
   myString += String(event);
   lcd.print(myString);}
 
 void changeFreqLCD(){
+  flightPhase = 0;
   lcd.clear();
   String myString = "Change Freq to Ch: ";
   myString += String(chnl1);
