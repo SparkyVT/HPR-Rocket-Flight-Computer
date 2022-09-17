@@ -1,7 +1,7 @@
- //High-Power Rocketry Flight Computer (TeensyFlight)
+//High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 9337 lines of code = 2408 MainFile + 378 Bus_Mgmt + 2199 SensorDrivers + 886 Calibration + 625 SpeedTrig + 505 Inflight_Recover + 637 SD + 398 Rotation + 691 Telemetry + 327 Event_Logic + 283 GPSconfig      
+//Code Line Count: 9356 lines of code = 2435 MainFile + 366 Bus_Mgmt + 2194 SensorDrivers + 888 Calibration + 625 SpeedTrig + 505 Inflight_Recover + 637 SD + 398 Rotation + 698 Telemetry + 327 Event_Logic + 283 GPSconfig      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features
@@ -1100,21 +1100,18 @@ void setup(void) {
   beginHighG();
   beginBaro();
 
-  //Radio Setup
-  //Set interrupts
-  pinMode(pins.radioIRQ, INPUT);
-  attachInterrupt(digitalPinToInterrupt(pins.radioIRQ), clearIRQ, RISING);
-  
   //Initialize the radio
-  sensors.status_RFM96W = radioBegin(pins.radioRST);
-  if(settings.testMode){
-    if(sensors.status_RFM96W){Serial.println(F("RFM96W/95W OK!"));}
-    else{Serial.println(F("RFM96W/95W not found!"));}}
+  //if the Adafruit RFM9XW board is used, make sure its on
+  if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, HIGH);}
   //433MHz Radio
   if(sensors.status_RFM96W && settings.testMode && sensors.radio == 1){Serial.println(F("Starting 433MHz"));}
   //915MHz Radio
   if(sensors.status_RFM96W && settings.testMode && sensors.radio == 2){Serial.println(F("Starting 915MHz"));}
-    
+  //start the radio
+  sensors.status_RFM96W = radioBegin(pins.radioRST);
+  if(sensors.status_RFM96W){Serial.println(F("RFM96W/95W OK!"));}
+  else{Serial.println(F("RFM96W/95W not found!"));}
+  
   //read the flight settings from the SD card
   readFlightSettingsSD();
   
@@ -1210,15 +1207,8 @@ void setup(void) {
   if(settings.testMode && settings.silentMode && !settings.TXenable){pins.beep = 13; pinMode(pins.beep, OUTPUT);}
 
   //setup the radio
-  if(!settings.TXenable){
-    if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, LOW);}
-    digitalWrite(pins.radioCS, HIGH);
-    radioSetMode(SleepMode);
-    if(settings.testMode){Serial.println(F("Telemetry OFF!"));}}
-  else{
-    //Set the radio output power & frequency
-    if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, HIGH);}
-    setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
+  radioInterval = RIpreLiftoff;
+  if(settings.TXenable){
     //915MHz FHSS
     if (sensors.radio == 2 && settings.FHSS){
       settings.TXfreq = 902.300; 
@@ -1228,12 +1218,18 @@ void setup(void) {
     if (sensors.radio == 2 && !settings.FHSS){
       setRadioPWR(2);//minimum power due to FCC regulations
       if(settings.testMode){Serial.println(F("Dedicated ISM band frequency. Power limit 2mW"));}}
+    //Set the radio output power & frequency
     setRadioFreq(settings.TXfreq);
+    setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
     if(settings.testMode){
       Serial.print("Radio Freq: ");Serial.println(settings.TXfreq, 3);
-      Serial.print("Radio Power: ");Serial.println(settings.TXpwr);}
-    radioInterval = RIpreLiftoff;}
-
+      Serial.print("Radio Power: ");Serial.println(settings.TXpwr);}}
+  else{
+    if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, LOW);}
+    digitalWrite(pins.radioCS, HIGH);
+    radioSetMode(SleepMode);
+    if(settings.testMode){Serial.println(F("Telemetry OFF!"));}}
+    
   //setup servos if enabled
   if(settings.stableRotn || settings.stableVert){
 
@@ -1450,7 +1446,7 @@ void setup(void) {
     beginADS1115('F');}
 
   //Overrides for bench test mode
-  if (settings.testMode) {
+  if(settings.testMode){
     settings.TXpwr = 2;
     setRadioPWR(settings.TXpwr);//lowest power setting
     Serial.print(F("Radio Power Reduced for Bench Test Mode: "));
@@ -1464,7 +1460,6 @@ void setup(void) {
     baro.maxAlt = 11101/unitConvert;
     maxVelocity = 202/unitConvert;
     RIpostFlight = 1000000UL;
-    radioInterval = RIpreLiftoff;
     thresholdVel = 15.5F;
     settings.magSwitchEnable = false;}
 
@@ -1859,7 +1854,7 @@ void loop(void){
     else{accelNow = (float)(accel.z - g) * accel.gainZ;}
     
     //Integrate velocity and altitude data prior to apogee
-    if(!events.apogeeFire || settings.testMode){
+    if(!events.apogeeFire){
 
       //Capture the max acceleration
       if(accelNow > maxG){maxG = accelNow;}
@@ -1876,7 +1871,7 @@ void loop(void){
       if(baro.newSamp && baro.Vel < fusionVel && baro.Vel < baro.maxVel && accelNow < 0.2F && fusionVel < 300.0F &&  baro.Alt < 9000){
         fusionVel *= 0.99F;
         fusionVel += 0.01F * baro.Vel;}
-      radio.vel = fusionVel;
+      radio.vel = (int16_t)fusionVel;
       
       //update maximum velocity if it exceeds the previous value
       if(fusionVel > maxVelocity){maxVelocity = fusionVel;}
@@ -1887,6 +1882,7 @@ void loop(void){
         fusionAlt *= 0.95;
         fusionAlt += 0.05 * baro.Alt;}
       if(!altOK && (fusionAlt > settings.altThreshold || settings.testMode)){altOK = true;}
+      radio.alt = (int16_t)fusionAlt;
 
     }//end if !apogee
     
@@ -2417,10 +2413,12 @@ void processBaroSamp(){
   //update variables
   if(baro.Vel > baro.maxVel){baro.maxVel = baro.Vel;}
   radio.vel = baro.Vel;
+  radio.alt = baro.smoothAlt;
   altAvgBuff[altAvgPosn] = baro.smoothAlt;
   baroTimeBuff[altAvgPosn] = baro.timeLastSamp;
   altAvgPosn++;
   if(altAvgPosn >= (byte)(sizeof(altAvgBuff)/sizeof(altAvgBuff[0]))){altAvgPosn = 0;}
+  if(events.apogeeFire || settings.testMode){fusionVel = baro.Vel; fusionAlt = baro.smoothAlt;}
   
   //----------------------------
   //Barometric touchdown trigger

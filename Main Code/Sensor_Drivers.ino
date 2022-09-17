@@ -1154,6 +1154,7 @@ bool beginADS1115(char dataRate) {
   highG.gainX = highG.gainY = highG.gainZ = 0.0183 * 9.80665;
   high1G = 55;
   sizeHighGfilter = 10;
+  highG.timeBtwnSamp = 1163UL;
 
   return true;}
 
@@ -1169,7 +1170,7 @@ void getADS1115() {
   burstRead(ADS1115_REG_CONVERT, 2);
 
   //X-axis must be pointed towards the sky!
-  highG.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
+  highG.rawX = (int16_t)((rawData[0] << 8) | rawData[1]);
   highG.rawX -= zeroLevel;
   highG.rawY = 0;
   highG.rawZ = 0;}

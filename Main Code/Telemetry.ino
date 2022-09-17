@@ -196,7 +196,7 @@ void radioSendPacket(){
     if(sensors.radio == 2 && settings.FHSS){
       dataPacket[pktPosn]=nextChnl; pktPosn++;
       dataPacket[pktPosn]=nextChnl2; pktPosn++;}
-    if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
+    if(!TX){TX = radioSendPkt(dataPacket, pktPosn);Serial.println("Pkt Sent");}
     TXstartTime = micros();
     int32_t pktSize = pktPosn;
     pktPosn = 0;
@@ -235,7 +235,6 @@ void radioSendPacket(){
     dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//4
     dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//5
     //altitude
-    radio.alt = (int16_t)(baro.Alt);
     dataPacket[pktPosn] = lowByte(radio.alt);pktPosn++;//6
     dataPacket[pktPosn] = highByte(radio.alt);pktPosn++;//7
     //Roll data
@@ -386,6 +385,10 @@ bool radioBegin(uint8_t radioRST){
 
   uint8_t debugVal;
   boolean successFlag = true;
+
+  //Set interrupts
+  pinMode(pins.radioIRQ, INPUT);
+  attachInterrupt(digitalPinToInterrupt(pins.radioIRQ), clearIRQ, RISING);
   
   //reset radio
   digitalWrite(pins.radioCS, HIGH);
@@ -499,9 +502,18 @@ bool radioBegin(uint8_t radioRST){
   debugVal = read8(RegOpMode);
   if(debugVal != (LoRaMode | radioSetMode)){
     Serial.print("Set Standby Mode Failed: "); 
-    Serial.print(debugVal, BIN);
+    Serial.println(debugVal, BIN);
     successFlag = false;}
 
+  //Set DIO0 to fire when transmit is complete
+  #define RegDioMapping1 0x40
+  write8(RegDioMapping1, 0x40);
+  delay(10);
+  debugVal = read8(RegDioMapping1);
+  if(debugVal != 0x40){
+    Serial.print("Set DIO0 Failed: ");
+    Serial.println(debugVal, HEX);}
+    
   //clear interrupts
   #define RegIrqFlags     0x12
   #define RegIrqFlagsMask 0x11
@@ -528,46 +540,35 @@ bool setRadioPWR(uint8_t pwr){
   
   //enable PA_DAC if power is above 17
   if(pwr > 17){
-    write8(regPaDac, 0x17);
+    write8(regPaDac, 0b01010111);
     pwr -= 3;
     delay(10);
     debugVal = read8(regPaDac);
-    if(debugVal != 0x17){
-      successFlag = false;
-      Serial.print("Set RegPaDac Failed: ");Serial.println(debugVal, HEX);}}
-  else{
-    //disable DAC
-    write8(regPaDac, 0x14);
-    delay(10);
-    debugVal = read8(regPaDac);
-    if(debugVal != 0x14){
+    if(debugVal != 0b01010111){
       successFlag = false;
       Serial.print("Set RegPaDac Failed: ");Serial.println(debugVal, HEX);}}
 
   //write to the power config register
-  write8(regPaConfig, (0x80 | (pwr-2)));
+  uint8_t radioPwr = (0x80 | (pwr-2));
+  Serial.print("Power Set: ");Serial.println(radioPwr, HEX);
+  write8(regPaConfig, radioPwr);
   delay(10);
   debugVal = read8(regPaConfig);
-  if(debugVal != (0x80 | (pwr-2))){
+  if(debugVal != radioPwr){
     successFlag = false;
     Serial.print("Set RegPaConfig Failed: ");Serial.println(debugVal, HEX);}
   
   return successFlag;}
 
 bool radioSendPkt(uint8_t* data, uint8_t len){
-
+  
   #define RegFIFO          0x00
   #define RegOpMode        0x01
   #define RegFifoAddrPtr   0x0D
-  #define RegDioMapping1   0x40
   #define RegPayloadLength 0x22
 
   //set bus
   activeBus = &radioBus;
-
-  if(TX){
-    Serial.println("Radio is transmitting - cannot send packet");
-    return false;}
   
   //put radio in standby
   write8(RegOpMode, StandbyMode);
@@ -575,9 +576,6 @@ bool radioSendPkt(uint8_t* data, uint8_t len){
 
   //clear flags
   write8(RegIrqFlags, 0xFF);
-
-  //set the IRQ to fire when TX is done
-  write8(RegDioMapping1, 0x40);
   
   //set the FIFO pointer to start of the buffer
   write8(RegFifoAddrPtr, 0x00);
@@ -650,7 +648,6 @@ bool radioSetMode(uint8_t mode){
   //set radio mode
   write8(RegOpMode, mode);
   radioMode = mode;
-  Serial.println(mode, HEX);
 
   delay(1);
   
@@ -693,6 +690,9 @@ void clearTXdone(){
   
   //clear flag
   write8(RegIrqFlags, 0xFF);
+
+  //set the radio code
+  radioMode = 1;
 
   noInterrupts();
   clearTX = false;
