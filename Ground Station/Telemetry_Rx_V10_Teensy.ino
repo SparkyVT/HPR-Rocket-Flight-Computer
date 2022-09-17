@@ -45,7 +45,7 @@ byte dataPkt[80];
 volatile boolean processIRQ = false;
 uint32_t timeLastPkt = 0UL;
 uint32_t debugTime;
-uint8_t pktRssi;
+int16_t pktRssi;
 float radio1Freq = 433.500;
 float radio2Freq = 433.250;
 
