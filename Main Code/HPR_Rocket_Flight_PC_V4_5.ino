@@ -1627,7 +1627,7 @@ void setup(void) {
     //Z0 + correction = correctZ0
     //correctZ0 = accel.z0/A2D
     //correction = correctZ0 - Z0
-    if(settings.testMode){Serial.print("Old Biasi: ");Serial.println(highG.biasX);}
+    if(settings.testMode){Serial.print("Old Bias: ");Serial.println(highG.biasX);}
     highG.biasX -= highG.dirX*(highG.z0 - (int)((float)accel.z0 / (float)A2D));
     if(settings.testMode){Serial.print(F("New Bias: "));Serial.println(highG.biasX);}}
   if(highG.orientY == 'Z'){
@@ -1868,7 +1868,7 @@ void loop(void){
       
       //calculate the new sensor fusion based velocity
       fusionVel += accelNow * (float)fltTime.dt * mlnth;
-      if(baro.newSamp && baro.Vel < fusionVel && baro.Vel < baro.maxVel && accelNow < 0.2F && fusionVel < 300.0F &&  baro.Alt < 9000){
+      if(baro.newSamp && baro.Vel < 300 && baro.Vel < baro.maxVel && accelNow < 0.2F && fusionVel < 300.0F && baro.Alt < 9000){
         fusionVel *= 0.99F;
         fusionVel += 0.01F * baro.Vel;}
       radio.vel = (int16_t)fusionVel;
@@ -2182,37 +2182,37 @@ void checkPyroContinuity(){
 
   if(!events.liftoff){
     if(pyro1.contStatus){
-    if(pyro1.func == 'M'){cont.main = true;}
-    if(pyro1.func == 'A'){cont.apogee = true;}
-    if(pyro1.func == 'I'){cont.upperStage = true;}
-    if(pyro1.func == 'B'){cont.boosterSep = true;}
-    if(pyro1.func == '1'){cont.airStart1 = true;}
-    if(pyro1.func == '2'){cont.airStart2 = true;}
-    if(pyro1.func == 'N'){cont.noFunc = true;}}
-  if(pyro2.contStatus){
-    if(pyro2.func == 'M'){cont.main = true;}
-    if(pyro2.func == 'A'){cont.apogee = true;}
-    if(pyro2.func == 'I'){cont.upperStage = true;}
-    if(pyro2.func == 'B'){cont.boosterSep = true;}
-    if(pyro2.func == '1'){cont.airStart1 = true;}
-    if(pyro2.func == '2'){cont.airStart2 = true;}
-    if(pyro2.func == 'N'){cont.noFunc = true;}}
-  if(pyro3.contStatus){
-    if(pyro3.func == 'M'){cont.main = true;}
-    if(pyro3.func == 'A'){cont.apogee = true;}
-    if(pyro3.func == 'I'){cont.upperStage = true;}
-    if(pyro3.func == 'B'){cont.boosterSep = true;}
-    if(pyro3.func == '1'){cont.airStart1 = true;}
-    if(pyro3.func == '2'){cont.airStart2 = true;}
-    if(pyro3.func == 'N'){cont.noFunc = true;}}
- if(pyro4.contStatus){
-    if(pyro4.func == 'M'){cont.main = true;}
-    if(pyro4.func == 'A'){cont.apogee = true;}
-    if(pyro4.func == 'I'){cont.upperStage = true;}
-    if(pyro4.func == 'B'){cont.boosterSep = true;}
-    if(pyro4.func == '1'){cont.airStart1 = true;}
-    if(pyro4.func == '2'){cont.airStart2 = true;}
-    if(pyro4.func == 'N'){cont.noFunc = true;}}
+      if(pyro1.func == 'M'){cont.main = true;}
+      if(pyro1.func == 'A'){cont.apogee = true;}
+      if(pyro1.func == 'I'){cont.upperStage = true;}
+      if(pyro1.func == 'B'){cont.boosterSep = true;}
+      if(pyro1.func == '1'){cont.airStart1 = true;}
+      if(pyro1.func == '2'){cont.airStart2 = true;}
+      if(pyro1.func == 'N'){cont.noFunc = true;}}
+    if(pyro2.contStatus){
+      if(pyro2.func == 'M'){cont.main = true;}
+      if(pyro2.func == 'A'){cont.apogee = true;}
+      if(pyro2.func == 'I'){cont.upperStage = true;}
+      if(pyro2.func == 'B'){cont.boosterSep = true;}
+      if(pyro2.func == '1'){cont.airStart1 = true;}
+      if(pyro2.func == '2'){cont.airStart2 = true;}
+      if(pyro2.func == 'N'){cont.noFunc = true;}}
+    if(pyro3.contStatus){
+      if(pyro3.func == 'M'){cont.main = true;}
+      if(pyro3.func == 'A'){cont.apogee = true;}
+      if(pyro3.func == 'I'){cont.upperStage = true;}
+      if(pyro3.func == 'B'){cont.boosterSep = true;}
+      if(pyro3.func == '1'){cont.airStart1 = true;}
+      if(pyro3.func == '2'){cont.airStart2 = true;}
+      if(pyro3.func == 'N'){cont.noFunc = true;}}
+   if(pyro4.contStatus){
+      if(pyro4.func == 'M'){cont.main = true;}
+      if(pyro4.func == 'A'){cont.apogee = true;}
+      if(pyro4.func == 'I'){cont.upperStage = true;}
+      if(pyro4.func == 'B'){cont.boosterSep = true;}
+      if(pyro4.func == '1'){cont.airStart1 = true;}
+      if(pyro4.func == '2'){cont.airStart2 = true;}
+      if(pyro4.func == 'N'){cont.noFunc = true;}}
 
   //if the flight profile is complex, but there is no continuity on the extra pyros, then reset to a single stage flight
   if((settings.fltProfile == '2' || settings.fltProfile == 'A') && !cont.upperStage && !cont.boosterSep && !cont.airStart1 && !cont.airStart2){

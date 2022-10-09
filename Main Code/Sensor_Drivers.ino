@@ -131,21 +131,13 @@ void getAccel() {
   switch (sensors.accel) {
 
     case 2:
-      if (events.liftoff) {
-        getLSM9DS1_AG();
-      }
-      else {
-        getLSM9DS1_A();
-      }
+      if (events.liftoff) {getLSM9DS1_AG();}
+      else {getLSM9DS1_A();}
       break;
 
     case 3:
-      if (events.liftoff) {
-        getLSM6DS33_AG();
-      }
-      else {
-        getLSM6DS33_A();
-      }
+      if (events.liftoff) {getLSM6DS33_AG();}
+      else {getLSM6DS33_A();}
       break;
 
     case 1:
@@ -288,9 +280,7 @@ void getGyro() {
   switch (sensors.gyro) {
 
     case 2:
-      if (!events.liftoff) {
-        getLSM9DS1_G();
-      }
+      if (!events.liftoff) {getLSM9DS1_G();}
       break;
 
     case 3:
@@ -763,7 +753,8 @@ void getLSM9DS1_AG() {
   gyro.rawZ   = (int16_t)(rawData[4] | (rawData[5] << 8));
   accel.rawX  = (int16_t)(rawData[6] | (rawData[7] << 8));
   accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
-  accel.rawZ  = (int16_t)(rawData[10]|(rawData[11] << 8));}
+  accel.rawZ  = (int16_t)(rawData[10]|(rawData[11] << 8));
+}
 
 void getLSM9DS1_A() {
 
@@ -1401,6 +1392,7 @@ void initiatePressure() {
   int32_t  ut = 0;
   int32_t X1, X2;     // following ds convention
   float t;
+  static boolean initialTemp = false;
 
   //Read ucompensated temperature
   #define BMP180_REGISTER_TEMPDATA 0xF6
@@ -1420,7 +1412,12 @@ void initiatePressure() {
   _BMP180_coeffs.b5 = X1 + X2;
   t = (_BMP180_coeffs.b5 + 8) >> 4;
   t /= 10;
-  baro.temperature = t - baro.tempOffset;
+
+  float tempCheck = baro.temperature - t - baro.tempOffset;
+  if(!initialTemp){
+    initialTemp = true;
+    baro.temperature = t - baro.tempOffset;}
+  else if(abs(tempCheck) < 20){baro.temperature = t - baro.tempOffset;}
 
   //Initiate Pressure
   write8(BMP180_REGISTER_CONTROL, BMP180_REGISTER_READPRESSURECMD + (_BMP180Mode << 6));
