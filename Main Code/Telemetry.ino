@@ -196,7 +196,7 @@ void radioSendPacket(){
     if(sensors.radio == 2 && settings.FHSS){
       dataPacket[pktPosn]=nextChnl; pktPosn++;
       dataPacket[pktPosn]=nextChnl2; pktPosn++;}
-    if(!TX){TX = radioSendPkt(dataPacket, pktPosn);Serial.println("Pkt Sent");}
+    if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
     TXstartTime = micros();
     int32_t pktSize = pktPosn;
     pktPosn = 0;

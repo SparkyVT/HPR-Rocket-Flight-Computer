@@ -1060,7 +1060,8 @@ bool beginH3LIS331DL() {
   byte id = 0x00;
   id = read8(0x0F);
   if (id != 0x32) {
-    Serial.println(F("H3LIS331 not found!"));
+    Serial.print(F("H3LIS331 not found! "));
+    Serial.println(id, HEX);
     return false;}
   Serial.println(F("H3LIS331 OK!"));
 

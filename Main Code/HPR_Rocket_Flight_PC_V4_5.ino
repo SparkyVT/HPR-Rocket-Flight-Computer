@@ -1,7 +1,7 @@
 //High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 9356 lines of code = 2435 MainFile + 366 Bus_Mgmt + 2194 SensorDrivers + 888 Calibration + 625 SpeedTrig + 505 Inflight_Recover + 637 SD + 398 Rotation + 698 Telemetry + 327 Event_Logic + 283 GPSconfig      
+//Code Line Count: 9373 lines of code = 2452 MainFile + 366 Bus_Mgmt + 2194 SensorDrivers + 888 Calibration + 625 SpeedTrig + 505 Inflight_Recover + 637 SD + 398 Rotation + 698 Telemetry + 327 Event_Logic + 283 GPSconfig      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features
@@ -66,7 +66,7 @@
 //V4_4_0 creates flexible I2C and SPI bus routines so that any device can work on any bus.  Supports all I2C and/or SPI buses across Teensy3.X and Teensy4.X platforms
 //V4_4_1 builds on the unsuccessful 4_4_0 and attempts to fix bus management through simpler interface functions, overhauls orientation method for simplicity 
 //V4_4_2 further streamlines the bus management functions with more efficient pointers, overclocks I2C speed on some sensors, implements controlled sampling of all sensors, continuously checks pre-flight continuity, improved barometric smoothing, fixed orientation bugs
-//V4_5_0 eliminates RadioHead library due to interferences with the PWMServo library, uses an interval timer to control the radio packet timing, fixes bugs in the telemetry timestamps
+//V4_5_0 eliminates RadioHead library due to interferences with the PWMServo library, now uses an interval timer for precise control of the radio packet timing, fixes bugs in the telemetry timestamps
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
@@ -1063,13 +1063,35 @@ void setup(void) {
   pinMode(pins.testRead, INPUT_PULLUP);   
   pinMode(pins.testGnd, OUTPUT); 
   pinMode(pins.radioCS, OUTPUT);       
+  pinMode(pins.highG_CS, OUTPUT);
   //Set the pyro firing pins to LOW for safety
   digitalWrite(pins.pyro1Fire, LOW);
   digitalWrite(pins.pyro2Fire, LOW);
   digitalWrite(pins.pyro3Fire, LOW);
   digitalWrite(pins.pyro4Fire, LOW);
-  //Set the device CS pins to HIGH
-  digitalWrite(pins.highG_CS, HIGH);
+  
+  //Set the device SPI Bus CS pins to HIGH
+  if(sensors.accelBusType == 'S'){
+    pinMode(pins.accelCS, OUTPUT);
+    digitalWrite(pins.accelCS, HIGH);}
+  if(sensors.gyroBusType == 'S'){
+    pinMode(pins.gyroCS, OUTPUT);
+    digitalWrite(pins.gyroCS, HIGH);}
+  if(sensors.magBusType == 'S'){
+    pinMode(pins.magCS, OUTPUT);
+    digitalWrite(pins.gyroCS, HIGH);}
+  if(sensors.highGBusType == 'S'){
+    pinMode(pins.highG_CS, OUTPUT);
+    digitalWrite(pins.highG_CS, HIGH);}
+  if(sensors.baroBusType == 'S'){
+    pinMode(pins.baroCS, OUTPUT);
+    digitalWrite(pins.baroCS, HIGH);}
+  if(sensors.sdBusType == 'S'){ 
+    pinMode(pins.SD_CS, OUTPUT);
+    digitalWrite(pins.SD_CS, HIGH);}
+  if(sensors.radioBusType == 'S'){
+    pinMode(pins.radioCS, OUTPUT);
+    digitalWrite(pins.radioCS, HIGH);}
   Serial.println("Set Pins");
 
   //Start Harware Serial communication
