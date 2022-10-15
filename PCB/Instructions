@@ -1,11 +1,10 @@
-If you want just one or two PCBs, then PM me on Rocketry Forum.  I usually have spares laying around that I can send to you at about $20USD per copy.
+If you only want 1 or 2 boards, then PM me on Rocketry Forum.  I usually have spares laying around that I can send to you at about $20 USD per copy.
 
-I also provided the Gerber files used by ExpressPCB.
+I also have Gerber files from ExpressPCB, but these are for an older design.
 
 Otherwise, follow the directions below to get 3 sets of flight computer and ground station boards from ExpressPCB at about $90USD.  
-You will have to split them on your own with a hacksaw or scroll saw.  There are two versions provided, one with the Sparkfun LSM9DS1 IMU stick and 
-the other with the Pololu Mini IMU-9 with LSM6DS33 and LIS3MDL.  Due to the chip shortage the LSM9DS1 is nearly impossible to find right now.  The
-base code is compatible with both versions.  
+You will have to cut them on your own with a hacksaw or scroll saw.  Due to the chip shortage, I designed a new board that is compatible with Teensy 3.5/3.6/4.1
+and uses Teensy 3.2/4.0 for the ground station.  The  base code is compatible with both versions.  
 
 1)  Download the .pcb file
 2)  Download the software from https://www.expresspcb.com/
