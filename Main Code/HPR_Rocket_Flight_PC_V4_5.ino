@@ -1,7 +1,7 @@
 //High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 9373 lines of code = 2452 MainFile + 366 Bus_Mgmt + 2194 SensorDrivers + 888 Calibration + 625 SpeedTrig + 505 Inflight_Recover + 637 SD + 398 Rotation + 698 Telemetry + 327 Event_Logic + 283 GPSconfig      
+//Code Line Count: 9364 lines of code = 2452 MainFile + 354 Bus_Mgmt + 2197 SensorDrivers + 888 Calibration + 625 SpeedTrig + 505 Inflight_Recover + 637 SD + 398 Rotation + 698 Telemetry + 327 Event_Logic + 283 GPSconfig      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features

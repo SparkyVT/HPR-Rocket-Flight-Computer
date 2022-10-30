@@ -702,6 +702,8 @@ bool beginLSM9DS1_M() {
   else {
     magBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     magBus.cs = pins.magCS;
+    magBus.readMask = 0x80;
+    magBus.incMask = 0x40;
     startSPI(&magBus, sensors.magBusNum);}
 
   //If I2C, check if there is a sensor at this address
@@ -1041,7 +1043,10 @@ bool beginH3LIS331DL() {
   if (sensors.highGBusType == 'I') {
     highGBus.i2cAddress = H3LIS331_ADDRESS;
     highGBus.i2cRate = 1000000;
-    startI2C(&highGBus, sensors.highGBusNum);}
+    startI2C(&highGBus, sensors.highGBusNum);
+    highGBus.writeMask = 0x01;
+    highGBus.readMask = 0x00;
+    highGBus.incMask = 0x80;}
   else {
     highGBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     highGBus.cs = pins.highG_CS;
