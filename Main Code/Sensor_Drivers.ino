@@ -1973,7 +1973,7 @@ void getBMP388() {
 //MS5611 and MS5607 Barometric Pressure Sensors
 //***************************************************************************
 #define MS56XX_ADDRESS (0x77)
-int16_t MS56XX_PROM[6];
+uint16_t MS56XX_PROM[6];
 int32_t MS56XX_dT;
 int32_t MS56XX_TEMP;
 
@@ -2042,7 +2042,7 @@ bool beginMS56XX() {
   MS56XX_PROM[4] = (rawData[0] << 8 | rawData[1]);
   burstRead(prom6MS56XX, 2);
   MS56XX_PROM[5] = (rawData[0] << 8 | rawData[1]);
-
+  
   //get initial temperature
   cmdMS56XX(0x58);
   delayMicroseconds(9040);
