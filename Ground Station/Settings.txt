@@ -1,0 +1,53 @@
+Ground Station Settings File
+Not not delete or change the order of the settings
+***********************
+---Station Settings---
+***********************
+LCD Enable = 1
+LCD Brightness = 75
+LCD Contrast = 50
+Display Metric = N
+Colored Events = 0
+Callsign = ABC123
+SD Card Enable = 1
+GPS Enable = 1
+Bluetooth Data = 0
+Serial Debug = 1
+********************************
+---Radio #1 Settings (433MHz)---
+********************************
+Radio Enable = 0
+RXfreq = 433.250
+FHSS = 0
+TX Power = 13
+********************************
+---Radio #2 Settings (900MHz)---
+********************************
+Radio Enable = 1
+RXfreq = 902.300
+FHSS = 1
+TX Power = 13
+************************************************************************************************
+                        valid setting values
+************************************************************************************************
+---------------------------------------------
+         Station Settings
+---------------------------------------------
+    LCD Enable: 1 = LCD on, 0 = LCD disabled
+LCD Brightness: 0 to 255, 0 darkest, 255 brightest, default 75
+  LCD Contrast: 0 to 255, 0 darkest, 255 lightest, default 50
+ Display Units: S = US Standard System, M = Metric System  
+Colored Events: 1 = LCD screen will change to red or green for key events, 0 = LCD stays white
+      Callsign: 6 characters, use amateur license callsign, or 6 unique characters if license free
+SD Card Enable: 1 = enabled, 0 = disabled
+    GPS Enable: 1 = enabled, 0 = disabled
+Bluetooth Data: 1 = enabled, 0 = disabled
+  Serial Debug: 0 = disabled, 1 = radio debug output, 2 = GPS debug output, 3 = both radio & GPS debug
+---------------------------------------------
+         Radio Configuration
+---------------------------------------------
+  Radio Enable: 1 enable radio, 0 disable radio
+        RXfreq: Radio frequency for 433MHz band or 915MHz band without FHSS, 915MHz synch freq when FHSS enabled
+          FHSS: Frequency Hopping Spread Spectrum implementation for 915MHz ISM band (no FCC license required)
+      TX power: telemetry TX power; integers between 2 and 20; 13=20mW, 15=30mW, 17=50mW, 20=100mW
+	      
