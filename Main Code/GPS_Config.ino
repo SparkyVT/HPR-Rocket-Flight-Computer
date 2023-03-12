@@ -113,11 +113,11 @@ void configGPS() {
   gpsSetSuccess = 0;
 
   //Turn Off NMEA VTG Messages
-  while(gpsSetSuccess < 3) {
+  while(!settings.flyBack && gpsSetSuccess < 3) {
     if(settings.testMode){Serial.print("Deactivating NMEA VTG Messages... ");}
     sendUBX(setVTG, sizeof(setVTG));
     gpsSetSuccess += getUBX_ACK(&setVTG[2]);}
-  if (gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA VTG Message Deactivation Failed!");}
+  if (settings.flyBack && gpsSetSuccess == 3 && settings.testMode){Serial.println("NMEA VTG Message Deactivation Failed!");}
   gpsSetSuccess = 0;
   
   //Set Interference Thresholds
@@ -142,7 +142,7 @@ void configGPS() {
     sendUBX(setBaudRate, sizeof(setBaudRate));
     gpsSetSuccess += getUBX_ACK(&setBaudRate[2]);}
   if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Ublox Baud Rate 38400 Failed!");}
-  else{
+  else if(sensors.GPS == 2){
     HWSERIAL->end();
     HWSERIAL->clear();
     HWSERIAL->begin(38400);}

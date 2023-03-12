@@ -97,13 +97,10 @@
 //readPromMS56XX(): gets the calibration settings in PROM
 //getMS56XX(): gets sensor data and manages the readings between temp and press
 //readMS56XX(): manages the I2C bus speed before calling I2C helper functions
-//CmdMS56XX1(): helper function to send commands
+//CmdMS56XX(): helper function to send commands
 //ConvertTempMS56XX(): converts temperature
 //ConvertPressMS56XX(): converts pressure
 
-//***************************************************************************
-//Generic Sensor Begin & Read Statements
-//***************************************************************************
 //***************************************************************************
 //Generic Sensor Begin & Read Statements
 //***************************************************************************
@@ -131,21 +128,13 @@ void getAccel() {
   switch (sensors.accel) {
 
     case 2:
-      if (events.liftoff) {
-        getLSM9DS1_AG();
-      }
-      else {
-        getLSM9DS1_A();
-      }
+      if (events.liftoff) {getLSM9DS1_AG();}
+      else {getLSM9DS1_A();}
       break;
 
     case 3:
-      if (events.liftoff) {
-        getLSM6DS33_AG();
-      }
-      else {
-        getLSM6DS33_A();
-      }
+      if (events.liftoff) {getLSM6DS33_AG();}
+      else {getLSM6DS33_A();}
       break;
 
     case 1:
@@ -288,9 +277,7 @@ void getGyro() {
   switch (sensors.gyro) {
 
     case 2:
-      if (!events.liftoff) {
-        getLSM9DS1_G();
-      }
+      if (!events.liftoff) {getLSM9DS1_G();}
       break;
 
     case 3:
@@ -641,8 +628,8 @@ void getL3GD20H() {
 bool beginLSM9DS1_AG() {
 
   //Addresses for the registers
-  #define LSM9DS1_ADDRESS_ACCELGYRO          (0x6B)
-  #define LSM9DS1_XG_ID                      (0b01101000)
+  #define LSM9DS1_ADDRESS_ACCELGYRO            (0x6B)
+  #define LSM9DS1_XG_ID                        (0b01101000)
   #define LSM9DS1_REGISTER_CTRL_REG1_G         (0x10)
   #define LSM9DS1_REGISTER_CTRL_REG5_XL        (0x1F)
   #define LSM9DS1_REGISTER_CTRL_REG6_XL        (0x20)
@@ -652,11 +639,13 @@ bool beginLSM9DS1_AG() {
   if (sensors.accelBusType == 'I') {
     accelBus.i2cAddress = gyroBus.i2cAddress = LSM9DS1_ADDRESS_ACCELGYRO;
     accelBus.i2cRate = gyroBus.i2cRate = 1000000;
-    startI2C(&accelBus, sensors.accelBusNum);}
+    startI2C(&accelBus, sensors.accelBusNum);
+    accelBus.readMask = gyroBus.readMask = 0x01;}
   else {
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     accelBus.cs = pins.accelCS;
-    startSPI(&accelBus, sensors.accelBusNum);}
+    startSPI(&accelBus, sensors.accelBusNum);
+    accelBus.readMask = 0x80;}
   gyroBus = accelBus;
   
   //if I2C, check if there is a sensor at this address
@@ -711,6 +700,8 @@ bool beginLSM9DS1_M() {
   else {
     magBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     magBus.cs = pins.magCS;
+    magBus.readMask = 0x80;
+    magBus.incMask = 0x40;
     startSPI(&magBus, sensors.magBusNum);}
 
   //If I2C, check if there is a sensor at this address
@@ -757,12 +748,13 @@ void getLSM9DS1_AG() {
   burstRead(LSM9DS1_REGISTER_OUT_X_L_G, 12);
 
   //assemble the data
-  gyro.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
-  gyro.rawY = (int16_t)(rawData[2] | (rawData[3] << 8));
-  gyro.rawZ = (int16_t)(rawData[4] | (rawData[5] << 8));
+  gyro.rawX   = (int16_t)(rawData[0] | (rawData[1] << 8));
+  gyro.rawY   = (int16_t)(rawData[2] | (rawData[3] << 8));
+  gyro.rawZ   = (int16_t)(rawData[4] | (rawData[5] << 8));
   accel.rawX  = (int16_t)(rawData[6] | (rawData[7] << 8));
   accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
-  accel.rawZ  = (int16_t)(rawData[10] | (rawData[11] << 8));}
+  accel.rawZ  = (int16_t)(rawData[10]|(rawData[11] << 8));
+}
 
 void getLSM9DS1_A() {
 
@@ -821,7 +813,7 @@ void getLSM9DS1_M() {
 bool beginLSM6DS33() {
 
   //Addresses for the registers
-#define LSM6DS33_ADDRESS_ACCELGYRO            (0xD6)
+#define LSM6DS33_ADDRESS_ACCELGYRO            (0xD4)
 #define LSM6DS33_WHOAMI                       (0x0F)
 #define LSM6DS33_REGISTER_CTRL1_XL            (0x10)
 #define LSM6DS33_REGISTER_CTRL2_G             (0x11)
@@ -830,6 +822,7 @@ bool beginLSM6DS33() {
   if (sensors.accelBusType == 'I') {
     accelBus.i2cAddress = gyroBus.i2cAddress = LSM6DS33_ADDRESS_ACCELGYRO;
     accelBus.i2cRate = gyroBus.i2cRate = 400000;
+    accelBus.readMask = 0x80;
     startI2C(&accelBus, sensors.accelBusNum);}
   else {
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
@@ -1044,17 +1037,19 @@ bool beginH3LIS331DL() {
   #define H3LIS331_REGISTER_CTRL_REG2 (0x21)
   #define H3LIS331_REGISTER_CTRL_REG4 (0x23)
 
-  uint8_t bitMask = 0x00;
   //Define bus settings and start bus
   if (sensors.highGBusType == 'I') {
     highGBus.i2cAddress = H3LIS331_ADDRESS;
     highGBus.i2cRate = 1000000;
-    startI2C(&highGBus, sensors.highGBusNum);}
+    startI2C(&highGBus, sensors.highGBusNum);
+    highGBus.writeMask = 0x01;
+    highGBus.incMask = 0x80;}
   else {
     highGBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
-    highGBus.cs = pins.highG_CS;
-    startSPI(&highGBus, sensors.highGBusNum);
-    bitMask = 0x80;}
+    highGBus.cs = pins.highG_CS; 
+    highGBus.readMask = 0x80;
+    highGBus.incMask = 0x40;
+    startSPI(&highGBus, sensors.highGBusNum);}
 
   //If I2C, check to see if there is a sensor at this address
   if (sensors.highGBusType == 'I') {
@@ -1064,9 +1059,10 @@ bool beginH3LIS331DL() {
 
   //check whoami
   byte id = 0x00;
-  id = read8(bitMask | 0x0F);
+  id = read8(0x0F);
   if (id != 0x32) {
-    Serial.println(F("H3LIS331 not found!"));
+    Serial.print(F("H3LIS331 not found! "));
+    Serial.println(id, HEX);
     return false;}
   Serial.println(F("H3LIS331 OK!"));
 
@@ -1093,11 +1089,8 @@ void getH3LIS331DL() {
   //setup the bus
   activeBus = &highGBus;
 
-  uint8_t bitMask = 0xC0;
-  if(sensors.highGBusType == 'I'){bitMask = 0x80;}
-
   //get data from all axes and assemble
-  burstRead(bitMask | H3LIS331_REGISTER_OUT_X_L, 6);
+  burstRead(H3LIS331_REGISTER_OUT_X_L, 6);
   
   highG.rawX = (int16_t)(rawData[0] | (rawData[1] << 8)) >> 4;
   highG.rawY = (int16_t)(rawData[2] | (rawData[3] << 8)) >> 4;
@@ -1154,6 +1147,7 @@ bool beginADS1115(char dataRate) {
   highG.gainX = highG.gainY = highG.gainZ = 0.0183 * 9.80665;
   high1G = 55;
   sizeHighGfilter = 10;
+  highG.timeBtwnSamp = 1163UL;
 
   return true;}
 
@@ -1169,7 +1163,7 @@ void getADS1115() {
   burstRead(ADS1115_REG_CONVERT, 2);
 
   //X-axis must be pointed towards the sky!
-  highG.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
+  highG.rawX = (int16_t)((rawData[0] << 8) | rawData[1]);
   highG.rawX -= zeroLevel;
   highG.rawY = 0;
   highG.rawZ = 0;}
@@ -1400,6 +1394,7 @@ void initiatePressure() {
   int32_t  ut = 0;
   int32_t X1, X2;     // following ds convention
   float t;
+  static boolean initialTemp = false;
 
   //Read ucompensated temperature
   #define BMP180_REGISTER_TEMPDATA 0xF6
@@ -1419,7 +1414,12 @@ void initiatePressure() {
   _BMP180_coeffs.b5 = X1 + X2;
   t = (_BMP180_coeffs.b5 + 8) >> 4;
   t /= 10;
-  baro.temperature = t - baro.tempOffset;
+
+  float tempCheck = baro.temperature - t - baro.tempOffset;
+  if(!initialTemp){
+    initialTemp = true;
+    baro.temperature = t - baro.tempOffset;}
+  else if(abs(tempCheck) < 20){baro.temperature = t - baro.tempOffset;}
 
   //Initiate Pressure
   write8(BMP180_REGISTER_CONTROL, BMP180_REGISTER_READPRESSURECMD + (_BMP180Mode << 6));
@@ -1969,7 +1969,7 @@ void getBMP388() {
 //MS5611 and MS5607 Barometric Pressure Sensors
 //***************************************************************************
 #define MS56XX_ADDRESS (0x77)
-int16_t MS56XX_PROM[6];
+uint16_t MS56XX_PROM[6];
 int32_t MS56XX_dT;
 int32_t MS56XX_TEMP;
 
@@ -2038,24 +2038,18 @@ bool beginMS56XX() {
   MS56XX_PROM[4] = (rawData[0] << 8 | rawData[1]);
   burstRead(prom6MS56XX, 2);
   MS56XX_PROM[5] = (rawData[0] << 8 | rawData[1]);
-
+  
   //get initial temperature
   cmdMS56XX(0x58);
   delayMicroseconds(9040);
   burstRead(0x00, 3);
   baro.temperature = ConvertTempMS56XX();
-  if (settings.testMode) {
-    Serial.print("Intial Temp Complete: ");
-    Serial.println(baro.temperature, 1);}
 
   //get initial pressure
   cmdMS56XX(0x48);
   delayMicroseconds(9040);
   burstRead(0x00, 3);
   baro.pressure = ConvertPressMS56XX();
-  if (settings.testMode) {
-    Serial.print("Intial Press Complete: ");
-    Serial.println(baro.pressure, 2);}
 
   //get another pressure
   cmdMS56XX(0x48);
@@ -2107,12 +2101,12 @@ float ConvertTempMS56XX() {
 
   uint32_t D2 = (rawData[0] << 16) | (rawData[1] << 8) | rawData[2];
 
-  MS56XX_dT = D2 - (C5 * 256);
+  MS56XX_dT = D2 - (C5 << 8);
 
-  MS56XX_TEMP = 2000 + ((MS56XX_dT * C6) / 8388608);
+  MS56XX_TEMP = 2000 + ((MS56XX_dT * C6) >> 23);
 
   int32_t T2 = 0L;
-  if (MS56XX_TEMP < 2000) {T2 = (MS56XX_dT * MS56XX_dT) / 2147483648;}
+  if (MS56XX_TEMP < 2000) {T2 = (MS56XX_dT * MS56XX_dT) >> 31;}
 
   MS56XX_TEMP -= T2;
 

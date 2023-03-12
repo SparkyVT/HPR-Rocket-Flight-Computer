@@ -17,9 +17,7 @@ void checkEvents(){
     radio.event = Time_Limit;
     if(settings.fltProfile == 'B'){radio.event = Booster_Time_Limit;}
     if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
-    radioInterval = RIpostFlight;
-    RIsyncOffset = 600000UL;
-    lastTX = micros();
+    radioTimer.begin(timerSendPkt, RIpostFlight);
     fltTime.touchdown = fltTime.timeCurrent;
     touchdownHour = GPS.time.hour();
     touchdownMin = GPS.time.minute();
@@ -44,7 +42,7 @@ void checkEvents(){
       pktPosn = 0;
       radio.packetnum = 0;
       sampNum = 0;
-      radioInterval = RIpreLiftoff;
+      radioTimer.begin(timerSendPkt, RIpreLiftoff);
       highGsmooth = 0;
       highGsum = 0;
       for(byte i=0; i<10; i++){highGfilter[i]=0;}
@@ -248,9 +246,9 @@ void checkEvents(){
   }//End Airstart Flight Mode
 
   //Accelerometer based apogee detection
-  boolean accelApogee = (accelVel < 0) ? true : false;
+  boolean accelApogee = (accelVel < -10) ? true : false;
   //Barometric based apogee detection: rocket must be below 9000m and barometric velocity < 0 and accelometer velocity < 70 (needed for Mach proofing)
-  boolean baroApogee = (baro.Vel < 0 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 9000) ? true : false;
+  boolean baroApogee = (baro.Vel < -10 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 9000) ? true : false;
   //Sensor fusion based apogee detection
   boolean fusionApogee = (fusionVel < 0) ? true : false;
   //Check for apogee event

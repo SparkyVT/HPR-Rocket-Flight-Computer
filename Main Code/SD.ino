@@ -10,6 +10,7 @@
 //readFlightSettingsSD(): reads the user settings from the SD card
 //writeSDflightData(): primary routine to capture the flight data in ASCII text to the SD card
 //writeSDfooter(): writes the post flight footer to the SD card once touchdown or timeout is detected
+//writeNMEA(): writes the NMEA GPS data to a separate file
 //--------------
 //Functions:
 //--------------
@@ -27,16 +28,18 @@
 //15 AUG 21: variable gain settings removed
 //18 NOV 21: added all flight settings to the footer
 //03 JAN 22: added hardware compatibility macros for Teensy 3.2, 4.0, 4.1, and moved in functions from the main file
-//21 Jun 22: minor bug fixes and tweaks
+//21 JUN 22: minor bug fixes and tweaks
+//27 NOV 22: adds an optional GPS output file containing the NMEA strings
 //---------------------------------
 #if defined (__MK66FX1M0__) || defined (__MK64FX512__)
-
+  //Teensy 3.5 and 3.6
   #include <SdFat.h>
    
   //SDIO Setup: v2.X now works after fixing the RadioHead ISR problem
   SdFs SD;
   FsFile outputFile;
   FsFile settingsFile;
+  FsFile gpsFile;
   
 #else
   //Teensy 4.X and 3.2
@@ -44,7 +47,11 @@
   
   File outputFile;
   File settingsFile;
+  File gpsFile;
 #endif
+
+//GPS log variable
+char GPSlog[1024];
 
 void beginSD(){
 
@@ -217,16 +224,17 @@ void parseEEPROMsettingsSD(){
 }
 
 void createNextFileSD(){
+
+  char fileName[20] = "FLIGHT01.txt";
   
   if(settings.testMode){Serial.print(F("Creating new SD card file: FLIGHT"));}
   n=0;
-  while (SD.exists(dataString)) {
+  while (SD.exists(fileName)) {
     n++;
-    if(n<10){itoa(n, dataString + 7,10);}
-    else{itoa(n, dataString + 6,10);}
-    dataString[8]='.';}
-  outputFile = SD.open(dataString, FILE_WRITE);
-  dataString[0]=(char)0;
+    if(n<10){itoa(n, fileName + 7,10);}
+    else{itoa(n, fileName + 6,10);}
+    fileName[8]='.';}
+  outputFile = SD.open(fileName, FILE_WRITE);
   //Print header
   outputFile.print(settings.rocketName);
   outputFile.print(F(" Code V"));
@@ -236,6 +244,23 @@ void createNextFileSD(){
   outputFile.println(F("smoothHighGz,rollZ,yawY,pitchX,offVert,intVel,intAlt,fusionVel,fusionAlt,fltEvents,radioCode,pyroCont,pyroFire,pyroPin,baroAlt,altMoveAvg,baroVel,baroPress,baroTemp,battVolt,magX,magY,magZ,gnssLat,gnssLon,gnssSpeed,gnssAlt,gnssAngle,gnssSatellites,radioPacketNum"));
   outputFile.flush();
 
+  //create GPS file
+  if(settings.GPSlog){
+    fileName[0] = 'G';
+    fileName[1] = 'P';
+    fileName[2] = 'S';
+    fileName[3] = 'l';
+    fileName[4] = 'o';
+    fileName[5] = 'g';
+    fileName[8] = '.';
+    fileName[9] = 'n';
+    fileName[10]= 'm';
+    fileName[11]= 'e';
+    fileName[12]= 'a';
+    fileName[13]= '\0';
+    gpsFile = SD.open(fileName, FILE_WRITE);
+    gpsFile.println("GPS Log");}
+
   if(settings.testMode){
     if(n<10){Serial.print('0');Serial.println(n);}
     else{Serial.println(n);}}
@@ -243,17 +268,18 @@ void createNextFileSD(){
 
 void reOpenSD(){
   n = 1;
-  while (SD.exists(dataString)) {
+  char fileName[20] = "FLIGHT01.txt";
+  while (SD.exists(fileName)){
     n++;
-    if(n<10){itoa(n, dataString + 7,10);}
-    else{itoa(n, dataString + 6,10);}
-    dataString[8]='.';}
+    if(n<10){itoa(n, fileName + 7,10);}
+    else{itoa(n, fileName + 6,10);}
+    fileName[8]='.';}
   n--;
-  if(n<10){itoa(n, dataString + 7,10);}
-  else{itoa(n, dataString + 6,10);}
-  dataString[8]='.';
+  if(n<10){itoa(n, fileName + 7,10);}
+  else{itoa(n, fileName + 6,10);}
+  fileName[8]='.';
   //outputFile = SD.open(dataString, FILE_WRITE | O_AT_END);
-  outputFile = SD.open(dataString, FILE_WRITE);}
+  outputFile = SD.open(fileName, FILE_WRITE);}
 
 void syncSD(){outputFile.flush();}
 
@@ -279,6 +305,8 @@ void readFlightSettingsSD(){
   settings.silentMode = (boolean)(parseNextVariable(true));
   settings.magSwitchEnable = (boolean)(parseNextVariable(true));
   settings.inflightRecover = (byte)(parseNextVariable(true));
+  settings.GPSlog = (boolean)(parseNextVariable(true));
+  if(settings.GPSlog){Serial.println("GPS Log Active");}
   settings.fireTime = (unsigned long) (parseNextVariable(true)*1000000UL);
   parseNextVariable(false); settings.pyro4Func = dataString[0];
   parseNextVariable(false); settings.pyro3Func = dataString[0];
@@ -327,7 +355,7 @@ void writeSDflightData(){
     writeBoolData(mag.newSamp);
     writeBoolData(baro.newSamp);
     writeBoolData(baro.newTemp);
-    writeBoolData(radioTX);
+    writeBoolData(SDradioTX);
     writeBoolData(gpsWrite);
     dataString[strPosn] = cs;strPosn++;
     writeULongData(sampleTime);
@@ -421,7 +449,7 @@ void writeSDflightData(){
     dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;
     dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;}
   //update the radio packet number
-  if (radioTX){writeIntData(radio.packetnum);radioTX = false;}
+  if (SDradioTX){writeIntData(radio.packetnum);SDradioTX = false;}
   else{dataString[strPosn]=cs;strPosn++;}
   //end of sample - carriage return, newline, and null value
   dataString[strPosn] = '\r';strPosn++;
@@ -558,8 +586,9 @@ void writeSDfooter(){
   strPosn=0;
   
   //close the file
-   outputFile.close();
-   fileClose = true;}//end SD footer
+  outputFile.close();
+  if(settings.GPSlog){gpsFile.close();}
+  fileClose = true;}//end SD footer
 
 void writeIntData(int dataValue) {
   itoa(dataValue, dataString + strPosn, base);
@@ -635,3 +664,15 @@ float parseNextVariable(boolean flag){
     dataValue = atof(dataString);
     return dataValue;}
   else{return '\0';}}//end void
+
+void updateGPSlogSD(char c){
+
+  static uint16_t logPosn = 0;
+
+  if(logPosn < sizeof(GPSlog)){
+    GPSlog[logPosn] = c;
+    logPosn++;}
+  else{
+    gpsFile.write(GPSlog, logPosn);
+    logPosn = 0;
+    GPSlog[logPosn] = c;}}

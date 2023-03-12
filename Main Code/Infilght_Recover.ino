@@ -12,8 +12,6 @@
 //----------------------------
 
 boolean rapidReset(){
-
-  RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
       
   //Read pin settings from EEPROM
   Serial.print(F("Reading EEPROM..."));
@@ -123,29 +121,6 @@ boolean rapidReset(){
   //read user settings stored in EEPROM
   readEEPROMsettings(); 
 
-  //safety override of user settings
-  if (settings.gTrigger < 1.5 * g) {settings.gTrigger = 1.5 * g;} //min 1.5G trigger
-  if (settings.gTrigger > 5 * g) {settings.gTrigger = 5 * g;} //max 5G trigger
-  if (settings.detectLiftoffTime < 100000UL) {settings.detectLiftoffTime = 100000UL;} //.1s min gTrigger detection
-  if (settings.detectLiftoffTime > 1000000UL) {settings.detectLiftoffTime = 1000000UL;} //1s max gTrigger detection
-  if (settings.apogeeDelay > 5000000UL) {settings.apogeeDelay = 5000000UL;} //5s max apogee delay
-  if (settings.fireTime > 1000000UL) {settings.fireTime = 1000000UL;} //1s max firing length
-  if (settings.mainDeployAlt > 458){settings.mainDeployAlt = 458;}//max of 1500 ft
-  if (settings.mainDeployAlt < 30) {settings.mainDeployAlt = 30;}//minimum of 100ft
-  if (settings.sustainerFireDelay > 8000000UL){settings.sustainerFireDelay = 8000000UL;}//maximum 8s 2nd stage ignition delay
-  if (settings.boosterSeparationDelay > 3000000UL){settings.boosterSeparationDelay = 3000000UL;}//max 3s booster separation delay after burnout
-  if (settings.airStart1Delay > 2000000UL){settings.airStart1Delay = 2000000UL;}//max 2s airstart delay
-  if (settings.airStart2Delay > 2000000UL){settings.airStart2Delay = 2000000UL;}//max 2s airstart delay
-  if (settings.altThreshold < 91){settings.altThreshold = 91;}//minimum 100ft threshold
-  if (settings.maxAngle > 450){settings.maxAngle = 450;}//maximum 45 degree off vertical
-  if (settings.rcdTime < 300000000UL){settings.rcdTime = 300000000UL;}//min 5min of recording time
-  if (settings.fireTime < 200000UL){settings.fireTime = 200000UL;}//min 0.2s of firing time
-  if (settings.fireTime > 1000000UL){settings.fireTime = 1000000UL;}//max 1.0s of firing time
-  if (settings.setupTime > 60000UL) {settings.setupTime = 60000UL;}//max 60 seconds from power-on to preflight start
-  if (settings.setupTime < 3000UL) {settings.setupTime = 3000UL;}//min 3 seconds of setup time
-  if (settings.TXpwr > 20){settings.TXpwr = 20;}
-  if (settings.TXpwr < 2){settings.TXpwr = 2;}
-  
   //restart SPI communication
   SPI.begin();
 
@@ -161,11 +136,11 @@ boolean rapidReset(){
   beginHighG();
   beginBaro();
   if(settings.TXenable && settings.inflightRecover > 0){
-    rf95.init();
+    radioBegin(pins.radioRST);
     //Set the radio output power & frequency
-    rf95.setTxPower(settings.TXpwr, false);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
+    setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
     if (sensors.radio == 2 && settings.FHSS){settings.TXfreq = 902.300; RIpreLiftoff = 600000UL;}//sync freq
-    rf95.setFrequency(settings.TXfreq);
+    setRadioFreq(settings.TXfreq);
     radioInterval = RIpreLiftoff;}
   
   //setup the ADC for sampling the battery
@@ -183,9 +158,9 @@ boolean rapidReset(){
     if(settings.testMode){Serial.println(F("Telemetry OFF!"));}}
   else{
     //Set the radio output power & frequency
-    rf95.setTxPower(settings.TXpwr, false);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
+    setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
     if (sensors.radio == 2 && settings.FHSS){settings.TXfreq = 902.300; RIpreLiftoff = 600000UL;}//sync freq
-    rf95.setFrequency(settings.TXfreq);
+    setRadioFreq(settings.TXfreq);
     if(settings.testMode){
       Serial.print("Radio Freq: ");Serial.println(settings.TXfreq, 3);
       Serial.print("Radio Power: ");Serial.println(settings.TXpwr);}
@@ -213,22 +188,6 @@ boolean rapidReset(){
 
   //read the orientation variables from EEPROM
   readOrientation();
-  
-  //Reset the SD card
-  // Rename the data file to FLIGHT01.txt
-  dataString[0] ='F';
-  dataString[1] ='L';
-  dataString[2] ='I';
-  dataString[3] ='G';
-  dataString[4] ='H';
-  dataString[5] ='T';
-  dataString[6] ='0';
-  dataString[7] ='1';
-  dataString[8] ='.';
-  dataString[9] ='t';
-  dataString[10]='x';
-  dataString[11]='t';
-  dataString[12]='\0';
   
   //Find the last file and continue writing
   reOpenSD();

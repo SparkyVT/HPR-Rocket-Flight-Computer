@@ -4,8 +4,19 @@
 //radioSendPacket(): main routine to build and send telemetry packets
 //hopTXfreq(): hops frequency when FHSS is active
 //syncPkt(): sends a sync packet on the FHSS hailing freq
+//radioSendPkt(): function to transmit the built packet to the radio
+/*Radio Drivers
+ * bool radioBegin(): starts code and checks radio functionality
+ * bool setRadioPWR(uint8_t pwr): sets output power (0 - 20 dbm)
+ * bool setRadioFreq(float freq): sets the radio frequency (expressed as MHz, ie 434.250)
+ * bool radioSendPkt(uint8_t* data, uint8_t len): send a radio packet from a byte array, with length len
+ * bool radioRecvPkt(uint8_t* data): recieve a packet and place data from FIFO into array "data"
+ * bool radioSetMode(uint8_t mode): sets the radio mode, mostly used for setting RX continuous mode in setup
+ */
 //-----------CHANGE LOG------------
 //17 JUL 21: initial breakout created
+//18 AUG 22: eliminated RadioHead library and wrote my own drivers
+//20 NOV 22: added in the callsign to the ham radio packet
 //---------------------------------
 
 /*900MHz FHSS Strategy
@@ -145,7 +156,6 @@ const float freqList915[64] = {
   914.3,  914.5,  914.7,  914.9};
 
 boolean hopFreq = true;
-//byte dataPacket[64];
 byte currentChnl = 0;
 int16_t hopNum = 0;
 int16_t nextHop;
@@ -156,27 +166,24 @@ int16_t pktNum = 0;
 int16_t gndPktNum = 0;
 byte hailChnl = 0;
 float freq;
-boolean sendPkt = false;
-
-//void startRadio(){
-//  startSPI(sensors.radioBusNum, pins.radioCS);
-//  bus.radioSPI = bus.activeSPI;
-//  hardware_spi1 = bus.activeSPI;}
 
 void radioSendPacket(){
-  RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
-  bool TX;
-  
+
+  byte pktHeader = 6;//packet screening requires a direct match to the ham radio callsign
 //------------------------------------------------------------------
 //                  PRE-FLIGHT PACKET
 //------------------------------------------------------------------
-  //send the preflight packet, 39 bytes, or 41 bytes if 915MHz FHSS
+  //send the preflight packet, 45 bytes
   if(events.preLiftoff){
     
     //hop frequency
-    if(settings.FHSS && sensors.radio == 2){hopTXfreq();}
+    if(settings.FHSS){hopTXfreq();}
     
     pktPosn=0;
+    //setup additional packet screening
+    //if(settings.FHSS){pktHeader = 4;}
+    //for(byte i = 0; i < pktHeader; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}//6 or 4
+    //start packet build
     dataPacket[pktPosn]=radio.event; pktPosn++;
     dataPacket[pktPosn]=gpsFix; pktPosn++;
     dataPacket[pktPosn]=cont.reportCode; pktPosn++;
@@ -193,17 +200,17 @@ void radioSendPacket(){
     for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i]; pktPosn++;}
     dataPacket[pktPosn]=lowByte(radio.satNum); pktPosn++;
     dataPacket[pktPosn]=highByte(radio.satNum); pktPosn++;
-    if(sensors.radio == 2 && settings.FHSS){
+    if(settings.FHSS){
       dataPacket[pktPosn]=nextChnl; pktPosn++;
       dataPacket[pktPosn]=nextChnl2; pktPosn++;}
-    TX = rf95.send((uint8_t *)dataPacket, pktPosn);
-    TXdataStart = micros();
+    TX = radioSendPkt(dataPacket, pktPosn);
+    TXstartTime = micros();
     int32_t pktSize = pktPosn;
     pktPosn = 0;
     if(radioDebug && settings.testMode){
       if(TX){Serial.println(F("PreFlight Packet Sent"));Serial.print("PktSize: ");Serial.println(pktSize);}
       else if(!TX){Serial.println(F("PreFlight Packet Failed!"));}}
-    if(settings.FHSS && sensors.radio == 2){
+    if(settings.FHSS){
       hopNum = nextHop;
       hopFreq = true;
       gndPktNum++;
@@ -212,121 +219,131 @@ void radioSendPacket(){
 //------------------------------------------------------------------
 //                  IN-FLIGHT PACKET
 //------------------------------------------------------------------
-  //send inflight packet, 64 bytes
+  //send inflight packet, 70 bytes
   //build the packet of 4 samples: 13 bytes per sample, 12 bytes GPS & pktnum, 13 x 4 + 12 = 64 bytes flight data
   else if(events.inFlight){  
 
     //update sample number
     sampNum++;
     
+    //put the callsign into the beginning of the packet
+    //if(sampNum == 1){
+      //if(settings.FHSS){pktHeader = 4;}
+      //for(byte i = 0; i < pktHeader; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}//6
+    
     //hop frequency if needed
-    if(sensors.radio == 2 && settings.FHSS && hopFreq && sampNum >= packetSamples){hopTXfreq();}
+    if(settings.FHSS && hopFreq && sampNum >= packetSamples){hopTXfreq();}
 
     //event
-    dataPacket[pktPosn] = radio.event; pktPosn++;//1
+    dataPacket[pktPosn] = radio.event; pktPosn++;//7
     //time
-    dataPacket[pktPosn] = lowByte(radio.fltTime);pktPosn++;//2
-    dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//3
+    uint32_t radioTime = radio.packetnum * 200000 + (sampNum-1) * 50000;
+    int32_t timeDiff = (int32_t)radioTime - (int32_t)fltTime.timeCurrent;
+    if(abs(timeDiff) < 50000){radio.fltTime = (int16_t)(radioTime/10000);}
+    else{radio.fltTime = (uint16_t)(fltTime.timeCurrent/10000);}
+    dataPacket[pktPosn] = lowByte(radio.fltTime);pktPosn++;//8
+    dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//9    
     //velocity
-    dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//4
-    dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//5
+    dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//10
+    dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//11
     //altitude
-    radio.alt = (int16_t)(baro.Alt);
-    dataPacket[pktPosn] = lowByte(radio.alt);pktPosn++;//6
-    dataPacket[pktPosn] = highByte(radio.alt);pktPosn++;//7
+    dataPacket[pktPosn] = lowByte(radio.alt);pktPosn++;//12
+    dataPacket[pktPosn] = highByte(radio.alt);pktPosn++;//13
     //Roll data
     radio.roll = rollZ;
-    dataPacket[pktPosn] = lowByte(radio.roll);pktPosn++;//8
-    dataPacket[pktPosn] = highByte(radio.roll);pktPosn++;//9
+    dataPacket[pktPosn] = lowByte(radio.roll);pktPosn++;//14
+    dataPacket[pktPosn] = highByte(radio.roll);pktPosn++;//15
     //Off Vertical data
     radio.offVert = offVert;
-    dataPacket[pktPosn] = lowByte(radio.offVert);pktPosn++;//10
-    dataPacket[pktPosn] = highByte(radio.offVert);pktPosn++;//11
+    dataPacket[pktPosn] = lowByte(radio.offVert);pktPosn++;//16
+    dataPacket[pktPosn] = highByte(radio.offVert);pktPosn++;//17
     //Acceleration
     radio.accel = (int16_t)(accelNow * 33.41406087); //33.41406087 = 32768 / 9.80665 / 100
-    dataPacket[pktPosn] = lowByte(radio.accel);pktPosn++;//12
-    dataPacket[pktPosn] = highByte(radio.accel);pktPosn++;//13
+    dataPacket[pktPosn] = lowByte(radio.accel);pktPosn++;//18
+    dataPacket[pktPosn] = highByte(radio.accel);pktPosn++;//19
       
     //GPS & packet data collected once per packet
     if(sampNum >= packetSamples){
 
       //update packet number
       radio.packetnum++;
-      dataPacket[pktPosn] = lowByte(radio.packetnum); pktPosn++;//53
-      dataPacket[pktPosn] = highByte(radio.packetnum); pktPosn++;//54
-      if(sensors.radio == 2){
+      dataPacket[pktPosn] = lowByte(radio.packetnum); pktPosn++;//59
+      dataPacket[pktPosn] = highByte(radio.packetnum); pktPosn++;//60
+      //add next set of channels if FHSS
+      if(settings.FHSS){
         dataPacket[pktPosn]=nextChnl; pktPosn++;
         dataPacket[pktPosn]=nextChnl2; pktPosn++;}
       
       //GPS Data
       if(gpsTransmit){
         gpsTransmit=false;
-        dataPacket[pktPosn] = lowByte(radio.GPSalt);pktPosn++;//55
-        dataPacket[pktPosn] = highByte(radio.GPSalt);pktPosn++;//56
-        for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlatitude.GPSbyte[i];pktPosn++;}//60
-        for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i];pktPosn++;}}//64
+        dataPacket[pktPosn] = lowByte(radio.GPSalt);pktPosn++;//61
+        dataPacket[pktPosn] = highByte(radio.GPSalt);pktPosn++;//62
+        for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlatitude.GPSbyte[i];pktPosn++;}//66
+        for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i];pktPosn++;}}//70
         
     //send packet
-    TX = rf95.send((uint8_t *)dataPacket, pktPosn);
-    TXdataStart = micros();
+    if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
+    TXstartTime = micros();
+    SDradioTX = true;
     if(radioDebug && settings.testMode){
-      if(TX){Serial.print(F("InFlight Packet Sent, "));Serial.println(TXdataStart);}
+      if(TX){Serial.print(F("InFlight Packet Sent, "));Serial.println(TXstartTime);}
       else if(!TX){Serial.println(F("InFlight Packet Failed!"));}}
     //reset counting variables
     sampNum = 0;
     pktPosn = 0;
-    if(settings.FHSS && sensors.radio == 2){
+    if(settings.FHSS){
       hopNum = nextHop;
-      if(radio.packetnum%3==0){hopFreq = true;}//true
-      if(radio.packetnum%9==0){syncFreq = true;}}//true
-    radioTX = true;}}
+      if(radio.packetnum%3==0){hopFreq = true;}
+      if(radio.packetnum%9==0){syncFreq = true;}}
+    }}
     
 //------------------------------------------------------------------
 //                  POST-FLIGHT PACKET
 //------------------------------------------------------------------
-  //send post flight packet, 22 bytes
+  //send post flight packet, 28 bytes or 30 bytes if FHSS
   else if(events.postFlight){
 
       //hop frequency
-      if(settings.FHSS && sensors.radio == 2){hopTXfreq();}
+      if(settings.FHSS){hopTXfreq();}
     
       pktPosn=0;
-      dataPacket[pktPosn]=radio.event; pktPosn++;//1 byte
-      dataPacket[pktPosn]=lowByte(radio.maxAlt); pktPosn++;//2 bytes
-      dataPacket[pktPosn]=highByte(radio.maxAlt); pktPosn++;//3 bytes
-      dataPacket[pktPosn]=lowByte(radio.maxVel); pktPosn++;//4 bytes
-      dataPacket[pktPosn]=highByte(radio.maxVel); pktPosn++;//5 bytes
-      dataPacket[pktPosn]=lowByte(radio.maxG); pktPosn++;//6 bytes
-      dataPacket[pktPosn]=highByte(radio.maxG); pktPosn++;//7 bytes
-      dataPacket[pktPosn]=lowByte(radio.maxGPSalt); pktPosn++;//8 bytes
-      dataPacket[pktPosn]=highByte(radio.maxGPSalt); pktPosn++;//9 bytes
-      dataPacket[pktPosn]=gpsFix; pktPosn++;//10 bytes
-      dataPacket[pktPosn]=lowByte(radio.GPSalt); pktPosn++;//11 bytes
-      dataPacket[pktPosn]=highByte(radio.GPSalt); pktPosn++;//12 bytes
-      dataPacket[pktPosn]=gpsLat; pktPosn++;//13 bytes
-      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlatitude.GPSbyte[i]; pktPosn++;}//17 bytes
-      dataPacket[pktPosn]=gpsLon;pktPosn++;//18 bytes
-      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i];pktPosn++;}//22 bytes
-      if(sensors.radio == 2){
+      //if(settings.FHSS){pktHeader = 4;}
+      //for(byte i = 0; i < pktHeader; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}//6 bytes
+      dataPacket[pktPosn]=radio.event; pktPosn++;//7 bytes
+      dataPacket[pktPosn]=lowByte(radio.maxAlt); pktPosn++;//8 bytes
+      dataPacket[pktPosn]=highByte(radio.maxAlt); pktPosn++;//9 bytes
+      dataPacket[pktPosn]=lowByte(radio.maxVel); pktPosn++;//10 bytes
+      dataPacket[pktPosn]=highByte(radio.maxVel); pktPosn++;//11 bytes
+      dataPacket[pktPosn]=lowByte(radio.maxG); pktPosn++;//12 bytes
+      dataPacket[pktPosn]=highByte(radio.maxG); pktPosn++;//13 bytes
+      dataPacket[pktPosn]=lowByte(radio.maxGPSalt); pktPosn++;//14 bytes
+      dataPacket[pktPosn]=highByte(radio.maxGPSalt); pktPosn++;//15 bytes
+      dataPacket[pktPosn]=gpsFix; pktPosn++;//16 bytes
+      dataPacket[pktPosn]=lowByte(radio.GPSalt); pktPosn++;//17 bytes
+      dataPacket[pktPosn]=highByte(radio.GPSalt); pktPosn++;//18 bytes
+      dataPacket[pktPosn]=gpsLat; pktPosn++;//19 bytes
+      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlatitude.GPSbyte[i]; pktPosn++;}//23 bytes
+      dataPacket[pktPosn]=gpsLon;pktPosn++;//24 bytes
+      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i];pktPosn++;}//28 bytes
+      if(settings.FHSS){
         dataPacket[pktPosn]=hailChnl; pktPosn++;
         dataPacket[pktPosn]=hailChnl; pktPosn++;}
-      TX = rf95.send((uint8_t *)dataPacket, pktPosn);
-      TXdataStart = micros();
+      if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
+      TXstartTime = micros();
+      SDradioTX = true;
       //Serial debug
       if(radioDebug && settings.testMode){
         if(TX){Serial.println(F("PostFlight Packet Sent"));}
         else if(!TX){Serial.println(F("PostFlight Packet Failed!"));}}
-      if(settings.FHSS && sensors.radio == 2){
-        syncFreq = true;
-        hopNum = nextHop;}
-      
+      if(settings.FHSS){hopNum = nextHop;}
     }//end postFlight code
 
-}//end radioSendPacket
+  //turn off the flag now that we've processed the packet command
+  sendPkt = false;}//end radioSendPacket
 
 void hopTXfreq(){
   
-  RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
   int nextHop2;
 
   //Serial debug
@@ -334,7 +351,7 @@ void hopTXfreq(){
     Serial.print("Hopping Freq: ");Serial.print(freqList915[nextChnl], 3);
     Serial.print(", HopNum: ");Serial.print(nextHop);Serial.print(", time; ");Serial.println(micros());}
     
-  rf95.setFrequency(freqList915[nextChnl]);
+  setRadioFreq(freqList915[nextChnl]);
   hopNum = nextHop;
   nextHop = hopNum + 1;
   if(nextHop >= 2000){nextHop = 0;}
@@ -347,13 +364,12 @@ void hopTXfreq(){
 
 void syncPkt(){
   
-  RH_RF95 rf95(pins.radioCS, pins.radioIRQ);
   float freq;
-
+  uint8_t syncPacket[4];
   //hop to the hailing channel
   freq = freqList915[hailChnl];
   if(liftoffSync){freq = freqList915[currentChnl];}
-  if(!liftoffSync){rf95.setFrequency(freqList915[hailChnl]);}
+  if(!liftoffSync){setRadioFreq(freqList915[hailChnl]);}
   liftoffSync = false;
 
   //Serial debug
@@ -363,10 +379,343 @@ void syncPkt(){
     Serial.print(", time; ");Serial.println(micros());}
     
   //define packet
-  dataPacket[0] = 255;//1
-  dataPacket[1] = currentChnl;//2
-  dataPacket[2] = nextChnl;//3
-  dataPacket[3] = nextChnl2;//4
+  syncPacket[0] = 255;//1
+  syncPacket[1] = currentChnl;//2
+  syncPacket[2] = nextChnl;//3
+  syncPacket[3] = nextChnl2;//4
   //send packet
-  rf95.send((uint8_t *)dataPacket, 4);
-  syncFreq = false;}
+  radioSendPkt(syncPacket, 4);
+  syncFreq = false;
+  noInterrupts();
+  syncFlag = false;
+  interrupts();}
+
+bool radioBegin(uint8_t radioRST){
+
+  radioBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
+  radioBus.cs = pins.radioCS;
+  radioBus.writeMask = 0x80;
+  radioBus.readMask = 0x00;
+  radioBus.incMask = 0x00;
+  startSPI(&radioBus, sensors.radioBusNum);
+
+  uint8_t debugVal;
+  boolean successFlag = true;
+
+  //Set interrupts
+  pinMode(pins.radioIRQ, INPUT);
+  attachInterrupt(digitalPinToInterrupt(pins.radioIRQ), clearIRQ, RISING);
+  
+  //reset radio
+  digitalWrite(pins.radioCS, HIGH);
+  digitalWrite(radioRST, HIGH);
+  delay(10);
+  digitalWrite(radioRST, LOW);
+  delayMicroseconds(100);
+  digitalWrite(radioRST, HIGH);
+  delay(10);
+  
+  #define RegOpMode       0x01
+  #define RegPreambleMsb  0x20
+  #define RegPreambleLsb  0x21
+  #define RegModemConfig1 0x1D
+  #define RegModemConfig2 0x1E
+  #define RegModemConfig3 0x26
+  uint8_t radioSetMode;
+  
+  //set radio to sleep mode
+  write8(RegOpMode, SleepMode);
+  radioMode = 0;
+  delay(10);
+  debugVal = read8(RegOpMode);
+  if(debugVal != SleepMode){
+    Serial.print("Set Sleep Mode Failed: "); 
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+  
+  //set radio to Long Range Mode
+  radioSetMode = LoRaMode;
+  write8(RegOpMode, radioSetMode);
+  radioMode = 1;
+  delay(10);
+  debugVal = read8(RegOpMode);
+  if (debugVal != radioSetMode){
+    Serial.print("Set LoRa Mode Failed: ");
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+
+  //configure the modem to 125kHz bw, 4/5 cr, explicit header
+  uint8_t modemConfig = 0b01110010;
+  write8(RegModemConfig1, modemConfig);
+  delay(10);
+  debugVal = read8(RegModemConfig1);
+  if(debugVal != modemConfig){
+    Serial.print("Config1 Failed: ");
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+
+  //configure the modem to sf7, normal TX mode, CRC on, RX MSB 0
+  modemConfig = 0b01110100;
+  write8(RegModemConfig2, modemConfig);
+  delay(10);
+  debugVal = read8(RegModemConfig2);
+  if(debugVal != modemConfig){
+    Serial.print("Config2 Failed: ");
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+
+  //Set the Automatic Gain Control (AGC)
+  modemConfig = 0x04;
+  write8(RegModemConfig3, modemConfig);
+  delay(10);
+  debugVal = read8(RegModemConfig3);
+  if(debugVal != modemConfig){
+    Serial.print("Config3 Failed: ");
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+    
+  //set the preamble length to 8
+  uint16_t preambleLength = 8;
+  union{
+    uint16_t val;
+    byte Byte[2];
+  } intUnion;
+  intUnion.val = preambleLength;
+  write8(RegPreambleLsb, intUnion.Byte[0]);
+  write8(RegPreambleMsb, intUnion.Byte[1]);
+  delay(10);
+  debugVal = read8(RegPreambleLsb);
+  intUnion.Byte[0] = debugVal;
+  debugVal = read8(RegPreambleMsb);
+  intUnion.Byte[1] = debugVal;
+  if(intUnion.val != preambleLength){
+    Serial.print("Set Preamble Len Failed: ");
+    Serial.println(intUnion.val, DEC);
+    successFlag = false;}
+
+  //Set the FIFO buffer to the start
+  #define RegFifoTxBase 0x0E
+  write8(RegFifoTxBase, 0x00);
+  delay(10);
+  debugVal = read8(RegFifoTxBase);
+  if(debugVal != 0x00){
+    Serial.print("Set FIFO TX Base Failed: ");
+    Serial.println(debugVal, BIN);}
+
+  //Set the FIFO Rx Buffer base address to the start
+  #define RegFifoRxBase 0x0F
+  write8(RegFifoRxBase, 0x00);
+  delay(10);
+  debugVal = read8(RegFifoRxBase);
+  if(debugVal != 0x00){
+    Serial.print("Set FIFO RX Base Failed: ");
+    Serial.println(debugVal, BIN);}
+    
+  //Set radio to Standby Mode
+  radioSetMode = StandbyMode;
+  write8(RegOpMode, radioSetMode);
+  delay(10);
+  debugVal = read8(RegOpMode);
+  if(debugVal != (LoRaMode | radioSetMode)){
+    Serial.print("Set Standby Mode Failed: "); 
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+
+  //Set DIO0 to fire when transmit is complete
+  #define RegDioMapping1 0x40
+  write8(RegDioMapping1, 0x40);
+  delay(10);
+  debugVal = read8(RegDioMapping1);
+  if(debugVal != 0x40){
+    Serial.print("Set DIO0 Failed: ");
+    Serial.println(debugVal, HEX);}
+    
+  //clear interrupts
+  #define RegIrqFlags     0x12
+  #define RegIrqFlagsMask 0x11
+  write8(RegIrqFlagsMask, 0x00);
+  write8(RegIrqFlags, 0xFF);  
+
+  //set the hailing frequency channel
+  if(settings.FHSS){
+    hailChnl = (uint8_t)(5*(settings.TXfreq - 902.300F));
+    //we need to reset the user defined frequency to be the closest LoRa channel
+    settings.TXfreq = freqList915[hailChnl];}
+
+  return successFlag;}
+ 
+bool setRadioPWR(uint8_t pwr){
+  
+  #define regPaDac    0x4D
+  #define regPaConfig 0x09
+  
+  boolean successFlag = true;
+  uint8_t debugVal;
+  
+  //set bus
+  activeBus = &radioBus;
+  
+  //do this like RadioHead RFM95 does it
+  //range is 2 to 20 dbm
+  if(pwr > 20){pwr = 20;}
+  if(pwr < 2){pwr = 2;}
+  
+  //enable PA_DAC if power is above 17
+  if(pwr > 17){
+    write8(regPaDac, 0b01010111);
+    pwr -= 3;
+    delay(10);
+    debugVal = read8(regPaDac);
+    if(debugVal != 0b01010111){
+      successFlag = false;
+      Serial.print("Set RegPaDac Failed: ");Serial.println(debugVal, HEX);}}
+
+  //write to the power config register
+  uint8_t radioPwr = (0x80 | (pwr-2));
+  Serial.print("Power Set: ");Serial.println(radioPwr, HEX);
+  write8(regPaConfig, radioPwr);
+  delay(10);
+  debugVal = read8(regPaConfig);
+  if(debugVal != radioPwr){
+    successFlag = false;
+    Serial.print("Set RegPaConfig Failed: ");Serial.println(debugVal, HEX);}
+  
+  return successFlag;}
+
+bool radioSendPkt(uint8_t* data, uint8_t len){
+  
+  #define RegFIFO          0x00
+  #define RegOpMode        0x01
+  #define RegFifoAddrPtr   0x0D
+  #define RegPayloadLength 0x22
+
+  //set bus
+  activeBus = &radioBus;
+  
+  //put radio in standby
+  write8(RegOpMode, StandbyMode);
+  radioMode = 1;
+
+  //clear flags
+  write8(RegIrqFlags, 0xFF);
+  
+  //set the FIFO pointer to start of the buffer
+  write8(RegFifoAddrPtr, 0x00);
+
+  //write to FIFO
+  burstWrite(RegFIFO, data, len);
+
+  //write the payload length
+  write8(RegPayloadLength, len);
+
+  //send the packet
+  write8(RegOpMode, TXmode);
+
+  //set flag
+  radioFnctn = TXmode;
+
+  //indicate the radio is transmitting
+  TX = true;
+  
+  return true;}
+
+bool setRadioFreq(float freq){
+
+  boolean successFlag = true;
+
+  //set bus
+  activeBus = &radioBus;
+  
+  //set mode to standby
+  write8(RegOpMode, StandbyMode);
+
+  uint32_t frf = ((freq * 1000000.0) / 32000000)*524288;
+  union{
+    uint32_t val;
+    uint8_t Byte[4];
+  } ulongUnion;
+
+  ulongUnion.val = frf;
+  
+  #define RegFrfMsb 0x06
+  #define RegFrfMid 0x07
+  #define RegFrfLsb 0x08
+  
+  write8(RegFrfMsb, ulongUnion.Byte[2]);
+  write8(RegFrfMid, ulongUnion.Byte[1]);
+  write8(RegFrfLsb, ulongUnion.Byte[0]);
+
+  //delay(10);
+
+  //read back the frequency
+  ulongUnion.Byte[2] = read8(RegFrfMsb);
+  ulongUnion.Byte[1] = read8(RegFrfMid);
+  ulongUnion.Byte[0] = read8(RegFrfLsb);
+
+  if(ulongUnion.val != frf){
+    successFlag = false;
+    Serial.print("Set Freq Fail: ");
+    Serial.println(ulongUnion.val);}
+
+  return successFlag;}
+
+bool radioSetMode(uint8_t mode){
+
+  #define RegOpMode      0x01
+  #define RegDioMapping1  0x40
+
+  //set bus
+  activeBus = &radioBus;
+  
+  //set radio mode
+  write8(RegOpMode, mode);
+  radioMode = mode;
+
+  delay(1);
+  
+  //check mode
+  uint8_t val = read8(RegOpMode);
+  if(val != (LoRaMode | mode)){
+    Serial.print("Set Mode Failed: ");
+    Serial.println(val, HEX);
+    return false;}
+
+  //set the IRQ to fire on TX sent
+  if(mode == TXmode){
+    write8(RegDioMapping1, 0x40);
+    radioFnctn = TXmode;}
+
+  //set the IRQ to fire on RX complete
+  if(mode == RXmode){
+    write8(RegDioMapping1, 0x00);
+    radioFnctn = RXmode;}
+
+  return true;}
+  
+void clearTXdone(){
+
+  uint32_t TXtime;
+  TXtime = micros() - TXstartTime;
+  TX = false;
+
+  //set bus
+  activeBus = &radioBus;
+
+  //read the IRQ flags
+  uint8_t debugVal = read8(RegIrqFlags);
+
+  if(radioDebug){
+    if(debugVal == 0x08){
+      Serial.print("TX Done: ");Serial.println(debugVal, HEX);
+      Serial.print("micros: ");Serial.println(TXtime);}
+    else{Serial.print("TX error: ");Serial.println(debugVal, BIN);}}
+  
+  //clear flag
+  write8(RegIrqFlags, 0xFF);
+
+  //set the radio code
+  radioMode = 1;
+
+  noInterrupts();
+  clearTX = false;
+  interrupts();}

@@ -204,6 +204,11 @@ void setCanards(){
   float dragForce = 0.5 * Cd * currentVel*currentVel * finArea * airDensity;
 
   //-----------------------
+  //Servos 1 & 2 must be aligned to the same plane
+  //Servos 1 & 2 must be aligned to the board Y-axis
+  //Servos 3 & 4 must be aligned to the same plane
+  //Servos 3 & 4 must be alinged to the board X-axis
+  //-----------------------
   //Update roll correction
   //-----------------------
   if(settings.stableRotn){
@@ -299,13 +304,13 @@ void setCanards(){
   float throwServo4 = 90 + asinf(sineThrowServo4) * rad2deg;
 
   //Set the fin positions
-  //fin pointed in the positive-y world-frame
+  //fin pointed in the positive-y rocket-frame
   canardYaw1.write(throwServo1-servo1trim);
-  //fin pointed in the negative-y world-frame
+  //fin pointed in the negative-y rocket-frame
   canardYaw2.write(throwServo2-servo2trim);
-  //fin pointed in the positive-x world-frame
+  //fin pointed in the positive-x rocket-frame
   canardPitch3.write(throwServo3-servo3trim);
-  //fin pointed in the negative-x world-frame
+  //fin pointed in the negative-x rocket-frame
   canardPitch4.write(throwServo4-servo4trim);
 
   //output debugging over serial
@@ -335,29 +340,160 @@ void setCanards(){
 
 void setRTB(){
 
+  const float rollTorqueArm = 0.046482;//1.83in = 0.0464m
+  const float bearingTorqueArm =  0.46482;//18in = 0.464m
+  float maxTorqueInput = 4.0;
+  const float KpLandPoint = 0.03;
+  const float KiLandPoint = 0.0;
+  const float KdLandPoint = 0.0;
+  const float KpRoll = 0.0015;
+  const float KiRoll = 0.0;
+  const float KdRoll = 0.0005;
+  uint32_t cdt;
+  static uint32_t lastUpdate = 0UL;
+  static float bearingErrorInt = 0.0F;
+  static float prevLandPointError = 0.0F;
+  static float landPointErrorInt = 0.0F;
+  
+  //Update time stamps
+  uint32_t timeNow = micros();
+  cdt = timeNow - lastUpdate;
+  lastUpdate = timeNow;
+  
+  //Calculate air density
+  const float R = 287.05; //R value for dry air
+  float airDensity = (baro.pressure * 100) / (R * (baro.temperature + 273.15));
+
+  //Calculate the fin drag force
+  const float Cd = 0.5; //estimate of the fin Cd
+  const float finArea = 0.00064516;//area of each canard in m^2
+  float currentVel = fusionVel;
+  if(fabs(currentVel)<1.0F){currentVel = 1.0F;}
+  if(settings.testMode){currentVel = 100.0F;}
+  float dragForce = 0.5 * Cd * currentVel*currentVel * finArea * airDensity;
+  
   //calculate the bearing to the return point using GPS coordinates
   //A = current position
   //B = desired position
   //X = cos(latitudeB) * sin(longitudeB - longitudeA)
   //Y = cos(latitudeA) * sin(latitudeB) - sin(latitudeA) * cos(latitudeB) * cos(longitudeB - longitudeA)
-  /*Variables
-  liftoffLatitude
-  liftoffLongitude 
-  gpsLongitude
-  gpsLatitude*/
   
-  float x = speedCos(liftoffLatitude) * speedSin(liftoffLongitude - gpsLongitude);
-  float y = speedCos(gpsLatitude) * speedSin(liftoffLatitude) - speedSin(gpsLatitude) * speedCos(liftoffLatitude) * speedCos(liftoffLongitude - gpsLongitude);
+  float x = speedCos(liftoffLatDec) * speedSin(liftoffLonDec - gpsLongitudeDec);
+  float y = speedCos(gpsLatitudeDec) * speedSin(liftoffLatDec) - speedSin(gpsLatitudeDec) * speedCos(liftoffLatDec) * speedCos(liftoffLonDec - gpsLongitudeDec);
 
   float bearingSetpoint = speedAtan2(x, y);
-  float bearingCurrent = speedAtan2(mag.y, mag.x);
+  float magBearing = speedAtan2(mag.y, mag.x);
+  float trackBearing = GPS.course.deg();
+  float bearingError = bearingSetpoint - magBearing;
 
-  //set the roll to the bearing with fins 1 & 3
+  //Update Integral Terms
+  bearingErrorInt += bearingError*cdt*mlnth;
 
-  //aim the vehicle body twoards the return point with fins 2 & 4
+  //Prevent Integral Wind-Up in bench-test mode
+  if(settings.testMode){bearingErrorInt = 0;}
   
+  //set the roll to the bearing with fins 3 & 4
+  //use torque generation model from above
+  //Update roll position correction
+  float bearingTorqueInput = KpRoll*bearingError + KiRoll*bearingErrorInt + KdRoll*gyro.z*gyro.gainZ;
+  if(fabs(bearingTorqueInput)>maxTorqueInput){bearingTorqueInput = ((bearingTorqueInput>0)? 1 : -1) * maxTorqueInput;}
+    
+  //Determine the required torque to correct bearing
+  const float numRollFins = 2.0F;
+  float bearingTorqueServo3 = bearingTorqueInput / numRollFins;
+  float bearingTorqueServo4 = bearingTorqueInput / numRollFins;
+  
+  //---------------------------------------------
+  //Calculate the sine of the required throw angle
+  //---------------------------------------------
+  //torque = controlForce * torqueArmDistance
+  //controlForce = sin(canardThrow) * finDragForce
+  //finDragForce = 0.5 * Cd * velocity^2 * finArea * airDensity
+  //canardThrow = asin(controlForce / finDragForce)
+  float sineThrowServo3 = bearingTorqueServo3 / (rollTorqueArm * dragForce);
+  float sineThrowServo4 = bearingTorqueServo4 / (rollTorqueArm * dragForce);
+
+  //control input corrections are limited to 45 degrees
+  const float sine45 = 0.70710678;//sqrt(2)/2
+  if(fabs(sineThrowServo3) > sine45){sineThrowServo3 = ((sineThrowServo3>0)? 1 : -1) * sine45;}
+  if(fabs(sineThrowServo4) > sine45){sineThrowServo4 = ((sineThrowServo4>0)? 1 : -1) * sine45;}
+
+  //translate to degrees, but reverse direction since we are now descending
+  const float rad2deg = 180 / M_PI;
+  float throwServo3 = 90 - asinf(sineThrowServo3) * rad2deg;
+  float throwServo4 = 90 - asinf(sineThrowServo4) * rad2deg;
+
+  //Set the fin positions
+  //fin pointed in the positive-x rocket-frame
+  canardPitch3.write(throwServo3-servo3trim);
+  //fin pointed in the negative-x rocket-frame
+  canardPitch4.write(throwServo4-servo4trim);
+
+  //-------------------------------------------------------------------------------------------------------------------
+  //aim the vehicle body twoards the return point with fins 1 & 2
+  //need a predictive model based on: rate of descent, current altitude, current distance from landing point
+  //rate of descent = baro vel or GPS derived descent rate
+  //current altitude = baro alt
+  //distance from landing point = GPS calcs
+  //GPS calculated ground speed
+  //landing point = time to landing x ground speed
+  //landing point = (baro alt - deployAlt) / baro vel x ground speed
+  //servo throw will be proportional to the difference between predicted landing point and desired landing point
+  //integral = how long the difference between predicted and desired is held
+  //proportional = difference between predicted and desired
+  //derivative = GPS calculated ground speed
+  //-------------------------------------------------------------------------------------------------------------------
+
+  //if the difference between the required bearing and the actual bearing is > 20 degrees,
+  //then zero fins 1 & 2 so that it doesn't make the bearing differential worse
+  float throwServo1;
+  float throwServo2;
+  if(fabs(bearingError) > 20){throwServo1 = throwServo2 = 0;}
+
+  //else estimate the landing point
+  float gpsAlt = GPS.altitude.meters() - baro.baseAlt;
+  float timeToLand = (gpsAlt - settings.mainDeployAlt) / fabs(GPSvel);//subtract out the main deployment altitude because we want it back at the launch position when the mains come out
+  float distanceToLandPoint = calcGPSdist(liftoffLonDec, liftoffLatDec, gpsLongitudeDec, gpsLatitudeDec);
+  float gpsGroundSpeed = GPS.speed.mps();
+  float landPointEst = distanceToLandPoint / gpsGroundSpeed;
+  float landPointError = distanceToLandPoint - landPointEst;
+
+  //Update Integral Terms
+  landPointErrorInt += landPointError*cdt*mlnth;
+
+  //calculate the controlThrow
+  throwServo1 = KpLandPoint*landPointError + KiLandPoint*landPointErrorInt + KdLandPoint*(landPointError - prevLandPointError);
+  throwServo2 = -1 * throwServo1;
+  prevLandPointError = landPointError;
+  
+  //Set the fin positions
+  //fin pointed in the positive-y rocket-frame
+  canardYaw1.write(throwServo1-servo1trim);
+  //fin pointed in the negative-y rocket-frame
+  canardYaw2.write(throwServo2-servo2trim);
+
 }//end setRTB
 
+float calcGPSdist(float Alon, float Alat, float Blon, float Blat){
+
+  //calculate the difference between the points
+  float diffLat = Alat - Blat;
+  float diffLon = Alon - Blon;
+
+  //convert latitude degrees to meters
+  diffLat *= 111111.1;
+
+  //https://www.sco.wisc.edu/2022/01/21/how-big-is-a-degree/#:~:text=Therefore%20we%20can%20easily%20compute,further%20subdivisions%20of%20a%20degree.&text=circumference%20of%2025%2C000%20miles.
+  //convert longitude degrees to meters through a simple interpolation table
+  if     (fabs(diffLon) <= 15.0){ diffLon = fabs(diffLon) * 107325.1 + (15 - fabs(diffLon)) * 3786;}
+  else if(fabs(diffLon) <= 30.0){ diffLon = fabs(diffLon) *  96225.0 + (30 - fabs(diffLon)) * 11100.1;}
+  else if(fabs(diffLon) <= 45.0){ diffLon = fabs(diffLon) *  78567.4 + (45 - fabs(diffLon)) * 17657.6;}
+  else if(fabs(diffLon) <= 60.0){ diffLon = fabs(diffLon) *  55555.6 + (60 - fabs(diffLon)) * 23011.8;}
+  else if(fabs(diffLon) <= 75.0){ diffLon = fabs(diffLon) *  28757.7 + (75 - fabs(diffLon)) * 26797.9;}
+  else                          { diffLon =                            (90 - fabs(diffLon)) * 28757.7;}//why one would launch rockets at the north pole is beyond me       
+
+  return sqrt(diffLat * diffLat + diffLon * diffLon);}
+  
 void magRotn(){
 
   long dotProd;
@@ -395,6 +531,4 @@ void magRotn(){
   magPitch = magOffVert * speedCos(tempRoll);
 
   //compute yaw
-  magYaw = magOffVert * speedSin(tempRoll);
-  
-}
+  magYaw = magOffVert * speedSin(tempRoll);}
