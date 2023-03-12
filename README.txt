@@ -53,15 +53,15 @@ Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
 --Connect UBLOX GPS unit to any available HW Serial port
 
 --------FLIGHT COMPUTER COMPONENTS----------
-    Microprocessor: Teensy 3.5 or 3.6 (compatible with provided PCB file) or Teensy 4.1/4.0/3.2 (no PCB file provided)
-               IMU: LSM9DS1, LSM6DS33, or LSM303 & L3GD20H combo
-      Magnetometer: LSM9DS1, LSM303, or LIS3MDL
-100G Accelerometer: H3LIS331DL, ADXL377, or ADXL377 & ADS1115 combo
-   Pressure Sensor: MS5611, MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
+    Microprocessor: Teensy 4.1, 3.5, or 3.6 (compatible with provided PCB file) or Teensy 4.0/3.2 (no PCB file provided)
+               IMU: LSM6DS0X (recommended), LSM9DS1, LSM6DS33, or LSM303 & L3GD20H combo
+      Magnetometer: LIS3MDL (recommended), LSM9DS1, or LSM303
+100G Accelerometer: H3LIS331DL (recommended), ADXL377, or ADXL377 & ADS1115 combo
+   Pressure Sensor: MS5611 (recommended), MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
               GNSS: UBLOX M6, M7, M8, M9 (NEO footprint supported in PCB file)
-    LoRa Telemetry: RFM96W 433MHz (USA: Amateur License Required, EUR: License Free) or RFM95W 915MHz (Optional Software FHSS)
+    LoRa Telemetry: RFM96W or RFM95W, both capable of TX on 433MHz or 915MHz (433MHz USA: Amateur License Required, EUR: License Free)
    Tactile Buttons: 0.2 in spacing
-               PCB: Create your own or use the provided design file for PCBexpress
+               PCB: Use the provided PCBexpress design file or create your own
            Battery: 2-cell 400mAh 20C LiPo recommended (DO NOT EXCEED 10V with provided PCB)
 
 --------GROUND STATION COMPONENTS----------
@@ -81,6 +81,7 @@ Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
 
 --------ADDITIONAL LIBRARIES REQUIRED----------
 TinyGPS++
+SDfat and/or SD
 
 --------INTENDED FUTURE REVISIONS----------
 1) Upgrade ground station with GPS, digital compass, & Bluetooth
@@ -95,7 +96,7 @@ fit the provided PCB
 Note: 1.25in x 4.0in size board.  Will fit in a 38mm coupler tube.
 Components mount on both sides.  See provided pictures for examples.
 
-Note: Estimated Flight Computer Cost = $135
-Note: Estimated Ground Station Cost = $140 (does not include antenna)
+Note: Estimated Flight Computer Cost = $150
+Note: Estimated Ground Station Cost = $150 (does not include antenna)
 Note: Estimated build time = 3hrs
 Note: Estimated programming, setup, calibration, & debugging time = 4hrs
