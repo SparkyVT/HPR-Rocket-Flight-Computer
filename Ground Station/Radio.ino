@@ -12,26 +12,36 @@
  *bool burstRead(byte reg, uint8_t *data, byte len)
  *bool burstWrite(byte reg, uint8_t *data, byte len)
  */
+
+//---------------------------
+//433 MHz Frequency List
+//---------------------------
+float radioFreq[9] = {433.250, 433.500, 433.625, 433.750, 433.875, 434.000, 434.125, 434.250, 434.400};
+
+//---------------------------
+//915 MHz LoRa channel list on ISM band
+//---------------------------
+const float FHSSchnl[64] = {
+  902.3,  902.5,  902.7,  902.9,  903.1,  903.3,  903.5,  903.7,  903.9,  904.1,
+  904.3,  904.5,  904.7,  904.9,  905.1,  905.3,  905.5,  905.7,  905.9,  906.1,  
+  906.3,  906.5,  906.7,  906.9,  907.1,  907.3,  907.5,  907.7,  907.9,  908.1,  
+  908.3,  908.5,  908.7,  908.9,  909.1,  909.3,  909.5,  909.7,  909.9,  910.1,  
+  910.3,  910.5,  910.7,  910.9,  911.1,  911.3,  911.5,  911.7,  911.9,  912.1,  
+  912.3,  912.5,  912.7,  912.9,  913.1,  913.3,  913.5,  913.7,  913.9,  914.1,
+  914.3,  914.5,  914.7,  914.9};
+  
 byte radioMode = 0;
 bool TX = false;
 
-bool radioBegin(uint8_t CS, uint8_t radioRST){
-
-  radioCS = CS;
+bool radioBegin(){
 
   uint8_t debugVal;
   boolean successFlag = true;
   
-  pinMode(radioCS, OUTPUT);
-  pinMode(radioRST, OUTPUT);
-  
-  //reset radio
-  digitalWrite(radioCS, HIGH);
-  digitalWrite(radioRST, HIGH);
   delay(10);
-  digitalWrite(radioRST, LOW);
+  digitalWrite(activeRadio->rst, LOW);
   delayMicroseconds(100);
-  digitalWrite(radioRST, HIGH);
+  digitalWrite(activeRadio->rst, HIGH);
   delay(10);
   
   #define RegOpMode       0x01
@@ -45,12 +55,16 @@ bool radioBegin(uint8_t CS, uint8_t radioRST){
   //set radio to sleep mode
   write8(RegOpMode, SleepMode);
   radioMode = 0;
+  if(!activeRadio->enable){return false;}
   delay(10);
   debugVal = read8(RegOpMode);
   if(debugVal != SleepMode){
     Serial.print("Set Sleep Mode Failed: "); 
     Serial.println(debugVal, BIN);
     successFlag = false;}
+
+  //set radio power
+  setRadioPWR(activeRadio->TXpwr);
   
   //set radio to Long Range Mode
   radioSetMode = LoRaMode;
@@ -146,6 +160,13 @@ bool radioBegin(uint8_t CS, uint8_t radioRST){
   write8(RegIrqFlagsMask, 0x00);
   write8(RegIrqFlags, 0xFF);  
 
+  //if FHSS, set the user frequency to the closest LoRa channel as the hail frequency
+  if(activeRadio->FHSS){
+    activeRadio->hailChnl = (uint8_t)(5*(activeRadio->frq - 902.300F));
+    activeRadio->frq = getFreq(activeRadio->hailChnl);
+    Serial.print("Radio ");Serial.print(activeRadio->num);Serial.print(" hail channel ");
+    Serial.print(activeRadio->hailChnl);Serial.print(", freq: ");Serial.println(activeRadio->frq, 3);}
+
   return successFlag;}
  
 bool setRadioPWR(uint8_t pwr){
@@ -155,7 +176,6 @@ bool setRadioPWR(uint8_t pwr){
   
   boolean successFlag = true;
   uint8_t debugVal;
-  radioCS = radio1CS;
   
   //do this like RadioHead RFM95 does it
   //range is 2 to 20 dbm
@@ -164,27 +184,21 @@ bool setRadioPWR(uint8_t pwr){
   
   //enable PA_DAC if power is above 17
   if(pwr > 17){
-    write8(regPaDac, 0x17);
+    write8(regPaDac, 0b01010111);
     pwr -= 3;
     delay(10);
     debugVal = read8(regPaDac);
-    if(debugVal != 0x17){
-      successFlag = false;
-      Serial.print("Set RegPaDac Failed: ");Serial.println(debugVal, HEX);}}
-  else{
-    //disable DAC
-    write8(regPaDac, 0x14);
-    delay(10);
-    debugVal = read8(regPaDac);
-    if(debugVal != 0x14){
+    if(debugVal != 0b01010111){
       successFlag = false;
       Serial.print("Set RegPaDac Failed: ");Serial.println(debugVal, HEX);}}
 
   //write to the power config register
-  write8(regPaConfig, (0x80 | (pwr-2)));
+  uint8_t radioPwr = (0x80 | (pwr-2));
+  Serial.print("Power Set: ");Serial.println(radioPwr, HEX);
+  write8(regPaConfig, radioPwr);
   delay(10);
   debugVal = read8(regPaConfig);
-  if(debugVal != (0x80 | (pwr-2))){
+  if(debugVal != radioPwr){
     successFlag = false;
     Serial.print("Set RegPaConfig Failed: ");Serial.println(debugVal, HEX);}
   
@@ -201,7 +215,7 @@ bool radioRecvPkt(uint8_t* data){
   if(flags == 0x40 || flags == 0x50){Serial.print("Good Packet Recieved: ");Serial.println(flags, HEX);}
 
   //bad packet recieved
-  else if(flags != 0x00){
+  else{
     Serial.print("IRQ Flag error: ");Serial.println(flags, BIN);
     flagError = true;}
     
@@ -242,9 +256,37 @@ bool radioRecvPkt(uint8_t* data){
 
   return true;}
 
+float readRadioFreq(){
+
+  //uint32_t frf = ((freq * 1000000.0) / 32000000)*524288;
+  uint32_t frf;
+  union{
+    uint32_t val;
+    uint8_t Byte[4];
+  } ulongUnion;
+
+  ulongUnion.val = frf;
+  
+  #define RegFrfMsb 0x06
+  #define RegFrfMid 0x07
+  #define RegFrfLsb 0x08
+
+  //read back the frequency
+  ulongUnion.Byte[2] = read8(RegFrfMsb);
+  ulongUnion.Byte[1] = read8(RegFrfMid);
+  ulongUnion.Byte[0] = read8(RegFrfLsb);
+  frf = ulongUnion.val;
+
+  float frq = 32*(float)frf/524288.0F;
+
+  return frq;}
+
 bool setRadioFreq(float freq){
 
   boolean successFlag = true;
+
+  //read the current mode
+  uint8_t currentMode = read8(RegOpMode);
   
   //set mode to standby
   write8(RegOpMode, StandbyMode);
@@ -265,7 +307,7 @@ bool setRadioFreq(float freq){
   write8(RegFrfMid, ulongUnion.Byte[1]);
   write8(RegFrfLsb, ulongUnion.Byte[0]);
 
-  delay(10);
+  //delay(10);
 
   //read back the frequency
   ulongUnion.Byte[2] = read8(RegFrfMsb);
@@ -276,10 +318,10 @@ bool setRadioFreq(float freq){
     successFlag = false;
     Serial.print("Set Freq Fail: ");
     Serial.println(ulongUnion.val);}
-  else{
-    Serial.print("Set Freq Success: ");
-    Serial.println(ulongUnion.val);}
 
+  //Set back to the previous mode
+  radioSetMode(RXmode);
+  
   return successFlag;}
 
 bool radioSetMode(uint8_t mode){
@@ -311,47 +353,52 @@ bool radioSetMode(uint8_t mode){
 
 void hopFreq(){
 
-  byte hopChnl;
-
-  chnlUsed++;
-  if(chnlUsed == 1){hopChnl = nextChnl;if(debugSerial){Serial.println(hopChnl);}}
-  else if(chnlUsed == 2){hopChnl = nextChnl2;if(debugSerial){Serial.println(hopChnl);}}
-  else if(chnlUsed >= 3){hopChnl = hailChnl_1;if(debugSerial){Serial.print(F("Moving to sync chnl: ")); Serial.println(hopChnl); syncFreq = true;}}
-  chnl1 = hopChnl;
-  setRadioFreq(getFreq(chnl1));
-  lastHopTime = micros();}
-
-void syncPkt(){
+  uint8_t hopChnl;
+  float freq;
   
-  byte currentChnl = chnl1;
-  syncFreq = false;
+  activeRadio->chnlUsed++;
+  Serial.print("chnlUsed = ");Serial.println(activeRadio->chnlUsed);
+  if(activeRadio->chnlUsed == 1){hopChnl = activeRadio->nextChnl;if(debugSerial){Serial.print("Hopping to Channel: ");Serial.println(hopChnl);}}
+  else if(activeRadio->chnlUsed == 2){hopChnl = activeRadio->nextChnl2;if(debugSerial){Serial.print("Hopping to Channel: ");Serial.println(hopChnl);}}
+  else if(activeRadio->chnlUsed >= 3){hopChnl = activeRadio->hailChnl;if(debugSerial){Serial.print(F("Moving to sync chnl: ")); Serial.println(hopChnl); activeRadio->syncFreq = true;}}
+  activeRadio->chnl1 = hopChnl;
+  freq = getFreq(activeRadio->chnl1);
+  activeRadio->frq = freq;
+  setRadioFreq(freq);
+  activeRadio->lastHopTime = micros();
+  Serial.print("Timestamp: ");Serial.println(activeRadio->lastHopTime);}
+
+void syncPkt(byte rxPacket[]){
+  
+  activeRadio->signalEst = true;
+  activeRadio->syncFreq = false;
+  lostSignalTime = 1400000UL;
   //parse packet
-  chnl1 = (byte)dataPacket1[1];
-  nextChnl = (byte)dataPacket1[2];
-  nextChnl2= (byte)dataPacket1[3];
-  chnlUsed = 0;
+  activeRadio->chnl1 = (byte)rxPacket[1];
+  activeRadio->nextChnl = (byte)rxPacket[2];
+  activeRadio->nextChnl2= (byte)rxPacket[3];
+  activeRadio->chnlUsed = 0;
   hopFreq();
   if(debugSerial){
-    Serial.print("------ Sync Packet Recieved ------");Serial.println(currentChnl);Serial.print("------ ");
+    Serial.print("Moving to Channel ");Serial.println(activeRadio->nextChnl);
     dispPktInfo();}}
 
 void dispPktInfo(){
-  freq1 = getFreq(chnl1);
-  if(debugSerial){
-    Serial.print(F("Current Chnl: "));Serial.print(chnl1);
-    Serial.print(F(", "));Serial.print(freq1);Serial.println(F("MHz"));
-    Serial.print(F("Next Chnl: "));Serial.print(nextChnl);Serial.print(F(", Next Freq: "));}
-  freq1 = getFreq(nextChnl);
-  if(debugSerial){Serial.print(freq1, 3); Serial.println("MHz");}
-}
+  Serial.print(F("Current Chnl: "));Serial.print(activeRadio->chnl1);Serial.print(F(", "));Serial.print(getFreq(activeRadio->chnl1));Serial.println(F("MHz"));
+  Serial.print(F("Next Chnl: "));Serial.print(activeRadio->nextChnl);Serial.print(F(", Next Freq: "));Serial.print(getFreq(activeRadio->nextChnl), 3); Serial.println("MHz");
+  Serial.print("3rd Chnl: ");Serial.print(activeRadio->nextChnl2);Serial.print(", ");Serial.print(getFreq(activeRadio->nextChnl2),3);Serial.println("MHz");}
 
 float getFreq(byte chnl){
   
   float frq;
   
-  if(band433){frq = 433.250 + chnl * 0.125;}
+  if(activeRadio->frq < 800.000F){
+    if(chnl>=sizeof(radioFreq)){chnl = sizeof(radioFreq)-1;}
+    frq = radioFreq[chnl];}
   
-  else{frq = 902.300F + 0.200F * chnl;}
+  else{
+    if(chnl>=sizeof(FHSSchnl)){chnl = sizeof(FHSSchnl)-1;}
+    frq = FHSSchnl[chnl];}
   
   return frq;}
 
@@ -366,14 +413,14 @@ uint8_t read8(byte reg){
   
   //begin SPI transaction
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
-  digitalWrite(radioCS, LOW);
+  digitalWrite(activeRadio->cs, LOW);
 
   //Read data
   SPI.transfer(reg);
   val = SPI.transfer(0);
   
   //end SPI transaction
-  digitalWrite(radioCS, HIGH);
+  digitalWrite(activeRadio->cs, HIGH);
   SPI.endTransaction();
 
   return val;}
@@ -382,14 +429,14 @@ bool write8(byte reg, byte data){
 
   //begin SPI transaction
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
-  digitalWrite(radioCS, LOW);
+  digitalWrite(activeRadio->cs, LOW);
   
   //Send data
   SPI.transfer(writeMask | reg);
   SPI.transfer(data);
 
   //end SPI transaction
-  digitalWrite(radioCS, HIGH);
+  digitalWrite(activeRadio->cs, HIGH);
   SPI.endTransaction();
 
   return true;}
@@ -398,7 +445,7 @@ bool burstWrite(byte reg, uint8_t *data, byte len){
   
   //begin SPI transaction
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
-  digitalWrite(radioCS, LOW);
+  digitalWrite(activeRadio->cs, LOW);
   
   //Send data
   SPI.transfer(writeMask | reg);
@@ -406,7 +453,7 @@ bool burstWrite(byte reg, uint8_t *data, byte len){
   Serial.println(" ");
 
   //end SPI transaction
-  digitalWrite(radioCS, HIGH);
+  digitalWrite(activeRadio->cs, HIGH);
   SPI.endTransaction();
 
   return true;}
@@ -415,14 +462,14 @@ bool burstRead(byte reg, uint8_t *data, byte len){
 
   //begin SPI transaction
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
-  digitalWrite(radioCS, LOW);
+  digitalWrite(activeRadio->cs, LOW);
 
   //Read data
   SPI.transfer(reg);
   for(byte i = 0; i < len; i++){*(data+i) = SPI.transfer(0);}
   
   //end SPI transaction
-  digitalWrite(radioCS, HIGH);
+  digitalWrite(activeRadio->cs, HIGH);
   SPI.endTransaction();
 
   return true;}

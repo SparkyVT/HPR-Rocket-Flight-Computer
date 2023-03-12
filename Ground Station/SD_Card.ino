@@ -1,3 +1,52 @@
+void readRadioSettingsSD(){
+  Serial.println(F("Reading User Settings from SD Card..."));
+  //Open the settings file
+  settingsFile = SD.open("Settings.txt", FILE_READ);
+
+  //Read in the user defined variables
+  //parseNextVariable(false);n=0;
+  //Station Settings
+  settings.LCD = (boolean)(parseNextVariable(true));
+  settings.LCDbrightness = (uint8_t)(parseNextVariable(true));
+  settings.LCDcontrast = (uint8_t)(parseNextVariable(true));
+  settings.displayMetric = (boolean)(parseNextVariable(true)); if(settings.displayMetric){unitConvert = 1.0F;}
+  settings.LCDcolorEvents = (boolean)(parseNextVariable(true));
+  parseNextVariable(false);for(byte i = 0; i < sizeof(settings.callSign);i++){settings.callSign[i] = dataString[i];} 
+  settings.enableSD = (boolean)(parseNextVariable(true));
+  settings.enableGPS = (boolean)(parseNextVariable(true));
+  settings.blueTooth = (boolean)(parseNextVariable(true));
+  settings.debugSerial = (boolean)(parseNextVariable(true));
+  radio1.enable = (boolean)(parseNextVariable(true));
+  radio1.frq = (float)(parseNextVariable(true));
+  radio1.FHSS = (boolean)(parseNextVariable(true));
+  radio1.TXpwr = (byte)(parseNextVariable(true));
+  radio2.enable = (boolean)(parseNextVariable(true));
+  radio2.frq = (float)(parseNextVariable(true));
+  radio2.FHSS = (boolean)(parseNextVariable(true));
+  radio2.TXpwr = (byte)(parseNextVariable(true));
+  //close the settings file
+  settingsFile.close();
+  Serial.println("Done!");
+}//end readFlightSettingsSD
+
+float parseNextVariable(boolean flag){
+  byte n=0;
+  float dataValue;
+  char c;
+  n=0;
+  c='\0';
+  while (c != '='){c = settingsFile.read();}
+  c = settingsFile.read();
+  while (c != '\n'&& c !='\r' && n < sizeof(dataString)){
+    c = settingsFile.read();
+    if(c != '\n' && c != '\r'){dataString[n]=c;}
+    else{dataString[n]='\0';}
+    n++;}
+  if(flag){
+    dataValue = atof(dataString);
+    return dataValue;}
+  else{return '\0';}}//end void
+ 
  void createSustainerFile(){
 
   fileNum=1;

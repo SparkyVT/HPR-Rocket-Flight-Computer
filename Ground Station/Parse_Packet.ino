@@ -5,7 +5,7 @@ void preflightPacket(byte rxPacket[]){
  -----------------------------------------------------*/
     
         //Read data from pre-flight packet
-        pktPosn=0;
+        pktPosn=eventPosn;
         event = (byte)rxPacket[pktPosn];pktPosn++;//1
         GPSlock = (byte)rxPacket[pktPosn];pktPosn++;//2
         contCode = (byte)rxPacket[pktPosn];pktPosn++;//3
@@ -25,6 +25,16 @@ void preflightPacket(byte rxPacket[]){
         radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//38
         radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//39
         satNum = radioInt.unionInt;
+        if(activeRadio->FHSS){
+          activeRadio->nextChnl = (byte)rxPacket[pktPosn];pktPosn++;
+          activeRadio->nextChnl2 = (byte)rxPacket[pktPosn];
+          //set the next channel
+          activeRadio->syncFreq = false;
+          if(settings.debugSerial){
+            dispPktInfo();
+            Serial.print(F("Hopping Freq: "));}
+          activeRadio->chnlUsed = 0;
+          hopFreq();}
         //capture the last good GPS coordinates to potentially store later in EEPROM
         if(GPSlock == 1){
           lastGPSlat = GPSlatitude;
@@ -37,16 +47,16 @@ void inflightPacket(byte rxPacket[]){
  -----------------------------------------------------*/     
         
         //parse the GPS data and packet number first, then the samples
-        pktPosn = 52;
+        pktPosn = 52 + eventPosn;
         radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//53
         radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//54
         packetnum = radioInt.unionInt;
 
         if(debugSerial){Serial.print(F("Inflight Packet Received, PktNum: "));Serial.println(packetnum);}
         
-        if(FHSS){
-          nextChnl = (byte)rxPacket[pktPosn];pktPosn++;
-          nextChnl2 = (byte)rxPacket[pktPosn];pktPosn++;}
+        if(activeRadio->FHSS){
+          activeRadio->nextChnl = (byte)rxPacket[pktPosn];pktPosn++;
+          activeRadio->nextChnl2 = (byte)rxPacket[pktPosn];pktPosn++;}
         radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//55
         radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//56
         GPSalt = radioInt.unionInt;
@@ -56,11 +66,11 @@ void inflightPacket(byte rxPacket[]){
         GPSlongitude=radioUnion.GPScoord;
       
         //determine GPS lock from the packet length
-        if(len < 60){GPSlock = 0;}
+        if(len < 60+eventPosn){GPSlock = 0;}
         else{GPSlock = 1; lastGPSfix = micros();}
         
         //parse inflight packet of 4 samples
-        pktPosn = 0;
+        pktPosn = eventPosn;
         for(byte i=0;i<4;i++){
                       
           //parse the samples
@@ -90,15 +100,15 @@ void inflightPacket(byte rxPacket[]){
           //write to the SD card
           if(SDinit){writeInflightData();}}
 
-        if(debugSerial){Serial.println("Inflight Data Written");}
+        if(settings.debugSerial){Serial.println("Inflight Data Written");}
         //set the next channel
-        if(FHSS){
-          syncFreq = false;
+        if(activeRadio->FHSS){
+          activeRadio->syncFreq = false;
           if(debugSerial){dispPktInfo();}
-          lastHopTime = lastRX - (packetnum%3 *200000UL);
-          chnlUsed = 0;
+          activeRadio->lastHopTime = activeRadio->lastRX - (packetnum%3 *200000UL);
+          activeRadio->chnlUsed = 0;
           if(packetnum%3 == 0){
-            if(debugSerial){Serial.print(F("Hopping Freq: "));}
+            if(settings.debugSerial){Serial.print(F("Hopping Freq: "));}
             hopFreq();}}
 
         //capture the last good GPS coordinates to potentially store later in EEPROM
@@ -111,7 +121,7 @@ void postflightPacket(byte rxPacket[]){
 /*---------------------------------------------------
               POSTFLIGHT PACKET
  -----------------------------------------------------*/
-        pktPosn = 1;
+        pktPosn = eventPosn+1;
         maxAltitude = (byte)rxPacket[pktPosn];pktPosn++;
         maxAltitude += ((byte)rxPacket[pktPosn] << 8);pktPosn++;
         maxVelocity = (byte)rxPacket[pktPosn];pktPosn++;

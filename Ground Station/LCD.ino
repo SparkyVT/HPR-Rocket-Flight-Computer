@@ -21,36 +21,16 @@ void startupLCD(){
   if(SDinit){lcd.print(F("SD Card OK!"));}
   else{lcd.print(F("SD Card Failed!"));}
   lcd.print('\r');
-  byte radioCode = 0;
-  if(radio1status && radio2status){radioCode = 1;}
-  else if(!radio1status && radio2status){radioCode = 2;}
-  else if(radio1status && !radio2status){radioCode = 3;}
-  else if(!radio1status && !radio2status){radioCode = 4;}
-  switch (radioCode){
-    case 1:
-      lcd.print(F("Both Radios OK!"));
-      break;
-
-    case 2:
-      lcd.print(F("Radio1 Failed!"));
-      break;
-
-    case 3:
-      lcd.print(F("Radio2 Failed!"));
-      break;
-
-    case 4:
-      lcd.print(F("Both Radios Failed!"));
-      break;
-
-    default:
-      lcd.print(F("LCD Code Error"));
-      break;}
+  //Radio 1
+  if(radio1.enable && radio1.status){lcd.print(F("Radio 1: "));lcd.print(radio1.frq,3);lcd.print(" MHz");}
+  else if(radio1.enable && !radio1.status){lcd.print(F("Radio 1: Failed!"));}
+  else if(!radio1.enable){lcd.print(F("Radio 1: Sleep"));}
   lcd.print('\r');
-  lcd.print(radio1Freq, 3);
-  lcd.print(F("      "));
-  lcd.print(radio2Freq, 3);
-  delay(5000);
+  //Radio 2
+  if(radio2.enable && radio2.status){lcd.print(F("Radio 2: "));lcd.print(radio2.frq,3);lcd.print(" MHz");}
+  else if(radio2.enable && !radio2.status){lcd.print(F("Radio 2: Failed!"));}
+  else if(!radio2.enable){lcd.print(F("Radio 2: Sleep"));}
+  delay(8000);
   
   //Print to the LCD the last good coordinates from the previous flight
   lcd.clear();
@@ -96,13 +76,6 @@ void preflightLCD(){
   myString.trim();
   for(byte i = myString.length()+1; i < 21; i++){myString += " ";}
   //line 1
-  //  if(contCode == 5){myString += "All 3 Pyros Detected";}
-  //  else if (contCode == 6){myString += "All 4 Pyros Detected";}
-  //  else if (contCode == 7){myString += "Pyro Apogee Only";}
-  //  else if (contCode == 8){myString += "Pyro Mains Only";}
-  //  else if (contCode == 9){myString += "Pyro Mains & Apogee";}
-  //  else if (contCode == 0){myString += "No Pyros Detected!";}
-  //  else{myString += "No Cont Pyro ";myString += String(contCode);}
   myString += pyroTable[contCode];
   for(byte i = myString.length()+1; i < 41; i++){myString += " ";}
   //line 2
@@ -266,6 +239,8 @@ void signalLostLCD(){
     if(debugSerial){Serial.println(myString);}}
 
 void errorLCD(){
+  Serial.println("---Pkt Error---");
+  dispPktInfo();
   flightPhase = 0;
   lcd.clear();
   String myString = "Pkt Code Error: ";
@@ -276,10 +251,10 @@ void changeFreqLCD(){
   flightPhase = 0;
   lcd.clear();
   String myString = "Change Freq to Ch: ";
-  myString += String(chnl1);
+  myString += String(activeRadio->chnl1);
   myString += '\r';
   myString += "Frequency: ";
-  myString += String(freq1, 3);
+  myString += String(activeRadio->frq, 3);
   lcd.print(myString);
   lastRX = micros();
   delay(1000);}
