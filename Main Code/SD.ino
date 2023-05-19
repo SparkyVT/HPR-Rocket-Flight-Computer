@@ -347,6 +347,9 @@ void writeSDflightData(){
   writeIntData(highG.x);
   writeIntData(highG.y);
   writeIntData(highG.z);
+  //reset write flags
+  accel.newSamp = gyro.newSamp = highG.newSamp = false;
+  //debug output for write flags
   if(settings.testMode){
     writeIntData(cyclesBtwn);
     writeBoolData(accel.newSamp);
@@ -357,6 +360,7 @@ void writeSDflightData(){
     writeBoolData(baro.newTemp);
     writeBoolData(SDradioTX);
     writeBoolData(gpsWrite);
+    writeBoolData(writeVolt);
     dataString[strPosn] = cs;strPosn++;
     writeULongData(sampleTime);
     cyclesBtwn = 0;}
@@ -455,14 +459,13 @@ void writeSDflightData(){
   dataString[strPosn] = '\r';strPosn++;
   dataString[strPosn] = '\n';strPosn++;
   dataString[strPosn] = '\0';
-  // write the string to file
+  // write the string to file and capture the time it takes to write to the SD card
   if(settings.testMode){writeStart = micros();}
   outputFile.write(dataString, strPosn);
   if(settings.testMode){writeTime = micros() - writeStart;
     if(writeTime > maxWriteTime){maxWriteTime = writeTime;}
     if(writeTime > writeThreshold){writeThreshCount++;}}
   strPosn = 0;
-  accel.newSamp = gyro.newSamp = highG.newSamp = false;
 }//end write SD data
 
 void writeSDfooter(){

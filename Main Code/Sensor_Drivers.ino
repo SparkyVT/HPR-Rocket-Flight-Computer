@@ -645,7 +645,7 @@ bool beginLSM9DS1_AG() {
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     accelBus.cs = pins.accelCS;
     startSPI(&accelBus, sensors.accelBusNum);
-    accelBus.readMask = 0x80;}
+    accelBus.readMask = gyroBus.readMask = 0x80;}
   gyroBus = accelBus;
   
   //if I2C, check if there is a sensor at this address
@@ -753,13 +753,12 @@ void getLSM9DS1_AG() {
   gyro.rawZ   = (int16_t)(rawData[4] | (rawData[5] << 8));
   accel.rawX  = (int16_t)(rawData[6] | (rawData[7] << 8));
   accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
-  accel.rawZ  = (int16_t)(rawData[10]|(rawData[11] << 8));
-}
+  accel.rawZ  = (int16_t)(rawData[10]|(rawData[11] << 8));}
 
 void getLSM9DS1_A() {
 
   //This routine reads 6 bytes only from the accelerometer
-#define LSM9DS1_REGISTER_OUT_X_L_XL (0x28)
+  #define LSM9DS1_REGISTER_OUT_X_L_XL (0x28)
 
   //setup the bus
   activeBus = &accelBus;
@@ -791,7 +790,7 @@ void getLSM9DS1_G() {
 void getLSM9DS1_M() {
 
   //This routine reads 6 bytes from the magnetometer
- #define LSM9DS1_REGISTER_OUT_X_L_M  (0x28)
+  #define LSM9DS1_REGISTER_OUT_X_L_M  (0x28)
 
   //setup the bus
   activeBus = &magBus;
@@ -813,20 +812,21 @@ void getLSM9DS1_M() {
 bool beginLSM6DS33() {
 
   //Addresses for the registers
-#define LSM6DS33_ADDRESS_ACCELGYRO            (0xD4)
-#define LSM6DS33_WHOAMI                       (0x0F)
-#define LSM6DS33_REGISTER_CTRL1_XL            (0x10)
-#define LSM6DS33_REGISTER_CTRL2_G             (0x11)
+  #define LSM6DS33_ADDRESS_ACCELGYRO            (0xD4)
+  #define LSM6DS33_WHOAMI                       (0x0F)
+  #define LSM6DS33_REGISTER_CTRL1_XL            (0x10)
+  #define LSM6DS33_REGISTER_CTRL2_G             (0x11)
 
   //Define bus settings and start bus
   if (sensors.accelBusType == 'I') {
     accelBus.i2cAddress = gyroBus.i2cAddress = LSM6DS33_ADDRESS_ACCELGYRO;
-    accelBus.i2cRate = gyroBus.i2cRate = 400000;
-    accelBus.readMask = 0x80;
+    accelBus.i2cRate = gyroBus.i2cRate = 1000000;
+    accelBus.readMask = gyroBus.readMask = 0x01;
     startI2C(&accelBus, sensors.accelBusNum);}
   else {
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     accelBus.cs = gyroBus.cs = pins.accelCS;
+    accelBus.readMask = gyroBus.readMask = 0x80;
     startSPI(&accelBus, sensors.accelBusNum);}
   gyroBus = accelBus;
 
@@ -843,7 +843,7 @@ bool beginLSM6DS33() {
     return false;}
   Serial.println(F("LSM9DS1 OK!"));
 
-  //CTRL_REG1_ODR: 10000 = 1.66kHz, 1001 = 3.33kHz, 1010 = 6.66kHz
+  //CTRL_REG1_ODR: 1000 = 1.66kHz, 1001 = 3.33kHz, 1010 = 6.66kHz
   //CTRL_REG1_FS: 00 = 2G, 01 = 16G, 10 = 4G, 11 = 8G
   //CTRL_REG1_BW: 00 = 400Hz, 01 = 200Hz, 10 = 100Hz, 11 = 50Hz
   //Accelerometer set 16G Range, 1.66kHz ODR, 400Hz BW
@@ -869,7 +869,7 @@ bool beginLSM6DS33() {
 
 void getLSM6DS33_AG() {
 
-  //this routine uses the LSM9DS1 burst read to rapidly read 12 bytes from the sensors
+  //this routine uses the LSM6DS33 burst read to rapidly read 12 bytes from the sensors
   #define LSM6DS33_REGISTER_OUTX_L_G (0x22)
 
   //setup the bus
@@ -879,9 +879,9 @@ void getLSM6DS33_AG() {
   burstRead(LSM6DS33_REGISTER_OUTX_L_G, 12);
 
   //assemble the data
-  gyro.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
-  gyro.rawY = (int16_t)(rawData[2] | (rawData[3] << 8));
-  gyro.rawZ = (int16_t)(rawData[4] | (rawData[5] << 8));
+  gyro.rawX   = (int16_t)(rawData[0] | (rawData[1] << 8));
+  gyro.rawY   = (int16_t)(rawData[2] | (rawData[3] << 8));
+  gyro.rawZ   = (int16_t)(rawData[4] | (rawData[5] << 8));
   accel.rawX  = (int16_t)(rawData[6] | (rawData[7] << 8));
   accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
   accel.rawZ  = (int16_t)(rawData[10] | (rawData[11] << 8));}
@@ -997,6 +997,11 @@ void getLIS3MDL() {
 //***************************************************************************
 bool beginADXL377() {
 
+  #if defined (__MK64FX512__) || defined (__MK66FX1M0__)
+  //disable the multiplexer pin
+  //pinMode(A11, INPUT_DISABLE);
+  #endif
+  
   //set gain
   highG.gainX = highG.gainY = highG.gainZ = 9.80655 / 129;
   high1G = 129;
