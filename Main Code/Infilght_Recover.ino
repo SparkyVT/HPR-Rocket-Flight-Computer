@@ -135,6 +135,11 @@ boolean rapidReset(){
   beginGyro();
   beginHighG();
   beginBaro();
+
+  //set the g-trigger
+  gTrigger = 2.5 * g;
+
+  //radio setup
   if(settings.TXenable && settings.inflightRecover > 0){
     radioBegin(pins.radioRST);
     //Set the radio output power & frequency

@@ -26,12 +26,12 @@ void checkEvents(){
 
   //Check false trigger until the flight time has passed the minimum time
   if (events.falseLiftoffCheck) {
-    if (fltTime.timeCurrent > settings.detectLiftoffTime) {events.falseLiftoffCheck = false;}
+    if (fltTime.timeCurrent > fltTime.detectLiftoffTime) {events.falseLiftoffCheck = false;}
     //if a negative acceleration is detected within the initial moments of liftoff and the rocket will not go 100 feet
     //then reset flight variables and resume launch detect
     //100 feet is declared to be the minimum altitude at which the rocket will attempt to deploy recovery devices
     //this will ensure that devices are deployed if the motor CATOs after a short boost
-    if (accel.z < settings.gTrigger && accelVel < thresholdVel) {
+    if (accel.z < gTrigger && accelVel < thresholdVel) {
       if(settings.testMode){Serial.println("False Trigger Reset");}
       //reset the key triggers
       events = resetEvents;
