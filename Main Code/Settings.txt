@@ -8,8 +8,6 @@ flightProfile = S
 units = S
 reportStyle = P
 startupTime = 10
-gTrigger = 2.5
-detectLiftoffTime = 0.5
 mainDeployAlt = 700
 apogeeDelay = 0.0
 maxRecordTime = 900
@@ -76,8 +74,6 @@ serialDebug = 1
                units: S = US Standard System, M = Metric System  
          reportStyle: P = Perfectflite, M = Marsa
          startupTime: seconds from power-on until start of pre-flight sequence
-            gTrigger: # of G's required to detect liftoff, between 1.5 and 5.0    
-   detectLiftoffTime: seconds of sustained gTrigger to detect liftoff, between 0.1 and 1.0
        mainDeployAlt: altitude to deploy mains, 100ft to 1500ft (30m to 458m)
         apogee delay: # of seconds after apogee to fire charge, between 0.0 and 5.0
        maxRecordTime: if touchdown is not detected, recording will stop after this many seconds, between 300 and 4294
