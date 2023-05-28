@@ -7,7 +7,7 @@
 //Two-stage & airstart capable with tilt-sensing safety features
 //Live telemetry over 433MHz or 915MHz LoRa (433MHz: USA amateur 70cm band, EUR licencse free) (915MHz: USA FHSS licence free or USA amateur license use non-FHSS) 
 //4 programmable high-current pyro outputs with continuity checks
-//Captures high-rate data at approximately 50,000 data points per second recorded to SD card
+//Captures high-rate data at approximately 50,000 data points per second on SD card
 //--1000Hz 3-axis digital 16G and 100G accelerometer data logging
 //--1000Hz 3-axis digital 2000dps gyroscope data logging
 //--1000Hz of flight events & continuity data logging
@@ -72,7 +72,7 @@
 //V4_5_2 finishes the draft RTB code, adds a canard calibration flight mode, fixed GPS bug with NEO-M8N
 //V4_5_3 uses the RFM96W in both 70cm and 900MHz mode based on user frequency input for 3 options: (1)900MHz FHSS up to 20dB, (2)900MHz dedicated frequency at 2dB, (3)70cm dedicated frequecy up to 20dB
 //V4_5_4 fixes a bug in the sensor timing that reduced the effective data capture rate
-//V4_5_5 removes launch detection user options since the algorithm has proven so reliable
+//V4_5_5 removes launch detection user options since the algorithm is proven reliable, fixes a timing bug with the barometers, makes GPS code more portable
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
@@ -1796,8 +1796,8 @@ void loop(void){
   sampleTimeCheck = micros();
   if(sampleTimeCheck - baro.timeLastSamp > baro.timeBtwnSamp){
     getBaro();
-    baro.timeLastSamp += baro.timeBtwnSamp;
-    while(sampleTimeCheck - baro.timeLastSamp > baro.timeBtwnSamp){baro.timeLastSamp += baro.timeBtwnSamp;}}
+    //barometers work in single-shot mode so we can't use time-block sampling like the other sensors
+    baro.timeLastSamp = sampleTimeCheck;}
 
   //Check if a magnetometer sample is needed
   sampleTimeCheck = micros();
@@ -2118,13 +2118,13 @@ void loop(void){
     
   //GPS Code
   /*if(!configGPSdefaults && micros() - timeLastGPS > 10000000UL){
-    restoreGPSdefaults();
+    restoreGPSdefaults(settings.testMode);
     configGPSdefaults = true; 
     gpsFix = 0;
     fixCount = 0;
     configGPSflight = false;}*/
   //5 seconds after touchdown put GPS into Power Save Mode (PSM)
-  if( !GPSpsm && (events.touchdown || events.timeOut) && micros() - fltTime.touchdown > 5000000UL){GPSpowerSaveMode();GPSpsm = true;}
+  if( !GPSpsm && (events.touchdown || events.timeOut) && micros() - fltTime.touchdown > 5000000UL){GPSpowerSaveMode(settings.testMode);GPSpsm = true;}
   //Read from serial
   if(HWSERIAL->available() > 0){msgRX = true;}
   while(HWSERIAL->available() > 0){
@@ -2141,7 +2141,7 @@ void loop(void){
         fixCount++;
         gpsFix = 1;
         if(!configGPSflight && fixCount > 40){
-          configGPS();
+          configGPS(settings.testMode, sensors.GPS, settings.flyBack);
           gpsFix = 0;
           configGPSflight = true; 
           configGPSdefaults = false;}
