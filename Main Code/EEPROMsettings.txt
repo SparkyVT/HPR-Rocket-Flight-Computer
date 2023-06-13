@@ -1,4 +1,4 @@
-EEPROM for version 4.4.2
+EEPROM for version 4.4.1
 Place this file into the root folder of the SD card
 At startup the flight computer will read it and update the EEPROM
 Once finished, the flight computer will delete this file
@@ -79,7 +79,7 @@ Accel: LSM303 = 1, LSM9DS1 = 2, LSM6DS33 = 3
 Gyro: L3GD20H = 1, LSM9DS1 = 2, LSM6DS33 = 3
 Mag: LSM303 = 1, LSM9DS1 = 2, LIS3MDL = 3
 highG: none = 0, ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3
-baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4, MS5611 = 5, MS5607 = 6
+baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4, MS5611 = 5, MS5607 = 6, LPS25H = 7
 radio: RFM96W 433MHz = 1, RFM95W 915MHz = 2
 GPS: NEO-M8N = 1, SAM/MAX/NEO-M8Q/W = 2, NEO-M9N = 3
 SD: SDcard present = 1, no SDcard = 0
