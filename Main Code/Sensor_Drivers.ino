@@ -1012,7 +1012,7 @@ bool beginLPS25H() {
 
   //Define bus settings and start bus
   if (sensors.magBusType == 'I') {
-    baroBus.i2cAddress = LPS25H_ADDRESS_MAG;
+    baroBus.i2cAddress = LPS25H_ADDRESS_BARO;
     baroBus.i2cRate = 400000;
     baroBus.incMask = 0x80;
     startI2C(&baroBus, sensors.baroBusNum);}
@@ -1041,12 +1041,6 @@ bool beginLPS25H() {
   //Initiate single shot
   write8(LPS25H_REGISTER_CTRL_REG2, 0x01);
 
-  //Mag Continuous Conversion
-  write8(LPS25H_REGISTER_CTRL_REG3, 0x00);
-
-  //Mag Reverse Magnetometer MSB / LSB Order, Z-Axis high-perf mode
-  write8(LPS25H_REGISTER_CTRL_REG3, 0b00001100);
-
   //set time between samples
   baro.timeBtwnSamp = 40000UL;
 
@@ -1060,14 +1054,19 @@ void getLPS25H() {
   activeBus = &baroBus;
   
   //read data
-  burstRead(LPS25H_REGISTER_OUT_X_L, 5);
+  burstRead(LPS25H_PRESS_POUT_XL , 5);
 
   //Initiate the next measurement
   write8(LPS25H_REGISTER_CTRL_REG2, 0x01);
 
   //assemble data
-  baro.rawX  = (int16_t)(rawData[0] | (rawData[1] << 8) | (rawData[2] << 16));
-  temp.rawX = (int16_t)(rawData[3] | (rawData[4] << 8));}
+  uint32_t rawPressure  = (int16_t)(rawData[0] | (rawData[1] << 8) | (rawData[2] << 16));
+  uint16_t rawTemp = (int16_t)(rawData[3] | (rawData[4] << 8));
+
+  baro.pressure = (float)((float)rawPressure/4096) - baro.pressOffset;
+  baro.temperature = (float)((float)rawTemp/480) - baro.tempOffset;
+  
+  baro.newSamp = baro.newTemp = true;}
 
 //***************************************************************************
 //AXL377 High-G Analog Accelerometer w/ Teensy3.5 ADC
