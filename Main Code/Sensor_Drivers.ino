@@ -812,7 +812,7 @@ void getLSM9DS1_M() {
 bool beginLSM6DS33() {
 
   //Addresses for the registers
-  #define LSM6DS33_ADDRESS_ACCELGYRO            (0xD4)
+  #define LSM6DS33_ADDRESS_ACCELGYRO            (0x6B)
   #define LSM6DS33_WHOAMI                       (0x0F)
   #define LSM6DS33_REGISTER_CTRL1_XL            (0x10)
   #define LSM6DS33_REGISTER_CTRL2_G             (0x11)
@@ -821,7 +821,6 @@ bool beginLSM6DS33() {
   if (sensors.accelBusType == 'I') {
     accelBus.i2cAddress = gyroBus.i2cAddress = LSM6DS33_ADDRESS_ACCELGYRO;
     accelBus.i2cRate = gyroBus.i2cRate = 1000000;
-    accelBus.readMask = gyroBus.readMask = 0x01;
     startI2C(&accelBus, sensors.accelBusNum);}
   else {
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
@@ -833,15 +832,15 @@ bool beginLSM6DS33() {
   //if I2C, check if there is a sensor at this address
   if (sensors.accelBusType == 'I') {
     if (!testSensor(LSM6DS33_ADDRESS_ACCELGYRO)) {
-      Serial.println(F("LSM9DS1 not found!"));
+      Serial.println(F("LSM6DS33 no reply!"));
       return false;}}
 
   //check whoami
   byte id = read8(LSM6DS33_WHOAMI);
   if (id != 0b01101001) {
-    Serial.println(F("LSM9DS1 not found!"));
+    Serial.println(F("LSM6DS33 not found!"));
     return false;}
-  Serial.println(F("LSM9DS1 OK!"));
+  Serial.println(F("LSM6DS33 OK!"));
 
   //CTRL_REG1_ODR: 1000 = 1.66kHz, 1001 = 3.33kHz, 1010 = 6.66kHz
   //CTRL_REG1_FS: 00 = 2G, 01 = 16G, 10 = 4G, 11 = 8G
@@ -927,7 +926,7 @@ void getLSM6DS33_G() {
 bool beginLIS3MDL() {
 
   //Addresses for the registers
-  #define LIS3MDL_ADDRESS_MAG                  (0x3C)
+  #define LIS3MDL_ADDRESS_MAG                  (0x1E)
   #define LIS3MDL_WHOAMI                       (0x0F)
   #define LIS3MDL_REGISTER_CTRL_REG1           (0x20)
   #define LIS3MDL_REGISTER_CTRL_REG2           (0x21)
@@ -947,7 +946,7 @@ bool beginLIS3MDL() {
   //If I2C, check to see if there is a sensor at this address
   if (sensors.magBusType == 'I') {
     if (!testSensor(LIS3MDL_ADDRESS_MAG | 0x01)) {
-      Serial.println(F("LIS3MDL not found!"));
+      Serial.println(F("LIS3MDL no reply!"));
       return false;}}
 
   //check whoami
