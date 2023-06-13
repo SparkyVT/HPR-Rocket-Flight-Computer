@@ -1,10 +1,5 @@
 //----------------------------
 //Written by SparkyVT, TRA #12111, NAR #85720, L3
-//Sensor Package 1: LSM303DLHC, L3GD20, BMP180, ADS1115, ADXL377
-//Sensor Package 2: LSM9DS1, MPL3115A2, H3LIS331DL
-//Sensor Package 3: LSM9DS1, MPL3115A2, ADXL377
-//Sensor Package 4: LSM9DS1, MS5611, H3LIS331DL
-//Sensor Package 5: LSM6DS33, LIS3MDL, MS5607, H3LIS331DL
 //-----------Change Log------------
 //26 Nov 17: Version 1 created to support Adafruit 10Dof board
 //10 Nov 18: Version 2 created to support LSM9DS1, H3LIS331DL, BMP280, BMP388
@@ -19,13 +14,14 @@
 //03 JAN 22: Moved I2C and SPI generic functions to Bus_Mgmt tab to better support different processors
 //10 MAY 22: Updated to have any device on any I2C or SPI bus
 //16 JUN 22: Updated with streamlined bus mgt functions, eliminated highG 3-axis mode due to improved i2c speed
+//13 JUN 22: Updated to add LPS25H support and correct bugs in LSM6DS33 and LIS3MDL
 //--------Supported Sensors---------
 //Accelerometers:LSM303, LSM9DS1, LSM6DS33
 //Gyroscopes: L3GD20H, LSM9DS1, LSM6DS33
 //Magnetometers: LSM303, LSM9DS1, LIS3MDL
 //High-G Accelerometers: H3LIS331DL, ADS1115 & ADXL377 Combo, ADXL377 & Teensy3.5 ADC combo
-//Barometric: BMP180, BMP280, BMP388, MPL3115A2, MS5611, MS5607
-//WARNING: New generation Bosch sensors are sensitive to RF interference (BMP280,BMP388,etc)
+//Barometric: BMP180, BMP280, BMP388, MPL3115A2, MS5611, MS5607, LPS25H
+//WARNING: Some Bosch sensors may be sensitive to RF interference, specifically the BMP280 and BMP388
 //----------------------------
 //LIST OF FUNCTIONS & ROUTINES
 //----------------------------
@@ -100,6 +96,9 @@
 //CmdMS56XX(): helper function to send commands
 //ConvertTempMS56XX(): converts temperature
 //ConvertPressMS56XX(): converts pressure
+
+//beginLPS25H(): starts sensor
+//getLPS25H(): gets both temperature and pressure data
 
 //***************************************************************************
 //Generic Sensor Begin & Read Statements
@@ -388,6 +387,10 @@ void beginBaro() {
     case 6:
       sensors.status_MS5607 = beginMS56XX();
       break;
+
+    case 7:
+      sensors.status_LPS25H = beginLPS25H();
+      break;
   }
 }
 
@@ -417,6 +420,10 @@ void getBaro() {
 
     case 6:
       getMS56XX();
+      break;
+
+    case 7:
+      getLPS25H();
       break;
   }
 }
@@ -990,6 +997,77 @@ void getLIS3MDL() {
   mag.rawX  = (int16_t)(rawData[0] | (rawData[1] << 8));
   mag.rawY  = (int16_t)(rawData[2] | (rawData[3] << 8));
   mag.rawZ  = (int16_t)(rawData[4] | (rawData[5] << 8));}
+//***************************************************************************
+//LPS25H Magnetometer
+//***************************************************************************
+bool beginLPS25H() {
+
+  //Addresses for the registers
+  #define LPS25H_ADDRESS_BARO                 (0x5D)
+  #define LPS25H_WHOAMI                       (0x0F)
+  #define LPS25H_REGISTER_CTRL_REG1           (0x20)
+  #define LPS25H_REGISTER_CTRL_REG2           (0x21)
+  #define LPS25H_REGISTER_CTRL_REG3           (0x22)
+  #define LPS25H_REGISTER_CTRL_REG4           (0x23)
+
+  //Define bus settings and start bus
+  if (sensors.magBusType == 'I') {
+    baroBus.i2cAddress = LPS25H_ADDRESS_MAG;
+    baroBus.i2cRate = 400000;
+    baroBus.incMask = 0x80;
+    startI2C(&baroBus, sensors.baroBusNum);}
+  else {
+    baroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
+    baroBus.cs = pins.baroCS;
+    baroBus.readMask = 0x80;
+    startSPI(&baroBus, sensors.baroBusNum);}
+
+  //If I2C, check to see if there is a sensor at this address
+  if (sensors.baroBusType == 'I') {
+    if (!testSensor(LPS25H_ADDRESS_BARO | 0x01)) {
+      Serial.println(F("LPS25H no reply!"));
+      return false;}}
+
+  //check whoami
+  byte id = read8(LPS25H_WHOAMI);
+  if (id != 0b10111101) {
+    Serial.println(F("LPS25H not found!"));
+    return false;}
+  Serial.println(F("LPS25H OK!"));
+
+  //Power-Down off, one-shot mode, block data update off
+  write8(LPS25H_REGISTER_CTRL_REG1, 0b10001000);
+
+  //Initiate single shot
+  write8(LPS25H_REGISTER_CTRL_REG2, 0x01);
+
+  //Mag Continuous Conversion
+  write8(LPS25H_REGISTER_CTRL_REG3, 0x00);
+
+  //Mag Reverse Magnetometer MSB / LSB Order, Z-Axis high-perf mode
+  write8(LPS25H_REGISTER_CTRL_REG3, 0b00001100);
+
+  //set time between samples
+  baro.timeBtwnSamp = 40000UL;
+
+  return true;
+}//end begin
+
+void getLPS25H() {
+  #define LPS25H_PRESS_POUT_XL  (0x28)
+
+  //setup the bus
+  activeBus = &baroBus;
+  
+  //read data
+  burstRead(LPS25H_REGISTER_OUT_X_L, 5);
+
+  //Initiate the next measurement
+  write8(LPS25H_REGISTER_CTRL_REG2, 0x01);
+
+  //assemble data
+  baro.rawX  = (int16_t)(rawData[0] | (rawData[1] << 8) | (rawData[2] << 16));
+  temp.rawX = (int16_t)(rawData[3] | (rawData[4] << 8));}
 
 //***************************************************************************
 //AXL377 High-G Analog Accelerometer w/ Teensy3.5 ADC
