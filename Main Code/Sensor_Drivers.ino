@@ -646,8 +646,7 @@ bool beginLSM9DS1_AG() {
   if (sensors.accelBusType == 'I') {
     accelBus.i2cAddress = gyroBus.i2cAddress = LSM9DS1_ADDRESS_ACCELGYRO;
     accelBus.i2cRate = gyroBus.i2cRate = 1000000;
-    startI2C(&accelBus, sensors.accelBusNum);
-    accelBus.readMask = gyroBus.readMask = 0x01;}
+    startI2C(&accelBus, sensors.accelBusNum);}
   else {
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     accelBus.cs = pins.accelCS;
@@ -998,7 +997,7 @@ void getLIS3MDL() {
   mag.rawY  = (int16_t)(rawData[2] | (rawData[3] << 8));
   mag.rawZ  = (int16_t)(rawData[4] | (rawData[5] << 8));}
 //***************************************************************************
-//LPS25H Magnetometer
+//LPS25H Barometric Pressure & Temperature
 //***************************************************************************
 bool beginLPS25H() {
 
@@ -1122,9 +1121,8 @@ bool beginH3LIS331DL() {
   if (sensors.highGBusType == 'I') {
     highGBus.i2cAddress = H3LIS331_ADDRESS;
     highGBus.i2cRate = 1000000;
-    startI2C(&highGBus, sensors.highGBusNum);
-    highGBus.writeMask = 0x01;
-    highGBus.incMask = 0x80;}
+    highGBus.incMask = 0x80;
+    startI2C(&highGBus, sensors.highGBusNum);}
   else {
     highGBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     highGBus.cs = pins.highG_CS; 

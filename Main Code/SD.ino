@@ -55,24 +55,29 @@ char GPSlog[1024];
 
 void beginSD(){
 
-  //Built-in SDIO on Teensy3.5 or 3.6 or 4.1
-  #if defined (__MK66FX1M0__) || defined (__MK64FX512__)
+  //Built-in SDIO on Teensy3.5 or 3.6
+  #if defined (__MK66FX1M0__) || defined (__MK64FX512__) 
   
     //Use SDFat library with Built-in SDIO
     if(!SD.begin(SdioConfig(FIFO_SDIO))){Serial.println(F("SD card failed!"));}
     else{Serial.println(F("SD Card OK!"));}
 
-  //Teensy 3.2 or 4.0
-  #else
+  //Teensy4.1 or Teensy4.0
+  #elif defined (__IMXRT1062__)
 
-    //if the SD Chip Select pin is set to the nullpin, then it must be Teensy4.0 using a builtin SDIO port
-    #if defined (__MK66FX1M0__)
-      if(pins.SD_CS == pins.nullFire){
-        if(!SD.begin(BUILTIN_SDCARD)){Serial.println(F("SD card failed!"));}
-        else{Serial.println(F("SD Card OK!"));}}
-    #endif
+    //Use the TeensyDuino modification of the SDFat library for SDIO
+    if(!SD.begin(BUILTIN_SDCARD)){Serial.println(F("SD card failed!"));}
+    else{Serial.println(F("SD Card OK!"));}
+
+    //Uncomment this section if using the Teensy4.0 with the SPI bus
+    /*if(pins.SD_CS != pins.nullFire){
+      if(!SD.begin(pins.SD_CS)){Serial.println(F("SD card failed!"));}
+      else{Serial.println(F("SD Card OK!"));}}*/
+     
+  //Teensy 3.2
+  #elif defined (__MK20DX256__)
     
-    //if the SD Chip Select is not set to the nullpin, then it must be a Teensy3.2 or Teensy4.0 so use the chip select pin
+    //Use the SDFat library
     if(pins.SD_CS != pins.nullFire){
       if(!SD.begin(pins.SD_CS)){Serial.println(F("SD card failed!"));}
       else{Serial.println(F("SD Card OK!"));}}
@@ -104,6 +109,7 @@ void parseEEPROMsettingsSD(){
   //If an EEPROM settings file exists, open it and copy the values into EEPROM
   byte kk;
   int8_t ii;
+  if(!SD.exists("EEPROMsettings.txt")){Serial.println("No settings file found");}
   if(SD.exists("EEPROMsettings.txt")){
     Serial.println(F("EEPROM file found!  Writing initial EEPROM Settings..."));
     settingsFile = SD.open("EEPROMsettings.txt", FILE_READ);
