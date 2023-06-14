@@ -951,7 +951,7 @@ bool beginLIS3MDL() {
 
   //If I2C, check to see if there is a sensor at this address
   if (sensors.magBusType == 'I') {
-    if (!testSensor(LIS3MDL_ADDRESS_MAG | 0x01)) {
+    if (!testSensor(LIS3MDL_ADDRESS_MAG)) {
       Serial.println(F("LIS3MDL no reply!"));
       return false;}}
 
