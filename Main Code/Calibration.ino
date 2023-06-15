@@ -179,7 +179,7 @@ void magCalibrate(){
     digitalWrite(pins.beep, LOW);
     delay(2000);} //end magnetometer calibration
 
- void writeCalibration(int16_t inValue, byte eepromStart){
+void writeCalibration(int16_t inValue, byte eepromStart){
 
     calUnion.calValue = inValue;
     EEPROM.update(eepromStart, calUnion.calByte[0]);

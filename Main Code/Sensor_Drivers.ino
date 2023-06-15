@@ -1059,11 +1059,11 @@ void getLPS25H() {
   write8(LPS25H_REGISTER_CTRL_REG2, 0x01);
 
   //assemble data
-  uint32_t rawPressure  = (int16_t)(rawData[0] | (rawData[1] << 8) | (rawData[2] << 16));
-  uint16_t rawTemp = (int16_t)(rawData[3] | (rawData[4] << 8));
-
+  uint32_t rawPressure  = (uint32_t)(rawData[0] | (rawData[1] << 8) | (rawData[2] << 16));
+  uint16_t rawTemp = (uint16_t)(rawData[3] | (rawData[4] << 8));
+  
   baro.pressure = (float)((float)rawPressure/4096) - baro.pressOffset;
-  baro.temperature = (float)((float)rawTemp/480) - baro.tempOffset;
+  baro.temperature = 42.5 +(float)((float)rawTemp/480) - baro.tempOffset;
   
   baro.newSamp = baro.newTemp = true;}
 
