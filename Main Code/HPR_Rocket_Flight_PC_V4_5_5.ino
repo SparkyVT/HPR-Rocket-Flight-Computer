@@ -72,7 +72,7 @@
 //V4_5_2 finishes the draft RTB code, adds a canard calibration flight mode, fixed GPS bug with NEO-M8N
 //V4_5_3 uses the RFM96W in both 70cm and 900MHz mode based on user frequency input for 3 options: (1)900MHz FHSS up to 20dB, (2)900MHz dedicated frequency at 2dB, (3)70cm dedicated frequecy up to 20dB
 //V4_5_4 fixes a bug in the sensor timing that reduced the effective data capture rate
-//V4_5_5 removes launch detection user options since the algorithm is proven reliable, fixes a timing bug with the barometers, makes GPS code more portable, adds LPS25H support, fixes bugs with LSM6DS33 and LIS3MDL, fixes SD card pre-processor bugs
+//V4_5_5 removes launch detection user options since the algorithm is proven reliable, fixes a timing bug with the barometers, makes GPS code more portable, adds LPS25H support, fixes bugs with LSM6DS33 and LIS3MDL, fixes SD card pre-processor bugs, added support for Adafruit Ultimate GPS
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
@@ -2125,7 +2125,7 @@ void loop(void){
     fixCount = 0;
     configGPSflight = false;}*/
   //5 seconds after touchdown put GPS into Power Save Mode (PSM)
-  if( !GPSpsm && (events.touchdown || events.timeOut) && micros() - fltTime.touchdown > 5000000UL){GPSpowerSaveMode(settings.testMode);GPSpsm = true;}
+  if( !GPSpsm && (events.touchdown || events.timeOut) && micros() - fltTime.touchdown > 5000000UL){GPSpowerSaveMode(settings.testMode, sensors.GPS);GPSpsm = true;}
   //Read from serial
   if(HWSERIAL->available() > 0){msgRX = true;}
   while(HWSERIAL->available() > 0){

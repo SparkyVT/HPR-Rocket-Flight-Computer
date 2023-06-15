@@ -10,6 +10,11 @@
 //----------------------------
 //UBLOX configuration modified from https://playground.arduino.cc/UBlox/GPS
 
+#include <Adafruit_GPS.h>
+
+//Adafruit GPS setup
+Adafruit_GPS gps(HWSERIAL);
+
 void restoreGPSdefaults(bool serialOutput){
 
   byte gpsSetSuccess = 0;
@@ -63,141 +68,155 @@ void configGPS(bool serialOutput, byte gpsVersion, bool VTGoption) {
   //set the constellations used
   //For M8, just add Galileo, from https://portal.u-blox.com/s/question/0D52p00008HKEEYCA5/ublox-gps-galileo-enabling-for-ubx-m8
   byte setSat[] = {0xB5, 0x62, 0x06, 0x3E, 0x0C, 0x00, 0x00, 0x00, 0x20, 0x01, 0x02, 0x04, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x82, 0x56};
-  
-  //Turn Off NMEA GSA Messages
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Deactivating NMEA GSA Messages... ");}
-    sendUBX(setGSA, sizeof(setGSA));
-    gpsSetSuccess += getUBX_ACK(&setGSA[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA GSA Message Deactivation Failed!");}
-  gpsSetSuccess = 0;
-  
-  //Set Navigation Mode
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Setting Navigation Mode... ");}
-    sendUBX(&setNav[0], sizeof(setNav));  //Send UBX Packet
-    gpsSetSuccess += getUBX_ACK(&setNav[2]);}
-  if (gpsSetSuccess == 3 && serialOutput) {Serial.println("Navigation mode configuration failed!");}
-  gpsSetSuccess = 0;
 
-  //Turn Off NMEA GSV Messages
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Deactivating NMEA GSV Messages... ");}
-    sendUBX(setGSV, sizeof(setGSV));
-    gpsSetSuccess += getUBX_ACK(&setGSV[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA GSV Message Deactivation Failed!");}
-  gpsSetSuccess = 0;
+  //UBLOX Devices are numbered 1 through 3, Adafruit is 4
+  if(gpsVersion < 4){
+    
+    //Turn Off NMEA GSA Messages
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Deactivating NMEA GSA Messages... ");}
+      sendUBX(setGSA, sizeof(setGSA));
+      gpsSetSuccess += getUBX_ACK(&setGSA[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA GSA Message Deactivation Failed!");}
+    gpsSetSuccess = 0;
+    
+    //Set Navigation Mode
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Setting Navigation Mode... ");}
+      sendUBX(&setNav[0], sizeof(setNav));  //Send UBX Packet
+      gpsSetSuccess += getUBX_ACK(&setNav[2]);}
+    if (gpsSetSuccess == 3 && serialOutput) {Serial.println("Navigation mode configuration failed!");}
+    gpsSetSuccess = 0;
   
-  //Set Data Update Rate
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Setting Data Update Rate... ");}
-    sendUBX(&setDataRate[0], sizeof(setDataRate));  //Send UBX Packet
-    gpsSetSuccess += getUBX_ACK(&setDataRate[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Data update mode configuration failed!");}
-  gpsSetSuccess = 0;
+    //Turn Off NMEA GSV Messages
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Deactivating NMEA GSV Messages... ");}
+      sendUBX(setGSV, sizeof(setGSV));
+      gpsSetSuccess += getUBX_ACK(&setGSV[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA GSV Message Deactivation Failed!");}
+    gpsSetSuccess = 0;
+    
+    //Set Data Update Rate
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Setting Data Update Rate... ");}
+      sendUBX(&setDataRate[0], sizeof(setDataRate));  //Send UBX Packet
+      gpsSetSuccess += getUBX_ACK(&setDataRate[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Data update mode configuration failed!");}
+    gpsSetSuccess = 0;
+  
+    //Turn on NMEA4.1 Messages for less than M9 versions
+    while(gpsVersion < 3 && gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Turning on NMEA 4.1 Messages... ");}
+      sendUBX(set4_1, sizeof(set4_1));
+      gpsSetSuccess += getUBX_ACK(&set4_1[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA 4.1 Message Activation Failed!");}
+    gpsSetSuccess = 0;
+  
+    //Turn on Galileo for M8 versions since it is not enabled by default
+    while(gpsVersion < 3 && gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Setting Satellite Constellations... ");}
+      sendUBX(setSat, sizeof(setSat));
+      gpsSetSuccess += getUBX_ACK(&setSat[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Satellite Settings Failed!");}
+    gpsSetSuccess = 0;
+  
+    //Turn Off NMEA VTG Messages
+    while(!VTGoption && gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Deactivating NMEA VTG Messages... ");}
+      sendUBX(setVTG, sizeof(setVTG));
+      gpsSetSuccess += getUBX_ACK(&setVTG[2]);}
+    if (!VTGoption && gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA VTG Message Deactivation Failed!");}
+    gpsSetSuccess = 0;
+    
+    //Set Interference Thresholds
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Setting Interferece Thresholds... ");}
+      sendUBX(setJam, sizeof(setJam));
+      gpsSetSuccess += getUBX_ACK(&setJam[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Interference Settings Failed!");}
+    gpsSetSuccess = 0;
+    
+    //Turn Off NMEA GLL Messages
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Deactivating NMEA GLL Messages... ");}
+      sendUBX(setGLL, sizeof(setGLL));
+      gpsSetSuccess += getUBX_ACK(&setGLL[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA GLL Message Deactivation Failed!");}
+    gpsSetSuccess = 0;
+    
+    //Increase Baud-Rate on M8Q for faster GPS updates
+    while(gpsVersion && gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Setting Ublox Baud Rate 38400... ");}
+      sendUBX(setBaudRate, sizeof(setBaudRate));
+      gpsSetSuccess += getUBX_ACK(&setBaudRate[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Ublox Baud Rate 38400 Failed!");}
+    else if(gpsVersion == 2){
+      HWSERIAL->end();
+      HWSERIAL->clear();
+      HWSERIAL->begin(38400);}}
 
-  //Turn on NMEA4.1 Messages for less than M9 versions
-  while(gpsVersion < 3 && gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Turning on NMEA 4.1 Messages... ");}
-    sendUBX(set4_1, sizeof(set4_1));
-    gpsSetSuccess += getUBX_ACK(&set4_1[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA 4.1 Message Activation Failed!");}
-  gpsSetSuccess = 0;
-
-  //Turn on Galileo for M8 versions since it is not enabled by default
-  while(gpsVersion < 3 && gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Setting Satellite Constellations... ");}
-    sendUBX(setSat, sizeof(setSat));
-    gpsSetSuccess += getUBX_ACK(&setSat[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Satellite Settings Failed!");}
-  gpsSetSuccess = 0;
-
-  //Turn Off NMEA VTG Messages
-  while(!VTGoption && gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Deactivating NMEA VTG Messages... ");}
-    sendUBX(setVTG, sizeof(setVTG));
-    gpsSetSuccess += getUBX_ACK(&setVTG[2]);}
-  if (!VTGoption && gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA VTG Message Deactivation Failed!");}
-  gpsSetSuccess = 0;
-  
-  //Set Interference Thresholds
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Setting Interferece Thresholds... ");}
-    sendUBX(setJam, sizeof(setJam));
-    gpsSetSuccess += getUBX_ACK(&setJam[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Interference Settings Failed!");}
-  gpsSetSuccess = 0;
-  
-  //Turn Off NMEA GLL Messages
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Deactivating NMEA GLL Messages... ");}
-    sendUBX(setGLL, sizeof(setGLL));
-    gpsSetSuccess += getUBX_ACK(&setGLL[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("NMEA GLL Message Deactivation Failed!");}
-  gpsSetSuccess = 0;
-  
-  //Increase Baud-Rate on M8Q for faster GPS updates
-  while(gpsVersion && gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Setting Ublox Baud Rate 38400... ");}
-    sendUBX(setBaudRate, sizeof(setBaudRate));
-    gpsSetSuccess += getUBX_ACK(&setBaudRate[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Ublox Baud Rate 38400 Failed!");}
-  else if(gpsVersion == 2){
-    HWSERIAL->end();
-    HWSERIAL->clear();
-    HWSERIAL->begin(38400);}
+    if(gpsVersion == 4){
+      gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+      gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);}
   
   }//end configGPS
 
-void GPSpowerSaveMode(bool serialOutput){
+void GPSpowerSaveMode(bool serialOutput, byte gpsVersion){
 
-  byte gpsSetSuccess = 0;
-  if(serialOutput){Serial.println("Configuring u-Blox GPS Power Save mode... ");}
-
-  //Generate the configuration string to config GNSS (GLONASS Off)
-  byte setGNSS[] = {0xB5, 0x62, 0x06, 0x3E, 0x24, 0x00, 0x00, 0x00, 0x16, 0x04, 0x00, 0x08, 0xFF, 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x01, 0x05, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x01, 0x06, 0x04, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0xA5, 0x8E};
+  //configure UBLOX chips
+  if(gpsVersion < 4){
+    
+    byte gpsSetSuccess = 0;
+    if(serialOutput){Serial.println("Configuring u-Blox GPS Power Save mode... ");}
   
-  //Generate the configuration string for Power Save mode with 5 minute updates
-  byte setPwr[] = {0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4F, 0x1F};
+    //Generate the configuration string to config GNSS (GLONASS Off)
+    byte setGNSS[] = {0xB5, 0x62, 0x06, 0x3E, 0x24, 0x00, 0x00, 0x00, 0x16, 0x04, 0x00, 0x08, 0xFF, 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x01, 0x05, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x01, 0x06, 0x04, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0xA5, 0x8E};
+    
+    //Generate the configuration string for Power Save mode with 5 minute updates
+    byte setPwr[] = {0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4F, 0x1F};
+  
+    //Generate configuration string to put reciever into power save mode
+    byte setPwr2[] = {0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x01, 0x22, 0x92}; 
+  
+    //Generate configuration string to put receiver into 1Hz update mode
+    //byte setDataRate1Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};//once per second
+    byte setDataRate01Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x10, 0x27, 0x01, 0x00, 0x01, 0x00, 0x4D, 0xDD};//once per 10 seconds
+  
+    //Config GNSS
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Configuring GNSS for Power Save Mode (GLONASS OFF)... ");}
+      sendUBX(setGNSS, sizeof(setGNSS));
+      gpsSetSuccess += getUBX_ACK(&setGNSS[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Config GNSS Message Failed!");}
+    gpsSetSuccess = 0;
+  
+    //Config Power Save
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Configuring Power Save Mode... ");}
+      sendUBX(setPwr, sizeof(setPwr));
+      gpsSetSuccess += getUBX_ACK(&setPwr[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Config PSM Message Failed!");}
+    gpsSetSuccess = 0;
+  
+    //Commit PSM
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Commit Power Save Mode... ");}
+      sendUBX(setPwr2, sizeof(setPwr2));
+      gpsSetSuccess += getUBX_ACK(&setPwr2[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Commit PSM Message Failed!");}
+    gpsSetSuccess = 0;
+  
+    //Set Data Update Rate
+    while(gpsSetSuccess < 3) {
+      if(serialOutput){Serial.print("Setting Data Update Rate... ");}
+      sendUBX(setDataRate01Hz, sizeof(setDataRate01Hz));  //Send UBX Packet
+      gpsSetSuccess += getUBX_ACK(&setDataRate01Hz[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Data update mode configuration failed!");}
+    gpsSetSuccess = 0;}
 
-  //Generate configuration string to put reciever into power save mode
-  byte setPwr2[] = {0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x01, 0x22, 0x92}; 
-
-  //Generate configuration string to put receiver into 1Hz update mode
-  //byte setDataRate1Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};//once per second
-  byte setDataRate01Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x10, 0x27, 0x01, 0x00, 0x01, 0x00, 0x4D, 0xDD};//once per 10 seconds
-
-  //Config GNSS
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Configuring GNSS for Power Save Mode (GLONASS OFF)... ");}
-    sendUBX(setGNSS, sizeof(setGNSS));
-    gpsSetSuccess += getUBX_ACK(&setGNSS[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Config GNSS Message Failed!");}
-  gpsSetSuccess = 0;
-
-  //Config Power Save
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Configuring Power Save Mode... ");}
-    sendUBX(setPwr, sizeof(setPwr));
-    gpsSetSuccess += getUBX_ACK(&setPwr[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Config PSM Message Failed!");}
-  gpsSetSuccess = 0;
-
-  //Commit PSM
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Commit Power Save Mode... ");}
-    sendUBX(setPwr2, sizeof(setPwr2));
-    gpsSetSuccess += getUBX_ACK(&setPwr2[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Commit PSM Message Failed!");}
-  gpsSetSuccess = 0;
-
-  //Set Data Update Rate
-  while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Setting Data Update Rate... ");}
-    sendUBX(setDataRate01Hz, sizeof(setDataRate01Hz));  //Send UBX Packet
-    gpsSetSuccess += getUBX_ACK(&setDataRate01Hz[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Data update mode configuration failed!");}
-  gpsSetSuccess = 0;
+  //Set lower update rate for Adafruit Ultimate GPS
+  if(gpsVersion == 4){gps.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ);}
+  
 }//End PowerSave Mode
 
 void calcChecksum(byte *checksumPayload, byte payloadSize) {

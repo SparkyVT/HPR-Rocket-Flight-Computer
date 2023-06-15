@@ -14,7 +14,7 @@
 //03 JAN 22: Moved I2C and SPI generic functions to Bus_Mgmt tab to better support different processors
 //10 MAY 22: Updated to have any device on any I2C or SPI bus
 //16 JUN 22: Updated with streamlined bus mgt functions, eliminated highG 3-axis mode due to improved i2c speed
-//13 JUN 22: Updated to add LPS25H support and correct bugs in LSM6DS33 and LIS3MDL
+//13 JUN 23: Updated to add LPS25H support and correct bugs in LSM6DS33 and LIS3MDL
 //--------Supported Sensors---------
 //Accelerometers:LSM303, LSM9DS1, LSM6DS33
 //Gyroscopes: L3GD20H, LSM9DS1, LSM6DS33
@@ -184,7 +184,7 @@ void resetMagGain() {
 #define LSM303_ADDRESS_MAG            (0x3C >> 1)
 #define LSM303_REGISTER_MAG_CRB_REG_M (0x01)
 #define LSM303_MAGGAIN_1_3            (0x20)
-#define LIS3MDL_ADDRESS_MAG           (0x3C)
+#define LIS3MDL_ADDRESS_MAG           (0x1E)
 #define LIS3MDL_REGISTER_CTRL_REG2    (0x21)
 
   //set bus
