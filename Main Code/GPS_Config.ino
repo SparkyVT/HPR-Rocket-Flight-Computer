@@ -145,7 +145,7 @@ void configGPS(bool serialOutput, byte gpsVersion, bool VTGoption) {
     gpsSetSuccess = 0;
     
     //Increase Baud-Rate on M8Q for faster GPS updates
-    while(gpsVersion && gpsSetSuccess < 3) {
+    while(gpsVersion == 2 && gpsSetSuccess < 3) {
       if(serialOutput){Serial.print("Setting Ublox Baud Rate 38400... ");}
       sendUBX(setBaudRate, sizeof(setBaudRate));
       gpsSetSuccess += getUBX_ACK(&setBaudRate[2]);}
@@ -157,7 +157,8 @@ void configGPS(bool serialOutput, byte gpsVersion, bool VTGoption) {
 
     if(gpsVersion == 4){
       gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-      gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);}
+      gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+      gps.sendCommand(PMTK_SET_BAUD_57600);}
   
   }//end configGPS
 

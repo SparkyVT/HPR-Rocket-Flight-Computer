@@ -971,6 +971,8 @@ inline void burstRead(void) __attribute__((always_inline));
 void setup(void) {
   
   Serial.begin(38400);
+  if(sensors.GPS == 4){Serial.begin(57600);}
+  
   delay(500);
 
   //check to see if we are restarting from a powerloss
