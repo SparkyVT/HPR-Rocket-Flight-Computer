@@ -1150,7 +1150,7 @@ void setup(void) {
   //if the Adafruit RFM9XW board is used, make sure its on
   if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, HIGH);}
   //start the radio
-  sensors.status_RFM96W = radioBegin(pins.radioRST);
+  if(settings.TXenable){sensors.status_RFM96W = radioBegin(pins.radioRST);}
   if(sensors.status_RFM96W){Serial.println(F("RFM96W/95W OK!"));}
   else{Serial.println(F("RFM96W/95W not found!"));}
   

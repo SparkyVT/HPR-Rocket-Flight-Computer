@@ -109,7 +109,6 @@ void parseEEPROMsettingsSD(){
   //If an EEPROM settings file exists, open it and copy the values into EEPROM
   byte kk;
   int8_t ii;
-  if(!SD.exists("EEPROMsettings.txt")){Serial.println("No settings file found");}
   if(SD.exists("EEPROMsettings.txt")){
     Serial.println(F("EEPROM file found!  Writing initial EEPROM Settings..."));
     settingsFile = SD.open("EEPROMsettings.txt", FILE_READ);
