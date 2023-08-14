@@ -6,7 +6,7 @@
 //parseEEPROMsettingsSD(): if an EEPROM settings file exists, read it and update EEPROM
 //createNextFileSD(): finds the last filename in the list and opens a new file, writes header
 //reOpenSD(): reopens the last file on the SD card
-//syncSD(): syncs the SD card in case of a powerloss
+//syncSD(): syncs the SD card in case of a powerlossfire
 //readFlightSettingsSD(): reads the user settings from the SD card
 //writeSDflightData(): primary routine to capture the flight data in ASCII text to the SD card
 //writeSDfooter(): writes the post flight footer to the SD card once touchdown or timeout is detected
@@ -420,7 +420,7 @@ void writeSDflightData(){
   writeBoolData(pyro3.fireStatus);
   writeBoolData(pyro4.fireStatus);
   dataString[strPosn] = cs;strPosn++;
-  writeIntData(firePin);
+  writeIntData(pins.firePin);
   //Barometer
   if (baro.newSamp) {
     writeFloatData(baro.Alt, 2);

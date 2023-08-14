@@ -183,7 +183,7 @@ void startI2C(_bus *myBus, uint8_t busNum){
   
   if(settings.testMode){Serial.print(busNum);Serial.print(F("..."));}}
 
-bool testSensor(byte address) {
+bool testSensor(uint8_t address) {
   activeBus->wire->beginTransmission(address);
   if(activeBus->wire->endTransmission() == 0){return true;}
   else{return false;}}
@@ -227,7 +227,7 @@ void startSPI(_bus *myBus, uint8_t busNum){
 //***************************************************************************
 //Common Read / Write Functions
 //***************************************************************************
-uint8_t read8(byte reg) {
+uint8_t read8(uint8_t reg) {
 
   uint8_t val;
 
@@ -237,7 +237,7 @@ uint8_t read8(byte reg) {
     activeBus->wire->beginTransmission(activeBus->i2cAddress);
     activeBus->wire->write(reg);
     activeBus->wire->endTransmission(false);
-    activeBus->wire->requestFrom(activeBus->i2cAddress, (byte)1);
+    activeBus->wire->requestFrom(activeBus->i2cAddress, (uint8_t)1);
     while (activeBus->wire->available() < 1) {};
     val = activeBus->wire->read();}
     
@@ -256,7 +256,7 @@ uint8_t read8(byte reg) {
     
     return val;}
     
-void burstRead(uint8_t reg, byte bytes) {
+void burstRead(uint8_t reg, uint8_t bytes) {
 
   //I2C Burst Read
   if(activeBus->type == 'I'){
@@ -266,7 +266,7 @@ void burstRead(uint8_t reg, byte bytes) {
     activeBus->wire->endTransmission(false);
     activeBus->wire->requestFrom(activeBus->i2cAddress, bytes);
     while (activeBus->wire->available() < bytes) {};
-    for (byte i = 0; i < bytes; i++) {rawData[i] = activeBus->wire->read();}}
+    for (uint8_t i = 0; i < bytes; i++) {rawData[i] = activeBus->wire->read();}}
 
   //SPI Burst Read
   else{
@@ -277,12 +277,12 @@ void burstRead(uint8_t reg, byte bytes) {
     //send register
     activeBus->spi->transfer(activeBus->readMask | activeBus->incMask | reg);
     //read data
-    for(byte i = 0; i < bytes; i++){rawData[i] = activeBus->spi->transfer(0);}
+    for(uint8_t i = 0; i < bytes; i++){rawData[i] = activeBus->spi->transfer(0);}
     //end SPI transaction
     digitalWriteFast(activeBus->cs, HIGH);
     activeBus->spi->endTransaction();}}
 
-void write8(byte reg, uint8_t val) {
+void write8(uint8_t reg, uint8_t val) {
 
   uint8_t readVal;
   
@@ -306,7 +306,7 @@ void write8(byte reg, uint8_t val) {
     digitalWriteFast(activeBus->cs, HIGH);
     activeBus->spi->endTransaction();}}
 
-void write16(byte reg, uint16_t val) {
+void write16(uint8_t reg, uint16_t val) {
 
   //I2C write
   if(activeBus->type == 'I'){
@@ -331,14 +331,14 @@ void write16(byte reg, uint16_t val) {
     digitalWrite(activeBus->cs, HIGH);
     activeBus->spi->endTransaction();}}
 
-void burstWrite(uint8_t reg, uint8_t *data, byte len) {
+void burstWrite(uint8_t reg, uint8_t *data, uint8_t len) {
 
   //I2C Burst Write
   if(activeBus->type == 'I'){
     activeBus->wire->setClock(activeBus->i2cRate);
     activeBus->wire->beginTransmission(activeBus->i2cAddress);
     activeBus->wire->write(reg | activeBus->incMask);
-    for(byte i = 0; i < len; i++){activeBus->wire->write(*(data+i));}
+    for(uint8_t i = 0; i < len; i++){activeBus->wire->write(*(data+i));}
     activeBus->wire->endTransmission(false);}
 
   //SPI Burst Write
@@ -348,7 +348,7 @@ void burstWrite(uint8_t reg, uint8_t *data, byte len) {
     digitalWriteFast(activeBus->cs, LOW);
     //Send data
     activeBus->spi->transfer(activeBus->writeMask | activeBus->incMask | reg);
-    for(byte i = 0; i < len; i++){activeBus->spi->transfer(*(data+i));}
+    for(uint8_t i = 0; i < len; i++){activeBus->spi->transfer(*(data+i));}
     //end SPI transaction
     digitalWrite(activeBus->cs, HIGH);
     SPI.endTransaction();}}

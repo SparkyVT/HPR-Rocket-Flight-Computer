@@ -1,4 +1,4 @@
-//----------------------------
+ //----------------------------
 //LIST OF FUNCTIONS & ROUTINES
 //----------------------------
 //getQuatRotn(): quaternion rotation at 100Hz using the gyroscope only
@@ -6,14 +6,15 @@
 //getRotnDCM2D(): Optimized DCM code to calculate the rotation on each cycle of the loop.  Used for active stabilization
 //setCanards(): control code for active stabilization using canards
 //-----------CHANGE LOG------------
-//17 JUL 21: initial breakout created
+//17 JUL 21: initial file breakout created
 //02 AUG 21: revision of PID control system, fixed bugs in DCM2D
 //26 DEC 21: initial coding of return system
 //---------------------------------
 
-void getQuatRotn(float dx, float dy, float dz){
+void getQuatRotn(float dx, float dy, float dz, float gyroGain){
 
   //Local Vectors
+  static float Quat[5] = {0.0, 1.0, 0.0, 0.0, 0.0};  
   float QuatDiff[5];
   float Rotn1[4];
   float Rotn2[4];
@@ -23,6 +24,12 @@ void getQuatRotn(float dx, float dy, float dz){
   static long prevRollZ = 0;
   static long quatRollZ = 0;
   static long fullRollZ = 0;
+
+  //convert to radians
+  const float rotn2rad = gyroGain * (3.14159265359 / 180) / 1000000;
+  dx *= rotn2rad;
+  dy *= rotn2rad;
+  dz *= rotn2rad;
   
   //Compute quaternion derivative
   QuatDiff[1] = 0.5 * (-1 * dx * Quat[2] - dy * Quat[3] - dz * Quat[4]);
@@ -71,22 +78,21 @@ void getQuatRotn(float dx, float dy, float dz){
   Rotn3[3] = a2 - b2 - c2 + d2;
   
   //compute 3D orientation
-  pitchX = speedAtan2(Rotn3[2], Rotn3[3]);
-  yawY = speedArcSin(-1*Rotn3[1]);
+  pitchX = speedAtan2(Rotn3[2], Rotn3[3]);//this returns tenths of a degree, not whole degrees
+  yawY = speedArcSin(-1*Rotn3[1]);//this returns tenths of a degree, not whole degrees
   
   prevRollZ = quatRollZ;
   quatRollZ = speedAtan2(Rotn2[1], Rotn1[1]);
   if(quatRollZ - prevRollZ > 1800){fullRollZ--;}
   else if(quatRollZ - prevRollZ < -1800){fullRollZ++;}
-  rollZ = (fullRollZ*3600 + quatRollZ)*.1;
+  rollZ = (fullRollZ*3600 + quatRollZ)*.1;//this is in whole degrees since its usually MUCH bigger than pitch and yaw
   
   //Compute angle off vertical
   float tanYaw = speedTan(yawY);
   float tanPitch = speedTan(pitchX);
-  
   float hyp1 = tanYaw*tanYaw + tanPitch*tanPitch;
   float hyp2 = powf(hyp1, 0.5);
-  offVert = speedArcTan(hyp2);
+  offVert = speedArcTan(hyp2);//this returns tenths of a degree, not whole degrees
   
   //as long as the rocket never exceeded 45 degrees, set the rotnOK variable to whether or not the current off-vertical rotation is within the allowable cone
   rotnOK = (!rotationFault && offVert < settings.maxAngle) ? true : false;
@@ -96,11 +102,16 @@ void getQuatRotn(float dx, float dy, float dz){
   
 }//end getQuatRotn
 
-//made global since these variables are also used by setCanards
+//to reduce trigonometric function calls, these are global variables since they are also used by setCanards()
 float cosZ = 1.0F;
 float sinZ = 0.0F;
   
-void getDCM2DRotn(long dx, long dy, long dz){
+void getDCM2DRotn(long dx, long dy, long dz, float gyroGain){
+  //this is a simplified Euler method that ONLY works for the simple rotations experienced by rockets (i.e. approximately a 2D arc to apogee)
+  //this method will NOT give accurate results for complex rotations (i.e. significant coning or tumbling), use quaternions instead for maximum accuracy
+  //rigorous testing shows a typical difference of 2-3 degrees (maximum) between this method and quaternions
+  //this simplified algorithm can be employed on modest processors since it uses minimal floating point operations and simplified trigonometry
+  //it has been successfully deployed on the Arduino Uno and Adafruit Metro Mini
 
   static float rawX = 0.0F;
   static float rawY = 0.0F;
@@ -109,7 +120,7 @@ void getDCM2DRotn(long dx, long dy, long dz){
   
   //Calculate new Z angle from gyro data
   rawZ += dz;
-  float radNewRoll = dz * gyro.gainZ * deg2rad  * mlnth;
+  float radNewRoll = dz * gyroGain * deg2rad  * mlnth;//convert to radians
   
   //compute sin(roll) and cos(roll)
   float sinNewRoll = sinSmallAngle(radNewRoll);
@@ -125,7 +136,7 @@ void getDCM2DRotn(long dx, long dy, long dz){
 
   //Compute Pitch, Roll, Yaw
   rollZ = (long)((rawZ * gyro.gainZ) * mlnth);
-  pitchX = (int)((rawX * gyro.gainX) * mlnth * 10);
+  pitchX = (int)((rawX * gyro.gainX) * mlnth * 10);//we report the value in tenths of a degree, not whole degrees
   yawY =   (int)((rawY * gyro.gainY) * mlnth * 10);
 
   //Compute off-vertical
@@ -303,6 +314,9 @@ void setCanards(){
   float throwServo3 = 90 + asinf(sineThrowServo3) * rad2deg;
   float throwServo4 = 90 + asinf(sineThrowServo4) * rad2deg;
 
+  //if we have hit apogee, then center the canards
+  if(events.apogee){throwServo1 = throwServo2 = throwServo3 = throwServo4 = 90;}
+
   //Set the fin positions
   //fin pointed in the positive-y rocket-frame
   canardYaw1.write(throwServo1-servo1trim);
@@ -423,6 +437,9 @@ void setRTB(){
   float throwServo3 = 90 - asinf(sineThrowServo3) * rad2deg;
   float throwServo4 = 90 - asinf(sineThrowServo4) * rad2deg;
 
+  //if the mains have deployed, center the fins
+  if(events.mainDeploy){throwServo3 = throwServo4 = 90;}
+    
   //Set the fin positions
   //fin pointed in the positive-x rocket-frame
   canardPitch3.write(throwServo3-servo3trim);
@@ -465,6 +482,9 @@ void setRTB(){
   throwServo1 = KpLandPoint*landPointError + KiLandPoint*landPointErrorInt + KdLandPoint*(landPointError - prevLandPointError);
   throwServo2 = -1 * throwServo1;
   prevLandPointError = landPointError;
+
+  //if the mains have deployed, center the fins
+  if(events.mainDeploy){throwServo1 = throwServo2 = 90;}
   
   //Set the fin positions
   //fin pointed in the positive-y rocket-frame

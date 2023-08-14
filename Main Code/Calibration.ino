@@ -18,68 +18,76 @@
 
 void accelCalibrate(){
       
-    Serial.println(F("Accelerometer Calibration Mode Confirmed. Ensure the altimeter is pointed vertical and held steady on a level surface"));
-    
-    for (byte i = 1; i < 20; i++){
-      digitalWrite(pins.beep, HIGH);
-      delay(250);
-      digitalWrite(pins.beep, LOW);
-      delay(250);}
-
+  Serial.println(F("Accelerometer Calibration Mode Confirmed. Ensure the altimeter is pointed vertical and held steady on a level surface"));
+  
+  for (byte i = 1; i < 20; i++){
     digitalWrite(pins.beep, HIGH);
+    delay(250);
+    digitalWrite(pins.beep, LOW);
+    delay(250);}
 
-    //reset the pointers and directions
-    accel.ptrX = &accel.rawX;
-    accel.ptrY = &accel.rawY;
-    accel.ptrZ = &accel.rawZ;
-    gyro.ptrX = &gyro.rawX;
-    gyro.ptrY = &gyro.rawY;
-    gyro.ptrZ = &gyro.rawZ;
-    mag.ptrX = &mag.rawX;
-    mag.ptrY = &mag.rawY;
-    mag.ptrZ = &mag.rawZ;
-    highG.ptrX = &highG.rawX;
-    highG.ptrY = &highG.rawY;
-    highG.ptrZ = &highG.rawZ;
-    //resetting the direction pointers isn't necessary because everything is now 1
-    accel.dirX = accel.dirY = accel.dirZ = 1;
-    gyro.dirX = gyro.dirY = gyro.dirZ = 1;
-    mag.dirX = mag.dirY = mag.dirZ = 1;
-    highG.dirX = highG.dirY = highG.dirZ = 1;
+  digitalWrite(pins.beep, HIGH);
 
-    Serial.println(F("Calibrating..."));
+  //reset the pointers and directions
+  accel.ptrX = &accel.rawX;
+  accel.ptrY = &accel.rawY;
+  accel.ptrZ = &accel.rawZ;
+  gyro.ptrX = &gyro.rawX;
+  gyro.ptrY = &gyro.rawY;
+  gyro.ptrZ = &gyro.rawZ;
+  mag.ptrX = &mag.rawX;
+  mag.ptrY = &mag.rawY;
+  mag.ptrZ = &mag.rawZ;
+  highG.ptrX = &highG.rawX;
+  highG.ptrY = &highG.rawY;
+  highG.ptrZ = &highG.rawZ;
+  //resetting the direction pointers isn't necessary because everything is now 1
+  accel.dirX = accel.dirY = accel.dirZ = 1;
+  gyro.dirX = gyro.dirY = gyro.dirZ = 1;
+  mag.dirX = mag.dirY = mag.dirZ = 1;
+  highG.dirX = highG.dirY = highG.dirZ = 1;
 
-    accel.biasX = accel.biasY = accel.biasZ = 0;
-    accel.sumX0 = accel.sumY0 = accel.sumZ0 = 0;
-    highG.biasX = highG.biasY = highG.biasZ = 0;
-    highG.sumX0 = highG.sumY0 = highG.sumZ0 = 0; 
+  Serial.println(F("Calibrating..."));
 
-    int dispData = 0;
-    int sampSize = 10000;
-    uint32_t delayTime = 714*(1-0.8);//average cycle time * (100% - time spent in I2C comms)
-    for (int i = 0; i < sampSize; i++){
+  accel.biasX = accel.biasY = accel.biasZ = 0;
+  accel.sumX0 = accel.sumY0 = accel.sumZ0 = 0;
+  highG.biasX = highG.biasY = highG.biasZ = 0;
+  highG.sumX0 = highG.sumY0 = highG.sumZ0 = 0; 
+
+  int16_t accelSamps = 0;
+  int16_t highGsamps = 0;
+  uint32_t sampTime = 3000000;
+  uint32_t calibrationStart = micros();
+  while(micros() - calibrationStart < sampTime){
+    //accelerometer
+    if(micros() - accel.timeLastSamp > accel.timeBtwnSamp){
       getAccel();
+      accel.timeLastSamp = micros();
+      accel.sumX0 += accel.x;
+      accel.sumY0 += accel.y;
+      accel.sumZ0 += accel.z;
+      accelSamps++;}
+    //high-G accelerometer
+    if(sensors.highG != 0 && micros() - highG.timeLastSamp > highG.timeBtwnSamp){
       getHighG();
-      dispData++;
-      if(dispData > 1000){
-        Serial.print(F("Accel X,Y,Z: "));Serial.print(accel.rawX);Serial.print(',');Serial.print(accel.rawY);Serial.print(',');Serial.println(accel.rawZ);
-        Serial.print(F("highG X,Y,Z: "));Serial.print(highG.rawX);Serial.print(',');Serial.print(highG.rawY);Serial.print(',');Serial.println(highG.rawZ);
-        dispData = 0;}
-      accel.sumX0 += accel.rawX;
-      accel.sumY0 += accel.rawY;
-      accel.sumZ0 += accel.rawZ;
-      highG.sumX0 += highG.rawX;
-      highG.sumY0 += highG.rawY;
-      highG.sumZ0 += highG.rawZ;
-      delayMicroseconds(delayTime);}
+      highG.timeLastSamp = micros();
+      highG.sumX0 += highG.x;
+      highG.sumY0 += highG.y;
+      highG.sumZ0 += highG.z;
+      highGsamps++;}
+
+    if(accelSamps%100 == 0){
+      Serial.print("Accel: ");Serial.print(accel.x);Serial.print(',');Serial.print(accel.y);Serial.print(',');Serial.println(accel.z);
+      Serial.print("HighG: ");Serial.print(highG.x);Serial.print(',');Serial.print(highG.y);Serial.print(',');Serial.println(highG.z);}
+  }//end sample period
       
     //calculate the bias
-    accel.biasX = (int)(accel.sumX0 / sampSize);
-    accel.biasY = (int)(accel.sumY0 / sampSize);
-    accel.biasZ = (int)(accel.sumZ0 / sampSize);
-    highG.biasX = (int)(highG.sumX0 / sampSize);
-    highG.biasY = (int)(highG.sumY0 / sampSize);
-    highG.biasZ = (int)(highG.sumZ0 / sampSize);
+    accel.biasX = (int)(accel.sumX0 / accelSamps);
+    accel.biasY = (int)(accel.sumY0 / accelSamps);
+    accel.biasZ = (int)(accel.sumZ0 / accelSamps);
+    highG.biasX = (int)(highG.sumX0 / highGsamps);
+    highG.biasY = (int)(highG.sumY0 / highGsamps);
+    highG.biasZ = (int)(highG.sumZ0 / highGsamps);
 
     //reset the counters
     accel.sumX0 = accel.sumY0 = accel.sumZ0 = 0;

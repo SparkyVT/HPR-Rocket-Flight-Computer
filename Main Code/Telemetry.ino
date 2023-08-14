@@ -180,9 +180,6 @@ void radioSendPacket(){
     if(settings.FHSS){hopTXfreq();}
     
     pktPosn=0;
-    //setup additional packet screening
-    //if(settings.FHSS){pktHeader = 4;}
-    //for(byte i = 0; i < pktHeader; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}//6 or 4
     //start packet build
     dataPacket[pktPosn]=radio.event; pktPosn++;
     dataPacket[pktPosn]=gpsFix; pktPosn++;
@@ -200,6 +197,8 @@ void radioSendPacket(){
     for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i]; pktPosn++;}
     dataPacket[pktPosn]=lowByte(radio.satNum); pktPosn++;
     dataPacket[pktPosn]=highByte(radio.satNum); pktPosn++;
+    //add in the callsign if needed
+    if(radio.pktCallsign){for(uint8_t i = 0; i++;i<6){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
     if(settings.FHSS){
       dataPacket[pktPosn]=nextChnl; pktPosn++;
       dataPacket[pktPosn]=nextChnl2; pktPosn++;}
@@ -225,11 +224,6 @@ void radioSendPacket(){
 
     //update sample number
     sampNum++;
-    
-    //put the callsign into the beginning of the packet
-    //if(sampNum == 1){
-      //if(settings.FHSS){pktHeader = 4;}
-      //for(byte i = 0; i < pktHeader; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}//6
     
     //hop frequency if needed
     if(settings.FHSS && hopFreq && sampNum >= packetSamples){hopTXfreq();}
@@ -269,6 +263,7 @@ void radioSendPacket(){
       radio.packetnum++;
       dataPacket[pktPosn] = lowByte(radio.packetnum); pktPosn++;//59
       dataPacket[pktPosn] = highByte(radio.packetnum); pktPosn++;//60
+
       //add next set of channels if FHSS
       if(settings.FHSS){
         dataPacket[pktPosn]=nextChnl; pktPosn++;
@@ -281,21 +276,27 @@ void radioSendPacket(){
         dataPacket[pktPosn] = highByte(radio.GPSalt);pktPosn++;//62
         for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlatitude.GPSbyte[i];pktPosn++;}//66
         for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i];pktPosn++;}}//70
-        
-    //send packet
-    if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
-    TXstartTime = micros();
-    SDradioTX = true;
-    if(radioDebug && settings.testMode){
-      if(TX){Serial.print(F("InFlight Packet Sent, "));Serial.println(TXstartTime);}
-      else if(!TX){Serial.println(F("InFlight Packet Failed!"));}}
-    //reset counting variables
-    sampNum = 0;
-    pktPosn = 0;
-    if(settings.FHSS){
-      hopNum = nextHop;
-      if(radio.packetnum%3==0){hopFreq = true;}
-      if(radio.packetnum%9==0){syncFreq = true;}}
+            
+      //add in the callsign if needed
+      if(radio.pktCallsign){for(uint8_t i = 0; i++;i<6){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
+
+      //send packet
+      if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
+      TXstartTime = micros();
+      SDradioTX = true;
+
+      //debug output
+      if(radioDebug && settings.testMode){
+        if(TX){Serial.print(F("InFlight Packet Sent, "));Serial.println(TXstartTime);}
+        else if(!TX){Serial.println(F("InFlight Packet Failed!"));}}
+
+      //reset counting variables
+      sampNum = 0;
+      pktPosn = 0;
+      if(settings.FHSS){
+        hopNum = nextHop;
+        if(radio.packetnum%3==0){hopFreq = true;}
+        if(radio.packetnum%9==0){syncFreq = true;}}
     }}
     
 //------------------------------------------------------------------
@@ -308,8 +309,6 @@ void radioSendPacket(){
       if(settings.FHSS){hopTXfreq();}
     
       pktPosn=0;
-      //if(settings.FHSS){pktHeader = 4;}
-      //for(byte i = 0; i < pktHeader; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}//6 bytes
       dataPacket[pktPosn]=radio.event; pktPosn++;//7 bytes
       dataPacket[pktPosn]=lowByte(radio.maxAlt); pktPosn++;//8 bytes
       dataPacket[pktPosn]=highByte(radio.maxAlt); pktPosn++;//9 bytes
@@ -329,6 +328,9 @@ void radioSendPacket(){
       if(settings.FHSS){
         dataPacket[pktPosn]=hailChnl; pktPosn++;
         dataPacket[pktPosn]=hailChnl; pktPosn++;}
+      //add in the callsign if needed
+      if(radio.pktCallsign){for(uint8_t i = 0; i++;i<6){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
+      //send the packet
       if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
       TXstartTime = micros();
       SDradioTX = true;
@@ -337,7 +339,7 @@ void radioSendPacket(){
         if(TX){Serial.println(F("PostFlight Packet Sent"));}
         else if(!TX){Serial.println(F("PostFlight Packet Failed!"));}}
       if(settings.FHSS){hopNum = nextHop;}
-    }//end postFlight code
+    }//end postFlight packet
 
   //turn off the flag now that we've processed the packet command
   sendPkt = false;}//end radioSendPacket
@@ -542,15 +544,18 @@ bool radioBegin(uint8_t radioRST){
     //we need to reset the user defined frequency to be the closest LoRa channel
     settings.TXfreq = freqList915[hailChnl];}
 
+  //set the flag to add the callsign to the radio packet if needed
+  if(settings.TXfreq >400.00 && settings.TXfreq < 500.00){radio.pktCallsign = true; settings.FHSS = false;}
+
   return successFlag;}
  
-bool setRadioPWR(uint8_t pwr){
+bool setRadioPWR(int8_t pwr){
   
   #define regPaDac    0x4D
   #define regPaConfig 0x09
   
   boolean successFlag = true;
-  uint8_t debugVal;
+  int8_t debugVal;
   
   //set bus
   activeBus = &radioBus;
@@ -571,7 +576,7 @@ bool setRadioPWR(uint8_t pwr){
       Serial.print("Set RegPaDac Failed: ");Serial.println(debugVal, HEX);}}
 
   //write to the power config register
-  uint8_t radioPwr = (0x80 | (pwr-2));
+  int8_t radioPwr = (0x80 | (pwr-2));
   Serial.print("Power Set: ");Serial.println(radioPwr, HEX);
   write8(regPaConfig, radioPwr);
   delay(10);

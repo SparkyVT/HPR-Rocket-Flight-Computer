@@ -15,6 +15,7 @@
 //10 MAY 22: Updated to have any device on any I2C or SPI bus
 //16 JUN 22: Updated with streamlined bus mgt functions, eliminated highG 3-axis mode due to improved i2c speed
 //13 JUN 23: Updated to add LPS25H support and correct bugs in LSM6DS33 and LIS3MDL
+//13 AUG 23: Added MPU6050 support, eliminated redundant routines
 //--------Supported Sensors---------
 //Accelerometers:LSM303, LSM9DS1, LSM6DS33
 //Gyroscopes: L3GD20H, LSM9DS1, LSM6DS33
@@ -49,15 +50,14 @@
 
 //beginLSM9DS1_AG(): starts accelerometer & gyro
 //beginLSM9DS1_M(): starts magnetometer
-//getLSM9DS1_A(): gets accelerometer data
-//getLSM9DS1_G(): gets gyro data
 //getLSM9DS1_AG(): gets accelerometer & gyro data
 //getLSM9DS1_M(): gets magnetometer data
 
 //beginLSM6DS33(): starts sensor
-//getLSM6DS33_A(): gets accelerometer data
-//getLSM6DS33_G(): gets gyro data
-//getLSM6DS33_AG(): gets accelerometer & gyro data
+//getLSM6DS33(): gets accelerometer & gyro data
+
+//beginMPU6050(): starts sensor
+//getMPU6050_AG(): gets accelerometer & gyro data
 
 //beginLIS3MDL(): starts sensor
 //getLIS3MDL(): gets magnetometer data
@@ -118,8 +118,11 @@ void beginAccel() {
     case 1:
       sensors.status_LSM303 = beginLSM303_A();
       break;
-  }
-}
+
+    case 4:
+      sensors.status_MPU6050 = beginMPU6050();
+      break;
+  }}
 
 void getAccel() {
 
@@ -127,19 +130,20 @@ void getAccel() {
   switch (sensors.accel) {
 
     case 2:
-      if (events.liftoff) {getLSM9DS1_AG();}
-      else {getLSM9DS1_A();}
+      getLSM9DS1_AG();
       break;
 
     case 3:
-      if (events.liftoff) {getLSM6DS33_AG();}
-      else {getLSM6DS33_A();}
+      getLSM6DS33();
       break;
 
     case 1:
       getLSM303_A();
       break;
-  }
+
+    case 4: 
+    getMPU6050();
+    break;}
 
   //indicate new sample
   accel.newSamp = true;
@@ -275,18 +279,17 @@ void getGyro() {
   //get sensor data
   switch (sensors.gyro) {
 
+    case 1:
+      getL3GD20H();
+      break;
+
     case 2:
-      if (!events.liftoff) {getLSM9DS1_G();}
       break;
 
     case 3:
-      if (!events.liftoff) {
-        getLSM6DS33_G();
-      }
       break;
 
-    case 1:
-      getL3GD20H();
+    case 4:
       break;
   }
 
@@ -429,7 +432,7 @@ void getBaro() {
 }
 
 //***************************************************************************
-//LSM303 Accelerometer
+//LSM303 Accelerometer, which has a different address from the magnetometer
 //***************************************************************************
 
 bool beginLSM303_A() {
@@ -630,7 +633,7 @@ void getL3GD20H() {
   gyro.rawZ = (int16_t)(rawData[4] | (rawData[5] << 8));}
 
 //***************************************************************************
-//LSM9DS1 Accelerometer & Gyroscope
+//LSM9DS1 Accelerometer & Gyroscope, which has a different addres from the magnetometer
 //***************************************************************************
 bool beginLSM9DS1_AG() {
 
@@ -761,38 +764,6 @@ void getLSM9DS1_AG() {
   accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
   accel.rawZ  = (int16_t)(rawData[10]|(rawData[11] << 8));}
 
-void getLSM9DS1_A() {
-
-  //This routine reads 6 bytes only from the accelerometer
-  #define LSM9DS1_REGISTER_OUT_X_L_XL (0x28)
-
-  //setup the bus
-  activeBus = &accelBus;
-
-  uint8_t bitMask = 0x80;
-  
-  //read the data
-  burstRead(bitMask | LSM9DS1_REGISTER_OUT_X_L_XL, 6);
-  accel.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
-  accel.rawY = (int16_t)(rawData[2] | (rawData[3] << 8));
-  accel.rawZ = (int16_t)(rawData[4] | (rawData[5] << 8));}
-
-void getLSM9DS1_G() {
-
-  //This routine reads 6 bytes only from the gyro
-  #define LSM9DS1_REGISTER_OUT_X_L_G  (0x18)
-
-  //setup the bus
-  activeBus = &gyroBus;
-
-  uint8_t bitMask = 0x80;
-  
-  //read the data and assemble
-  burstRead(bitMask | LSM9DS1_REGISTER_OUT_X_L_G, 6);
-  gyro.rawX  = (int16_t)(rawData[0] | (rawData[1] << 8));
-  gyro.rawY  = (int16_t)(rawData[2] | (rawData[3] << 8));
-  gyro.rawZ  = (int16_t)(rawData[4] | (rawData[5] << 8));}
-
 void getLSM9DS1_M() {
 
   //This routine reads 6 bytes from the magnetometer
@@ -872,7 +843,7 @@ bool beginLSM6DS33() {
   return true;
 }//end begin
 
-void getLSM6DS33_AG() {
+void getLSM6DS33() {
 
   //this routine uses the LSM6DS33 burst read to rapidly read 12 bytes from the sensors
   #define LSM6DS33_REGISTER_OUTX_L_G (0x22)
@@ -891,41 +862,80 @@ void getLSM6DS33_AG() {
   accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
   accel.rawZ  = (int16_t)(rawData[10] | (rawData[11] << 8));}
 
-void getLSM6DS33_A() {
+//***************************************************************************
+//MPU6050 Accelerometer & Gyroscope
+//***************************************************************************
+bool beginMPU6050(){
+  //Addresses for the registers
+  #define MPU6050_ADDRESS_ACCELGYRO            (0x6B)
+  #define MPU6050_XG_ID                        (0x68)
+  #define MPU6050_REGISTER_GYRO_CONFIG         (0x1B)
+  #define MPU6050_REGISTER_ACCEL_CONFIG        (0x1C)
 
-  //This routine reads 6 bytes only from the accelerometer
-  #define LSM6DS33_REGISTER_OUTX_L_XL (0x28)
+  //Define bus settings and start bus
+  if (sensors.accelBusType == 'I') {
+    accelBus.i2cAddress = gyroBus.i2cAddress = MPU6050_ADDRESS_ACCELGYRO;
+    accelBus.i2cRate = gyroBus.i2cRate = 400000;
+    startI2C(&accelBus, sensors.accelBusNum);}
+  else {
+    accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
+    accelBus.cs = gyroBus.cs = pins.accelCS;
+    startSPI(&accelBus, sensors.accelBusNum);
+    accelBus.readMask = gyroBus.readMask = 0x80;}
+  gyroBus = accelBus;
+  
+  //if I2C, check if there is a sensor at this address
+  if (sensors.accelBusType == 'I') {
+    if (!testSensor(MPU6050_ADDRESS_ACCELGYRO)) {
+      Serial.println(F("MPU6050 no reply!"));
+      return false;}}
+
+  //check whoami
+  byte id = read8(0x75);
+  if (id != 0x68) {
+    Serial.println(F("MPU6050 not found!"));
+    return false;}
+  Serial.println(F("MPU6050 Accelerometer/Gyroscope OK!"));
+
+  //Set Accelerometer 16G Range
+  write8(MPU6050_REGISTER_ACCEL_CONFIG, 0b00011000);
+  accel.ADCmax = (int16_t)(0.98 * 32768);
+  accel.gainX = accel.gainY = accel.gainZ = 1/2048;
+
+  //Set Gyroscope 2000dps Range
+  write8(MPU6050_REGISTER_GYRO_CONFIG, 0b00011000);
+  gyro.gainX = gyro.gainY = gyro.gainZ = 1/16.4;
+  gyro.ADCmax = 32768;
+  //set time between samples
+  accel.timeBtwnSamp = gyro.timeBtwnSamp = 1000UL;
+
+  //set Accelerometer G level and add G to the gains
+  g = int16_t(1 / accel.gainX);
+  accel.gainX *= 9.80665;
+  accel.gainY *= 9.80665;
+  accel.gainZ *= 9.80665;
+
+  return true;}
+
+bool getMPU6050(){
+
+  //the MPU6050 accel and gyro output registers are not sequential, so we need to draw 14 bytes
+  #define MPU6050_REGISTER_OUTX_H_G (0x3B)
 
   //setup the bus
   activeBus = &accelBus;
-
-  uint8_t bitMask = 0x80;
   
   //read the data
-  burstRead(bitMask | LSM6DS33_REGISTER_OUTX_L_G, 6);
+  burstRead(MPU6050_REGISTER_OUTX_H_G, 14);
 
   //assemble the data
-  accel.rawX = (int16_t)(rawData[0] | (rawData[1] << 8));
-  accel.rawY = (int16_t)(rawData[2] | (rawData[3] << 8));
-  accel.rawZ = (int16_t)(rawData[4] | (rawData[5] << 8));}
-
-void getLSM6DS33_G() {
-
-  #define LSM6DS33_REGISTER_OUTX_L_G (0x22)
-
-  //setup the bus
-  activeBus = &gyroBus;
-
-  uint8_t bitMask = 0x80;
-  
-  //read the data
-  burstRead(bitMask | LSM6DS33_REGISTER_OUTX_L_G, 6);
-
-  //assemble the data
-  gyro.rawX  = (int16_t)(rawData[0] | (rawData[1] << 8));
-  gyro.rawY  = (int16_t)(rawData[2] | (rawData[3] << 8));
-  gyro.rawZ  = (int16_t)(rawData[4] | (rawData[5] << 8));}
-
+  accel.rawX   = (int16_t)(rawData[1] | (rawData[0] << 8));
+  accel.rawY   = (int16_t)(rawData[3] | (rawData[2] << 8));
+  accel.rawZ   = (int16_t)(rawData[5] | (rawData[4] << 8));
+  gyro.rawX  = (int16_t)(rawData[9] | (rawData[8] << 8));
+  gyro.rawY  = (int16_t)(rawData[11] | (rawData[12] << 8));
+  gyro.rawZ  = (int16_t)(rawData[13] | (rawData[14] << 8));
+}
 //***************************************************************************
 //LIS3MDL Magnetometer
 //***************************************************************************
