@@ -8,7 +8,7 @@ TRA #12111, L3
 
 --------DESCRIPTION----------
 This flight computer is designed for rockets 38mm in diameter or greater, and will fit inside a 38mm tube coupler.
-Dimensions are 4.0in x 1.25in x 0.5in, not including antenna
+Dimensions are 4.0in x 1.25in x 0.5in, antenna configuration may add more length
 It has similar capability as a TeleMega, but without a smart-phone app or advanced interfaces  
 Flight-tested on multiple M-powered supersonic flights to over 24K feet and Mach 2.0.  
 For large or high-power projects, a commercially avialble backup computer is strongly recommended.  
@@ -31,6 +31,7 @@ High Data-Capture rate: approximately 50,000 samples per second recorded to SD c
 --20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS position, signal strength)
 --5Hz-25Hz of GNSS data logging (chip-dependent data rates & constellations)
 --Separate data file for each flight up to 100 flights
+--Optional separate GNSS NMEA capture file for plotting in Google Earth, UBLOX NEO-M9N configurtion approved for TRA altitude record attempts
 Simple, easy-to-use configuration interface through the SD card
 --User Selectable Flight Mode: Single-Stage, Two-Stage, Airstart, or Booster
 --Configurable Apogee delay
@@ -54,7 +55,7 @@ Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
 
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 4.1, 3.5, or 3.6 (compatible with provided PCB file) or Teensy 4.0/3.2 (no PCB file provided)
-               IMU: LSM6DS0X (recommended), LSM9DS1, LSM6DS33, or LSM303 & L3GD20H combo
+               IMU: LSM6DS0X (recommended), LSM9DS1, LSM6DS33, MPU6050, or LSM303 & L3GD20H combo
       Magnetometer: LIS3MDL (recommended), LSM9DS1, or LSM303
 100G Accelerometer: H3LIS331DL (recommended), ADXL377, or ADXL377 & ADS1115 combo
    Pressure Sensor: MS5611 (recommended), MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
