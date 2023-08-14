@@ -1566,6 +1566,7 @@ void setup(void) {
   int16_t magSamps = 0;
   uint32_t sampTime = 3000000;
   uint32_t calibrationStart = micros();
+  bool samplePrint = false;
   while(micros() - calibrationStart < sampTime){
     //accelerometer
     if(micros() - accel.timeLastSamp > accel.timeBtwnSamp){
@@ -1574,14 +1575,15 @@ void setup(void) {
       accel.sumX0 += accel.x;
       accel.sumY0 += accel.y;
       accel.sumZ0 += accel.z;
-      accelSamps++;}
+      accelSamps++;
+      samplePrint = true;}
     //gyroscope
     if(micros() - gyro.timeLastSamp > gyro.timeBtwnSamp){
       getGyro();
       gyro.timeLastSamp = micros();
-      gyro.sumX0 += gyro.x;
-      gyro.sumY0 += gyro.y;
-      gyro.sumZ0 += gyro.z;
+      gyro.sumX0 += gyro.rawX;
+      gyro.sumY0 += gyro.rawY;
+      gyro.sumZ0 += gyro.rawZ;
       gyroSamps++;}
     //high-G accelerometer
     if(sensors.highG != 0 && micros() - highG.timeLastSamp > highG.timeBtwnSamp){
@@ -1599,17 +1601,22 @@ void setup(void) {
       mag.sumY0 += mag.y;
       mag.sumZ0 += mag.z;
       magSamps++;}
-    if(settings.testMode && accelSamps%100 == 0){
+    if(settings.testMode && accelSamps%100 == 0 && samplePrint){
       Serial.print("Gyro: ");Serial.print(gyro.rawX);Serial.print(',');Serial.print(gyro.rawY);Serial.print(',');Serial.println(gyro.rawZ);
       Serial.print("Accel: ");Serial.print(accel.x);Serial.print(',');Serial.print(accel.y);Serial.print(',');Serial.println(accel.z);
       Serial.print("HighG: ");Serial.print(highG.x);Serial.print(',');Serial.print(highG.y);Serial.print(',');Serial.println(highG.z);
-      Serial.print("Mag: ");Serial.print(mag.x);Serial.print(',');Serial.print(mag.y);Serial.print(',');Serial.println(mag.z);}
+      Serial.print("Mag: ");Serial.print(mag.x);Serial.print(',');Serial.print(mag.y);Serial.print(',');Serial.println(mag.z);
+      samplePrint = false;}
   }//end sample period
 
   //Compute the average of the sample period
-  gyro.biasX = round(gyro.sumX0 / gyroSamps);
-  gyro.biasY = round(gyro.sumY0 / gyroSamps);
-  gyro.biasZ = round(gyro.sumZ0 / gyroSamps);
+  Serial.print("gyro samples: "); Serial.println(gyroSamps);
+  Serial.print("accel samples: "); Serial.println(accelSamps);
+  Serial.print("highG samples: "); Serial.println(highGsamps);
+  Serial.print("mag samples: "); Serial.println(magSamps);
+  gyro.biasX = (int)round(gyro.sumX0 / gyroSamps);
+  gyro.biasY = (int)round(gyro.sumY0 / gyroSamps);
+  gyro.biasZ = (int)round(gyro.sumZ0 / gyroSamps);
   accel.x0 = (int)round(accel.sumX0 / accelSamps);
   accel.y0 = (int)round(accel.sumY0 / accelSamps);
   accel.z0 = (int)round(accel.sumZ0 / accelSamps);
@@ -1619,6 +1626,7 @@ void setup(void) {
   mag.x0 = (int)round(mag.sumX0 / magSamps);
   mag.y0 = (int)round(mag.sumY0 / magSamps);
   mag.z0 = (int)round(mag.sumZ0 / magSamps);
+  //print out the results of the initial calibration sequence
   if(settings.testMode){
     Serial.println(F("Sampling complete"));
     Serial.print(F("Gyro Offsets: "));

@@ -58,6 +58,7 @@ void accelCalibrate(){
   int16_t highGsamps = 0;
   uint32_t sampTime = 3000000;
   uint32_t calibrationStart = micros();
+  bool samplePrint = false;
   while(micros() - calibrationStart < sampTime){
     //accelerometer
     if(micros() - accel.timeLastSamp > accel.timeBtwnSamp){
@@ -66,7 +67,8 @@ void accelCalibrate(){
       accel.sumX0 += accel.x;
       accel.sumY0 += accel.y;
       accel.sumZ0 += accel.z;
-      accelSamps++;}
+      accelSamps++;
+      samplePrint = true;}
     //high-G accelerometer
     if(sensors.highG != 0 && micros() - highG.timeLastSamp > highG.timeBtwnSamp){
       getHighG();
@@ -76,9 +78,10 @@ void accelCalibrate(){
       highG.sumZ0 += highG.z;
       highGsamps++;}
 
-    if(accelSamps%100 == 0){
+    if(accelSamps%100 == 0 && samplePrint){
       Serial.print("Accel: ");Serial.print(accel.x);Serial.print(',');Serial.print(accel.y);Serial.print(',');Serial.println(accel.z);
-      Serial.print("HighG: ");Serial.print(highG.x);Serial.print(',');Serial.print(highG.y);Serial.print(',');Serial.println(highG.z);}
+      Serial.print("HighG: ");Serial.print(highG.x);Serial.print(',');Serial.print(highG.y);Serial.print(',');Serial.println(highG.z);
+      samplePrint = false;}
   }//end sample period
       
     //calculate the bias
@@ -893,4 +896,5 @@ void wiggleServo( byte servo){
     actionServo8.write(90-servo8trim);
     break;}
   
-  }//end void wiggle servo
+
+  }//end void wiggle servo+
