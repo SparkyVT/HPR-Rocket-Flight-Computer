@@ -58,7 +58,7 @@ Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
       Magnetometer: LIS3MDL (recommended), LSM9DS1, or LSM303
 100G Accelerometer: H3LIS331DL (recommended), ADXL377, or ADXL377 & ADS1115 combo
    Pressure Sensor: MS5611 (recommended), MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
-              GNSS: UBLOX M6, M7, M8, M9 (NEO footprint supported in PCB file)
+              GNSS: UBLOX M6, M7, M8, M9 (NEO footprint supported in PCB file) or Adafruit Ultimate GPS
     LoRa Telemetry: RFM96W or RFM95W, both capable of TX on 433MHz or 915MHz (433MHz USA: Amateur License Required, EUR: License Free)
    Tactile Buttons: 0.2 in spacing
                PCB: Use the provided PCBexpress design file or create your own
