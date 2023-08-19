@@ -1,7 +1,7 @@
 //High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 9718 lines of code = 2464 MainFile + 354 Bus_Mgmt + 2282 SensorDrivers + 896 Calibration + 625 SpeedTrig + 471 Inflight_Recover + 683 SD + 634 Rotation + 721 Telemetry + 327 Event_Logic + 303 GPSconfig      
+//Code Line Count: 9697 lines of code = 2472 MainFile + 354 Bus_Mgmt + 2282 SensorDrivers + 900 Calibration + 625 SpeedTrig + 471 Inflight_Recover + 683 SD + 554 Rotation + 726 Telemetry + 327 Event_Logic + 303 GPSconfig      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features
@@ -715,7 +715,6 @@ float pitchX0;
 int pitchX;
 int yawY;
 long rollZ = 0;
-const float degRad = 57.29577951308; //degrees per radian
 const float mlnth = 0.000001;
 int offVert = 0;
 bool rotationFault = false;
@@ -1669,22 +1668,23 @@ void setup(void) {
   //highG.biasX = highGx0 - (int)((float)accel.x0 / (float)A2D) - 27;//old formula is kept for reference
   
   //Compute the acceleromter based rotation angle
-  if (accel.y0 >= 0) {yawY0 = asin(min(1, (float)accel.y0 / (float)g)) * degRad;}
-  else {yawY0 = asin(max(-1, (float)accel.y0 / (float)g)) * degRad;}
+  const float rad2deg = 57.29577951308; //degrees per radian
+  if (accel.y0 >= 0) {yawY0 = asinf(min(1, (float)accel.y0 / (float)g)) * rad2deg;}
+  else {yawY0 = asinf(max(-1, (float)accel.y0 / (float)g)) * rad2deg;}
 
-  if (accel.x0 >= 0) {pitchX0 = asin(min(1, (float)accel.x0 / (float)g)) * degRad;}
-  else {pitchX0 = asin(max(-1, (float)accel.x0 / (float)g)) * degRad;}
+  if (accel.x0 >= 0) {pitchX0 = asinf(min(1, (float)accel.x0 / (float)g)) * rad2deg;}
+  else {pitchX0 = asinf(max(-1, (float)accel.x0 / (float)g)) * rad2deg;}
 
   //update quaternion rotation
-  getQuatRotn(pitchX0, yawY0, 0, 1);
-  if(settings.stableRotn || settings.stableVert){
-    pitchX = (int)(pitchX0*10);
-    yawY = (int)(yawY0*10);}
+  getQuatRotn(pitchX0*1000000/gyro.gainZ, yawY0*1000000/gyro.gainZ, 0, gyro.gainZ);
+  //use DCM2D if we are deploying control surfaces
+  if(settings.stableRotn || settings.stableVert){getDCM2DRotn(pitchX0*1000000/gyro.gainZ, yawY0*1000000/gyro.gainZ, 0, gyro.gainZ);}
+  //Output the initial rotation conditions reltative to the Earth
   if(settings.testMode){
     Serial.println(F("Rotation Computation Complete"));
     Serial.print(F("Yaw: "));Serial.println(yawY0, 2);
     Serial.print(F("Pitch: "));Serial.println(pitchX0, 2);
-    Serial.print(F("Off Vertical: "));Serial.println(((float)offVert)/((float)10), 2);}  
+    Serial.print(F("Off Vertical: "));Serial.println(((float)offVert)*.1, 1);}  
 
   //Read the battery voltage
   voltReading = analogRead(pins.batt);

@@ -49,7 +49,7 @@ void getQuatRotn(float dx, float dy, float dz, float gyroGain){
   Quat[2] *= quatLen;
   Quat[3] *= quatLen;
   Quat[4] *= quatLen;
-      
+
   //compute the components of the rotation matrix
   float a = Quat[1];
   float b = Quat[2];
@@ -86,14 +86,14 @@ void getQuatRotn(float dx, float dy, float dz, float gyroGain){
   if(quatRollZ - prevRollZ > 1800){fullRollZ--;}
   else if(quatRollZ - prevRollZ < -1800){fullRollZ++;}
   rollZ = (fullRollZ*3600 + quatRollZ)*.1;//this is in whole degrees since its usually MUCH bigger than pitch and yaw
-  
+
   //Compute angle off vertical
   float tanYaw = speedTan(yawY);
   float tanPitch = speedTan(pitchX);
   float hyp1 = tanYaw*tanYaw + tanPitch*tanPitch;
   float hyp2 = powf(hyp1, 0.5);
   offVert = speedArcTan(hyp2);//this returns tenths of a degree, not whole degrees
-  
+
   //as long as the rocket never exceeded 45 degrees, set the rotnOK variable to whether or not the current off-vertical rotation is within the allowable cone
   rotnOK = (!rotationFault && offVert < settings.maxAngle) ? true : false;
   
@@ -135,9 +135,9 @@ void getDCM2DRotn(long dx, long dy, long dz, float gyroGain){
   rawY += (cosZ * dy + sinZ * dx);
 
   //Compute Pitch, Roll, Yaw
-  rollZ = (long)((rawZ * gyro.gainZ) * mlnth);
-  pitchX = (int)((rawX * gyro.gainX) * mlnth * 10);//we report the value in tenths of a degree, not whole degrees
-  yawY =   (int)((rawY * gyro.gainY) * mlnth * 10);
+  rollZ = (long)((rawZ * gyroGain) * mlnth);
+  pitchX = (int)((rawX * gyroGain) * mlnth * 10);//we report the value in tenths of a degree, not whole degrees
+  yawY =   (int)((rawY * gyroGain) * mlnth * 10);
 
   //Compute off-vertical
   float tanYaw = speedTan(yawY);
