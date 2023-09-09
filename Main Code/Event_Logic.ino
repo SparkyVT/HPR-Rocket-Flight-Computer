@@ -17,12 +17,12 @@ void checkEvents(){
     radio.event = Time_Limit;
     if(settings.fltProfile == 'B'){radio.event = Booster_Time_Limit;}
     if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
-    radioTimer.begin(timerSendPkt, RIpostFlight);
+    radioTimer.begin(timerSendPkt, pktInterval.postFlight);
     fltTime.touchdown = fltTime.timeCurrent;
-    touchdownHour = GPS.time.hour();
-    touchdownMin = GPS.time.minute();
-    touchdownSec = GPS.time.second();
-    touchdownMili = GPS.time.centisecond();}
+    gnss.touchdown.hour = GPS.time.hour();
+    gnss.touchdown.minute = GPS.time.minute();
+    gnss.touchdown.second = GPS.time.second();
+    gnss.touchdown.mili = GPS.time.centisecond();}
 
   //Check false trigger until the flight time has passed the minimum time
   if (events.falseLiftoffCheck) {
@@ -42,10 +42,12 @@ void checkEvents(){
       pktPosn = 0;
       radio.packetnum = 0;
       sampNum = 0;
-      radioTimer.begin(timerSendPkt, RIpreLiftoff);
-      highGsmooth = 0;
+      radioTimer.begin(timerSendPkt, pktInterval.preLiftoff);
+      //reset the high-g filter
+      filterPosn = 0;
       highGsum = 0;
-      for(byte i=0; i<10; i++){highGfilter[i]=0;}
+      for(byte i=0; i < (sizeof(highGfilter)/sizeof(highGfilter[0])); i++){highGfilter[i]=0;}
+      filterFull = false;
       accelVel = 0;
       accelAlt = 0;}
   }//end falseLiftoffCheck
@@ -314,14 +316,12 @@ void checkEvents(){
     events.inFlight = false;
     events.postFlight = true;
     fltTime.touchdown = fltTime.timeCurrent;
-    radioInterval = RIpostFlight;
-    RIsyncOffset = 600000UL;
     radio.event = Touchdown;
     if(settings.fltProfile == 'B'){radio.event = Booster_Touchdown;}
     if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}
-    touchdownHour = GPS.time.hour();
-    touchdownMin = GPS.time.minute();
-    touchdownSec = GPS.time.second();
-    touchdownMili = GPS.time.centisecond();}
+    gnss.touchdown.hour = GPS.time.hour();
+    gnss.touchdown.minute = GPS.time.minute();
+    gnss.touchdown.second = GPS.time.second();
+    gnss.touchdown.mili = GPS.time.centisecond();}
 
  }//end check events

@@ -184,9 +184,9 @@ void setCanards(){
   float sinePitchThrowServo3;
   float sinePitchThrowServo4;
 
-  float rollTorqueInput;
-  float pitchTorqueInput;
-  float yawTorqueInput;
+  float rollTorqueInput = 0.0;
+  float pitchTorqueInput = 0.0;
+  float yawTorqueInput = 0.0;
 
   const float rollTorqueArm = 0.046482;//1.83in = 0.0464m
   const float yawPitchTorqueArm =  0.46482;//18in = 0.464m
@@ -392,8 +392,8 @@ void setRTB(){
   //X = cos(latitudeB) * sin(longitudeB - longitudeA)
   //Y = cos(latitudeA) * sin(latitudeB) - sin(latitudeA) * cos(latitudeB) * cos(longitudeB - longitudeA)
   
-  float x = speedCos(liftoffLatDec) * speedSin(liftoffLonDec - gpsLongitudeDec);
-  float y = speedCos(gpsLatitudeDec) * speedSin(liftoffLatDec) - speedSin(gpsLatitudeDec) * speedCos(liftoffLatDec) * speedCos(liftoffLonDec - gpsLongitudeDec);
+  float x = speedCos(gnss.latitude) * speedSin(gnss.liftoff.longitude - gnss.longitude);
+  float y = speedCos(gnss.latitude) * speedSin(gnss.liftoff.latitude) - speedSin(gnss.latitude) * speedCos(gnss.liftoff.latitude) * speedCos(gnss.liftoff.longitude - gnss.longitude);
 
   float bearingSetpoint = speedAtan2(x, y);
   float magBearing = speedAtan2(mag.y, mag.x);
@@ -468,9 +468,8 @@ void setRTB(){
   if(fabs(bearingError) > 20){throwServo1 = throwServo2 = 0;}
 
   //else estimate the landing point
-  float gpsAlt = GPS.altitude.meters() - baro.baseAlt;
-  float timeToLand = (gpsAlt - settings.mainDeployAlt) / fabs(GPSvel);//subtract out the main deployment altitude because we want it back at the launch position when the mains come out
-  float distanceToLandPoint = calcGPSdist(liftoffLonDec, liftoffLatDec, gpsLongitudeDec, gpsLatitudeDec);
+  float timeToLand = (gnss.alt - settings.mainDeployAlt) / fabs(gnss.vel);//subtract out the main deployment altitude because we want it back at the launch position when the mains come out
+  float distanceToLandPoint = calcGPSdist(gnss.liftoff.longitude, gnss.liftoff.latitude, gnss.longitude, gnss.latitude);
   float gpsGroundSpeed = GPS.speed.mps();
   float landPointEst = distanceToLandPoint / gpsGroundSpeed;
   float landPointError = distanceToLandPoint - landPointEst;

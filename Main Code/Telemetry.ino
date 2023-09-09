@@ -169,7 +169,6 @@ float freq;
 
 void radioSendPacket(){
 
-  byte pktHeader = 6;//packet screening requires a direct match to the ham radio callsign
 //------------------------------------------------------------------
 //                  PRE-FLIGHT PACKET
 //------------------------------------------------------------------
@@ -181,27 +180,29 @@ void radioSendPacket(){
     
     pktPosn=0;
     //start packet build
-    dataPacket[pktPosn]=radio.event; pktPosn++;
-    dataPacket[pktPosn]=gpsFix; pktPosn++;
-    dataPacket[pktPosn]=cont.reportCode; pktPosn++;
+    dataPacket[pktPosn]=radio.event; pktPosn++;//1
+    dataPacket[pktPosn]=gnss.fix; pktPosn++;//2
+    dataPacket[pktPosn]=cont.reportCode; pktPosn++;//3
     for (byte j = 0; j < sizeof(settings.rocketName); j++){
       dataPacket[pktPosn] = settings.rocketName[j];
-      pktPosn++;}
-    dataPacket[pktPosn]=lowByte(radio.baseAlt); pktPosn++;
-    dataPacket[pktPosn]=highByte(radio.baseAlt); pktPosn++;
-    dataPacket[pktPosn]=lowByte(radio.GPSalt); pktPosn++;
-    dataPacket[pktPosn]=highByte(radio.GPSalt); pktPosn++;
-    dataPacket[pktPosn]=gpsLat; pktPosn++;
-    for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlatitude.GPSbyte[i]; pktPosn++;}
-    dataPacket[pktPosn]=gpsLon; pktPosn++;
-    for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i]; pktPosn++;}
-    dataPacket[pktPosn]=lowByte(radio.satNum); pktPosn++;
-    dataPacket[pktPosn]=highByte(radio.satNum); pktPosn++;
-    //add in the callsign if needed
-    if(radio.pktCallsign){for(uint8_t i = 0; i++;i<6){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
+      pktPosn++;}//23
+    dataPacket[pktPosn]=lowByte(radio.baseAlt); pktPosn++;//24
+    dataPacket[pktPosn]=highByte(radio.baseAlt); pktPosn++;//25
+    dataPacket[pktPosn]=lowByte(radio.GPSalt); pktPosn++;//26
+    dataPacket[pktPosn]=highByte(radio.GPSalt); pktPosn++;//27
+    floatUnion.val = GPS.location.lat();
+    for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i]; pktPosn++;}//31
+    floatUnion.val = GPS.location.lng();
+    for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i]; pktPosn++;}//35
+    dataPacket[pktPosn]=lowByte(radio.satNum); pktPosn++;//36
+    dataPacket[pktPosn]=highByte(radio.satNum); pktPosn++;//37
+    //if FHSS, send the next channel
     if(settings.FHSS){
       dataPacket[pktPosn]=nextChnl; pktPosn++;
       dataPacket[pktPosn]=nextChnl2; pktPosn++;}
+    //add in the callsign if needed
+    if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
+    //send the packet
     TX = radioSendPkt(dataPacket, pktPosn);
     TXstartTime = micros();
     int32_t pktSize = pktPosn;
@@ -229,40 +230,40 @@ void radioSendPacket(){
     if(settings.FHSS && hopFreq && sampNum >= packetSamples){hopTXfreq();}
 
     //event
-    dataPacket[pktPosn] = radio.event; pktPosn++;//7
+    dataPacket[pktPosn] = radio.event; pktPosn++;//1
     //time
     uint32_t radioTime = radio.packetnum * 200000 + (sampNum-1) * 50000;
     int32_t timeDiff = (int32_t)radioTime - (int32_t)fltTime.timeCurrent;
     if(abs(timeDiff) < 50000){radio.fltTime = (int16_t)(radioTime/10000);}
     else{radio.fltTime = (uint16_t)(fltTime.timeCurrent/10000);}
-    dataPacket[pktPosn] = lowByte(radio.fltTime);pktPosn++;//8
-    dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//9    
+    dataPacket[pktPosn] = lowByte(radio.fltTime);pktPosn++;//2
+    dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//3 
     //velocity
-    dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//10
-    dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//11
+    dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//4
+    dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//5
     //altitude
-    dataPacket[pktPosn] = lowByte(radio.alt);pktPosn++;//12
-    dataPacket[pktPosn] = highByte(radio.alt);pktPosn++;//13
+    dataPacket[pktPosn] = lowByte(radio.alt);pktPosn++;//6
+    dataPacket[pktPosn] = highByte(radio.alt);pktPosn++;//7
     //Roll data
     radio.roll = rollZ;
-    dataPacket[pktPosn] = lowByte(radio.roll);pktPosn++;//14
-    dataPacket[pktPosn] = highByte(radio.roll);pktPosn++;//15
+    dataPacket[pktPosn] = lowByte(radio.roll);pktPosn++;//8
+    dataPacket[pktPosn] = highByte(radio.roll);pktPosn++;//9
     //Off Vertical data
     radio.offVert = offVert;
-    dataPacket[pktPosn] = lowByte(radio.offVert);pktPosn++;//16
-    dataPacket[pktPosn] = highByte(radio.offVert);pktPosn++;//17
+    dataPacket[pktPosn] = lowByte(radio.offVert);pktPosn++;//10
+    dataPacket[pktPosn] = highByte(radio.offVert);pktPosn++;//11
     //Acceleration
     radio.accel = (int16_t)(accelNow * 33.41406087); //33.41406087 = 32768 / 9.80665 / 100
-    dataPacket[pktPosn] = lowByte(radio.accel);pktPosn++;//18
-    dataPacket[pktPosn] = highByte(radio.accel);pktPosn++;//19
+    dataPacket[pktPosn] = lowByte(radio.accel);pktPosn++;//12
+    dataPacket[pktPosn] = highByte(radio.accel);pktPosn++;//13
       
     //GPS & packet data collected once per packet
     if(sampNum >= packetSamples){
 
       //update packet number
       radio.packetnum++;
-      dataPacket[pktPosn] = lowByte(radio.packetnum); pktPosn++;//59
-      dataPacket[pktPosn] = highByte(radio.packetnum); pktPosn++;//60
+      dataPacket[pktPosn] = lowByte(radio.packetnum); pktPosn++;//53
+      dataPacket[pktPosn] = highByte(radio.packetnum); pktPosn++;//54
 
       //add next set of channels if FHSS
       if(settings.FHSS){
@@ -270,15 +271,15 @@ void radioSendPacket(){
         dataPacket[pktPosn]=nextChnl2; pktPosn++;}
       
       //GPS Data
-      if(gpsTransmit){
-        gpsTransmit=false;
-        dataPacket[pktPosn] = lowByte(radio.GPSalt);pktPosn++;//61
-        dataPacket[pktPosn] = highByte(radio.GPSalt);pktPosn++;//62
-        for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlatitude.GPSbyte[i];pktPosn++;}//66
-        for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i];pktPosn++;}}//70
+      dataPacket[pktPosn] = lowByte(radio.GPSalt);pktPosn++;//55
+      dataPacket[pktPosn] = highByte(radio.GPSalt);pktPosn++;//56
+      floatUnion.val = GPS.location.lat();
+      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i];pktPosn++;}//60
+      floatUnion.val = GPS.location.lng();
+      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i];pktPosn++;}//64
             
       //add in the callsign if needed
-      if(radio.pktCallsign){for(uint8_t i = 0; i++;i<6){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
+      if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}//70
 
       //send packet
       if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
@@ -318,18 +319,18 @@ void radioSendPacket(){
       dataPacket[pktPosn]=highByte(radio.maxG); pktPosn++;//13 bytes
       dataPacket[pktPosn]=lowByte(radio.maxGPSalt); pktPosn++;//14 bytes
       dataPacket[pktPosn]=highByte(radio.maxGPSalt); pktPosn++;//15 bytes
-      dataPacket[pktPosn]=gpsFix; pktPosn++;//16 bytes
+      dataPacket[pktPosn]=gnss.fix; pktPosn++;//16 bytes
       dataPacket[pktPosn]=lowByte(radio.GPSalt); pktPosn++;//17 bytes
       dataPacket[pktPosn]=highByte(radio.GPSalt); pktPosn++;//18 bytes
-      dataPacket[pktPosn]=gpsLat; pktPosn++;//19 bytes
-      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlatitude.GPSbyte[i]; pktPosn++;}//23 bytes
-      dataPacket[pktPosn]=gpsLon;pktPosn++;//24 bytes
-      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=GPSlongitude.GPSbyte[i];pktPosn++;}//28 bytes
+      floatUnion.val = GPS.location.lat();
+      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i]; pktPosn++;}//22 bytes
+      floatUnion.val = GPS.location.lng();
+      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i];pktPosn++;}//26 bytes
       if(settings.FHSS){
         dataPacket[pktPosn]=hailChnl; pktPosn++;
         dataPacket[pktPosn]=hailChnl; pktPosn++;}
       //add in the callsign if needed
-      if(radio.pktCallsign){for(uint8_t i = 0; i++;i<6){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
+      if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
       //send the packet
       if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
       TXstartTime = micros();

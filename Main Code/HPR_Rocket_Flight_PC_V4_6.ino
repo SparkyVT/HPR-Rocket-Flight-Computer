@@ -1,7 +1,7 @@
 //High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 9697 lines of code = 2472 MainFile + 354 Bus_Mgmt + 2282 SensorDrivers + 900 Calibration + 625 SpeedTrig + 471 Inflight_Recover + 683 SD + 554 Rotation + 726 Telemetry + 327 Event_Logic + 303 GPSconfig      
+//Code Line Count: 9644 lines of code = 2430 MainFile + 354 Bus_Mgmt + 2282 SensorDrivers + 900 Calibration + 625 SpeedTrig + 471 Inflight_Recover + 683 SD + 554 Rotation + 726 Telemetry + 327 Event_Logic + 292 GPSconfig      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features
@@ -72,8 +72,8 @@
 //V4_5_2 finishes the draft RTB code, adds a canard calibration flight mode, fixed GPS bug with NEO-M8N
 //V4_5_3 uses the RFM96W in both 70cm and 900MHz mode based on user frequency input for 3 options: (1)900MHz FHSS up to 20dB, (2)900MHz dedicated frequency at 2dB, (3)70cm dedicated frequecy up to 20dB
 //V4_5_4 fixes a bug in the sensor timing that reduced the effective data capture rate
-//V4_5_5 removes launch detection user options since the algorithm is proven reliable, fixes a timing bug with the barometers, makes GPS code more portable, adds LPS25H support, fixes bugs with LSM6DS33 and LIS3MDL, fixes SD card pre-processor bugs, added support for Adafruit Ultimate GPS
-//V4_6_0 improves portability of quaternion rotation code, added MPU6050 support, fixed calibration routine bug
+//V4_5_5 removes launch detection user options since the algorithm is proven reliable, fixes a timing bug with the barometers, makes GPS configuration code more portable, adds LPS25H support, fixes bugs with LSM6DS33 and LIS3MDL, fixes SD card pre-processor bugs, added support for Adafruit Ultimate GPS
+//V4_6_0 improves portability of quaternion rotation code, added MPU6050 support, fixed calibration routine bug, cleaned up some of the GPS data processing, corrected major bug in high-G moving average, fixed a bug with the UBLOX power save mode
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
@@ -357,7 +357,7 @@ struct{
 //-----------------------------------------
 //Sensor variables
 //-----------------------------------------
-byte rawData[12];
+byte rawData[14];
 typedef struct{
   byte addr;
   int16_t ADCmax;
@@ -428,7 +428,7 @@ struct {
   char pyro2Func = 'N';
   char pyro1Func = 'N';
   //--------telemetry settings----------------
-  char callSign[6]= ""; 
+  char callSign[7]= ""; 
   bool TXenable = true;//false turns off radio transmissions
   byte TXpwr = 13;
   float TXfreq = 433.250;
@@ -515,43 +515,36 @@ uint8_t pktPosn=0;
 uint16_t sampNum = 0;
 uint8_t packetSamples = 4;
 bool gpsTransmit = false;
-unsigned long RIpreLiftoff = 1000000UL;
-unsigned long RIinflight = 50000UL;
-unsigned long RIpostFlight = 10000000UL;
-unsigned long RIsyncOffset = 0UL;
-unsigned long radioInterval = 0UL;;
 bool TX = false;
 bool SDradioTX = false;
 uint8_t radioMode;
 volatile boolean clearTX = false;
 volatile boolean sendPkt = false;
 volatile boolean syncFlag = false;
+struct {
+  uint32_t preLiftoff = 1000000UL;
+  uint32_t inflight = 50000UL;
+  uint32_t postFlight = 10000000UL; 
+} pktInterval;
 struct{
   int16_t packetnum = 0;
   uint8_t event = 0;
   uint16_t fltTime = 0;
   int16_t baseAlt = 0;
-  int16_t alt;
-  int16_t accel;
+  int16_t alt = 0;
+  int16_t accel = 0;
   int16_t vel = 0;
-  int16_t roll;
-  int16_t offVert;
-  int16_t maxAlt;
-  int16_t maxVel;
-  int16_t maxGPSalt;
-  int16_t maxG;
-  int16_t GPSalt;
+  int16_t roll = 0;
+  int16_t offVert = 0;
+  int16_t maxAlt = 0;
+  int16_t maxVel = 0;
+  int16_t maxGPSalt = 0;
+  int16_t maxG = 0;
+  int16_t GPSalt = 0;
   int16_t satNum = 0;
   bool pktCallsign = false;
+  
 } radio;
-union {
-   float GPScoord; 
-   uint8_t GPSbyte[4];
-} GPSlongitude;
-union {
-   float GPScoord; 
-   uint8_t GPSbyte[4];
-} GPSlatitude;
 //-----------------------------------------
 //flight events
 //-----------------------------------------
@@ -695,6 +688,10 @@ struct{
 //-----------------------------------------
 uint8_t baroTouchdown = 0;
 uint8_t touchdownTrigger = 5;
+float pressureAvg = 0;
+float pressureAvg5[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+float pressureSum = 0.0;
+uint8_t pressurePosn = 0;
 //-----------------------------------------
 //Magnetometer Variables
 //-----------------------------------------
@@ -784,61 +781,43 @@ const char cs = ',';
 //-----------------------------------------
 //GPS Variables
 //-----------------------------------------
-float maxGPSalt = 0.0;
-float baseGPSalt = 0.0;
-float GPSavgAlt[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-float GPSaltBuff[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-uint32_t GPStimeBuff[5] = {0UL, 0UL, 0UL, 0UL, 0UL};
-float GPSaltSum = 0.0;
-uint8_t GPSposn = 0;
-uint8_t GPSaltPosn = 0;
-bool GPSnewData = false;
-bool gpsWrite = false;
-char liftoffLat = 'N';
-char liftoffLon = 'W';
-float liftoffLatitude = 0.0;
-float liftoffLongitude = 0.0;
-float liftoffLatDec;
-float liftoffLonDec;
-int liftoffYear = 0;
-uint8_t liftoffMonth = 0;
-uint8_t liftoffDay = 0;
-uint8_t liftoffHour = 0;
-uint8_t liftoffMin = 0;
-float liftoffSec = 0.0;
-long liftoffMili = 0L;
-char touchdownLat = 'N';
-char touchdownLon = 'W';
-float touchdownLatitude = 0.0;
-float touchdownLongitude = 0.0;
-float touchdownAlt = 0;
-uint8_t touchdownHour = 0;
-uint8_t touchdownMin = 0;
-float touchdownSec = 0.0;
-long touchdownMili = 0L;
-uint8_t gpsFix = 0;
-float gpsFloat;
-float gpsInt;
-uint8_t gpsLat;
-uint8_t gpsLon;
-float gpsLatitude;
-float gpsLongitude;
-float gpsLatitudeDec;
-float gpsLongitudeDec;
-float GPSvel = 0.0F;
-bool configGPSdefaults = true;
-bool configGPSflight = false;
-unsigned long timeLastGPS = 0UL;
-uint16_t fixCount = 0;
-bool GPSpsm = false;
-char serialBuffer[512];
-uint16_t serialPosn = 0;
-bool msgRX = false;
-bool GPSbufferFull = false;
-float pressureAvg = 0;
-float pressureAvg5[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-float pressureSum = 0.0;
-uint8_t pressurePosn = 0;
+typedef struct GNSSeventData{
+  float latitude;
+  float longitude;
+  float alt = 0.0;
+  int year;
+  uint8_t month;
+  uint8_t day;
+  uint8_t hour;
+  uint8_t minute;
+  uint8_t second;
+  uint8_t mili;
+} eventData;
+struct {
+  float alt = 0.0;
+  float maxAlt = 0.0;
+  float baseAlt = 0.0;
+  float vel = 0.0F;
+  float latitude;
+  float longitude;
+  float avgAlt[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+  float altBuff[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+  uint32_t timeBuff[5] = {0UL, 0UL, 0UL, 0UL, 0UL};
+  bool bufferFull = false;
+  float altSum = 0.0;
+  uint8_t bufferPosn = 0;
+  uint8_t altPosn = 0;
+  eventData liftoff;
+  eventData apogee;
+  eventData touchdown;
+  uint8_t fix = 0;
+  uint16_t fixCount = 0;
+  unsigned long timeLastFix= 0UL;
+  bool SDwrite = false;
+  bool configDefaults = false;
+  bool configFlight = false;
+  bool configPwrSave = false;
+}gnss;
 //-----------------------------------------
 //EEPROM useful unions
 //-----------------------------------------
@@ -1235,11 +1214,10 @@ void setup(void) {
   if(settings.testMode && settings.silentMode){pins.beep = pins.nullCont; Serial.println(F("Silent Mode Confirmed"));}
 
   //setup the radio
-  radioInterval = RIpreLiftoff;
   if(settings.TXenable){
     //915MHz FHSS
     if (settings.FHSS){
-      RIpreLiftoff = 600000UL;
+      pktInterval.preLiftoff = 600000UL;
       if(settings.testMode){Serial.println("FHSS Active!");}}
     //915MHz dedicated frequency (no FHSS)
     if (settings.TXfreq > 900.000F && !settings.FHSS){
@@ -1488,7 +1466,7 @@ void setup(void) {
     gTrigger = (int)(1.5*g); //1.5G trigger
     baro.maxAlt = 11101/unitConvert;
     maxVelocity = 202/unitConvert;
-    RIpostFlight = 1000000UL;
+    pktInterval.postFlight = 1000000UL;
     thresholdVel = 15.5F;
     settings.magSwitchEnable = false;}
 
@@ -1772,7 +1750,7 @@ void setup(void) {
     delay(3000);}
 
   //initialize the radio timing
-  radioTimer.begin(timerSendPkt, RIpreLiftoff);
+  radioTimer.begin(timerSendPkt, pktInterval.preLiftoff);
   if(settings.fltProfile == 'B'){radio.event = Booster_Preflight;}
   
 }//end setup
@@ -1849,15 +1827,15 @@ void loop(void){
     fltTime.liftoff = fltTime.tmClock;
     radio.event = Liftoff;
     radio.alt = 0;
-    radioTimer.begin(timerSendPkt, RIinflight);
+    radioTimer.begin(timerSendPkt, pktInterval.inflight);
     noInterrupts();
     sendPkt = true;
     interrupts();
-    liftoffHour = GPS.time.hour();
-    liftoffMin = GPS.time.minute();
-    liftoffSec = GPS.time.second();
-    liftoffMili = GPS.time.centisecond();
-    maxGPSalt = 0.0F;
+    gnss.liftoff.hour = GPS.time.hour();
+    gnss.liftoff.minute = GPS.time.minute();
+    gnss.liftoff.second = GPS.time.second();
+    gnss.liftoff.mili = GPS.time.centisecond();
+    gnss.maxAlt = 0.0F;
     //store base alt in EEPROM
     floatUnion.val = baro.baseAlt;
     if(settings.inflightRecover != 0){
@@ -1888,9 +1866,9 @@ void loop(void){
 
     //Compute the current g-load. Use the high-G accelerometer if the IMU is pegged and a high-G accelerometer is present
     if(abs(accel.z) < accel.ADCmax){accelNow = (float)(accel.z - g) * accel.gainZ;}
-    else if(!sensors.status_NoHighGAccel){accelNow = (highGsmooth - (float)high1G) *  highG.gainZ;}
+    else if(!sensors.status_NoHighGAccel){accelNow = (highG.z - (float)high1G) *  highG.gainZ;}
     else{accelNow = (float)(accel.z - g) * accel.gainZ;}
-    
+
     //Integrate velocity and altitude data prior to apogee
     if(!events.apogeeFire){
 
@@ -1906,7 +1884,7 @@ void loop(void){
       
       //calculate the new sensor fusion based velocity
       fusionVel += accelNow * (float)fltTime.dt * mlnth;
-      if(baro.newSamp && baro.Vel < 300 && baro.Vel < baro.maxVel && accelNow < 0.2F && fusionVel < 300.0F && baro.Alt < 9000){
+      if(baro.newSamp && baro.Vel < 300 && baro.Vel < baro.maxVel && accelNow < 0.2F && fusionVel < 300.0F && baro.Alt < 13000){
         fusionVel *= 0.99F;
         fusionVel += 0.01F * baro.Vel;}
       radio.vel = (int16_t)fusionVel;
@@ -1963,7 +1941,7 @@ void loop(void){
       lastVolt = fltTime.timeCurrent;}
         
     //Write the data to a string if we have a new sample
-    if(accel.newSamp || gyro.newSamp || highG.newSamp || mag.newSamp || baro.newSamp || baro.newTemp || gpsWrite || writeVolt || SDradioTX){
+    if(accel.newSamp || gyro.newSamp || highG.newSamp || mag.newSamp || baro.newSamp || baro.newTemp || gnss.SDwrite || writeVolt || SDradioTX){
       writeSDflightData();}
         
     //Close file at Touchdown or Timeout
@@ -1978,10 +1956,10 @@ void loop(void){
       digitalWrite(pyro4.firePin, LOW);
       //if FHSS, start the postFlight synch packet timer
       if(settings.FHSS){
-        syncTimer.begin(timerSyncPkt, RIpostFlight);
+        syncTimer.begin(timerSyncPkt, pktInterval.postFlight);
         delayMicroseconds(300000UL);}
       //Set the radio transmitter to post-flight data rate
-      radioTimer.begin(timerSendPkt, RIpostFlight);
+      radioTimer.begin(timerSendPkt, pktInterval.postFlight);
       //Read max altitude into its beep array
       parseBeep(long(baro.maxAlt*unitConvert), maxAltDigits, 6);
       //Read max velocity into its beep array
@@ -1999,8 +1977,8 @@ void loop(void){
       //set the final radio variables
       radio.maxAlt = (int16_t)baro.maxAlt;
       radio.maxVel = (int16_t)maxVelocity;
-      radio.maxG = (int)((maxG / 0.980665));
-      radio.maxGPSalt = (int)maxGPSalt;
+      radio.maxG = (int16_t)((maxG / 0.980665));
+      radio.maxGPSalt = (int16_t)gnss.maxAlt;
       //write out the SD card timing variables
       if(settings.testMode){
         Serial.print(F("Max SD Write Time: "));Serial.println(maxWriteTime);
@@ -2124,6 +2102,7 @@ void loop(void){
     timeLastBeep = fltTime.tmClock;}
     
   //GPS Code
+  //restore defaults if we go a long time without a lock
   /*if(!configGPSdefaults && micros() - timeLastGPS > 10000000UL){
     restoreGPSdefaults(settings.testMode);
     configGPSdefaults = true; 
@@ -2131,8 +2110,11 @@ void loop(void){
     fixCount = 0;
     configGPSflight = false;}*/
   //5 seconds after touchdown put GPS into Power Save Mode (PSM)
-  if( !GPSpsm && (events.touchdown || events.timeOut) && micros() - fltTime.touchdown > 5000000UL){GPSpowerSaveMode(settings.testMode, sensors.GPS);GPSpsm = true;}
+  if(!gnss.configPwrSave && (events.touchdown || events.timeOut) && micros() - fltTime.touchdown > 5000000UL){GPSpowerSaveMode(settings.testMode, sensors.GPS);gnss.configPwrSave = true;}
   //Read from serial
+  char serialBuffer[512];
+  uint16_t serialPosn = 0;
+  bool msgRX = false;
   if(HWSERIAL->available() > 0){msgRX = true;}
   while(HWSERIAL->available() > 0){
     char c = HWSERIAL->read();
@@ -2140,46 +2122,44 @@ void loop(void){
     if(settings.GPSlog && !fileClose){updateGPSlogSD(c);}
     if(settings.testMode && GPSecho &&!events.liftoff){serialBuffer[serialPosn] = c; serialPosn++;}}
   if(settings.testMode && GPSecho && !events.liftoff && msgRX){serialBuffer[serialPosn] = '\0'; Serial.print(serialBuffer); msgRX = false; serialPosn = 0;}
-
   radio.satNum = GPS.satellites.value();
-  if(micros() - timeLastGPS > 2000000UL && !events.postFlight){gpsFix = 0;}
+  if(micros() - gnss.timeLastFix > 2000000UL && !events.postFlight){gnss.fix = 0;}
+  //process new GNSS position update
   if (GPS.location.isUpdated() || GPS.altitude.isUpdated()) {
-        timeLastGPS = micros();
-        fixCount++;
-        gpsFix = 1;
-        if(!configGPSflight && fixCount > 40){
-          configGPS(settings.testMode, sensors.GPS, settings.flyBack);
-          gpsFix = 0;
-          configGPSflight = true; 
-          configGPSdefaults = false;}
-        gpsWrite = true;
-        gpsTransmit = true;
-        convertLocation();
-        radio.GPSalt = (int16_t)(GPS.altitude.meters() - baro.baseAlt);
-        GPSlatitude.GPScoord = gpsLatitude;
-        GPSlongitude.GPScoord = gpsLongitude;
-        gpsLatitudeDec = GPS.location.lat();
-        gpsLongitudeDec = GPS.location.lng();
-        //capture GPS velocity
-        GPSaltPosn++;
-        if(GPSaltPosn >= (byte)(sizeof(GPSaltBuff)/sizeof(GPSaltBuff[0]))){GPSaltPosn = 0;}
-        GPSvel = (GPS.altitude.meters() - GPSaltBuff[GPSaltPosn])/((micros() - GPStimeBuff[GPSaltPosn])*mlnth);
-        GPSaltBuff[GPSaltPosn] = GPS.altitude.meters();
-        GPStimeBuff[GPSaltPosn] = micros();
-        //update sensor fusion velocity
-        if(events.apogee){fusionVel = 0.9 * GPSvel + 0.1 * baro.Vel;}
+        gnss.timeLastFix = micros();
+        gnss.fixCount++;
+        gnss.fix = 1;
+        gnss.SDwrite = true;
+        gnss.alt = (GPS.altitude.meters() - baro.baseAlt);
+        radio.GPSalt = (int16_t)gnss.alt;
         //capture max GPS alt
-        if(GPS.altitude.meters() - baro.baseAlt > maxGPSalt){maxGPSalt = GPS.altitude.meters() - baro.baseAlt;}
+        if(radio.GPSalt > gnss.maxAlt){gnss.maxAlt = radio.GPSalt;}
+        gnss.latitude = GPS.location.lat();
+        gnss.longitude = GPS.location.lng();
+        //configure the GPS if the fix is stable
+        if(!gnss.configFlight && gnss.fixCount > 40){
+          configGPS(settings.testMode, sensors.GPS, settings.flyBack);
+          gnss.fix = 0;
+          gnss.configFlight = true; 
+          gnss.configDefaults = false;}
+        //capture GPS vertical descent velocity with a moving average of 5 samples
+        gnss.altPosn++;
+        if(gnss.altPosn >= (byte)(sizeof(gnss.altBuff)/sizeof(gnss.altBuff[0]))){gnss.altPosn = 0;}
+        gnss.vel = (GPS.altitude.meters() - gnss.altBuff[gnss.altPosn])/((micros() - gnss.timeBuff[gnss.altPosn])*mlnth);
+        gnss.altBuff[gnss.altPosn] = GPS.altitude.meters();
+        gnss.timeBuff[gnss.altPosn] = micros();
+        //update sensor fusion velocity if descending
+        if(events.apogee){fusionVel = 0.9 * gnss.vel + 0.1 * baro.Vel;}
         //capture the GPS takeoff position and correct base altitude
         if(events.preLiftoff){
           if(GPS.altitude.meters() != 0){
             //Correct sea level pressure with running average of 5 samples
             //GPS altitude running average
-            GPSposn++;
-            if(GPSposn >= (byte)(sizeof(GPSavgAlt)/sizeof(GPSavgAlt[0]))){GPSposn = 0;GPSbufferFull = true;}
-            GPSaltSum = GPSaltSum + GPS.altitude.meters() - GPSavgAlt[GPSposn];
-            GPSavgAlt[GPSposn] = GPS.altitude.meters();
-            baseGPSalt = GPSaltSum/(float)(sizeof(GPSavgAlt)/sizeof(GPSavgAlt[0]));
+            gnss.bufferPosn++;
+            if(gnss.bufferPosn >= (byte)(sizeof(gnss.avgAlt)/sizeof(gnss.avgAlt[0]))){gnss.bufferPosn = 0;gnss.bufferFull = true;}
+            gnss.altSum = gnss.altSum + GPS.altitude.meters() - gnss.avgAlt[gnss.bufferPosn];
+            gnss.avgAlt[gnss.bufferPosn] = GPS.altitude.meters();
+            gnss.baseAlt = gnss.altSum/(float)(sizeof(gnss.avgAlt)/sizeof(gnss.avgAlt[0]));
             //barometric pressure running average
             pressurePosn++;
             if(pressurePosn >= (byte)(sizeof(pressureAvg5)/sizeof(pressureAvg5[0]))){pressurePosn = 0;}
@@ -2187,23 +2167,17 @@ void loop(void){
             pressureAvg5[pressurePosn] = baro.pressure;
             pressureAvg = pressureSum/(float)(sizeof(pressureAvg5)/sizeof(pressureAvg5[0]));
             //sea level correction
-            if(GPSbufferFull){baro.seaLevelPressure = pressureAvg / powf((44330 - baseGPSalt)/44330, 5.254861);}}
-          liftoffLatDec = GPS.location.lat();
-          liftoffLat=gpsLat;
-          liftoffLatitude=gpsLatitude;
-          liftoffLon=gpsLon;
-          liftoffLonDec = GPS.location.lng();
-          liftoffLongitude=gpsLongitude;
-          liftoffYear = GPS.date.year();
-          liftoffMonth = GPS.date.month();
-          liftoffDay = GPS.date.day();}
+            if(gnss.bufferFull){baro.seaLevelPressure = pressureAvg / powf((44330 - gnss.baseAlt)/44330, 5.254861);}}
+          gnss.liftoff.latitude = GPS.location.lat();
+          gnss.liftoff.longitude = GPS.location.lng();
+          gnss.liftoff.year = GPS.date.year();
+          gnss.liftoff.month = GPS.date.month();
+          gnss.liftoff.day = GPS.date.day();}
         //capture the last GPS position
         if(events.mainDeploy || !events.touchdown || !events.timeOut){
-          touchdownLat=gpsLat;
-          touchdownLatitude=gpsLatitude;
-          touchdownLon=gpsLon;
-          touchdownLongitude=gpsLongitude;
-          touchdownAlt = GPS.altitude.meters();}}
+          gnss.touchdown.latitude = GPS.location.lat();
+          gnss.touchdown.longitude = GPS.location.lng();
+          gnss.touchdown.alt = GPS.altitude.meters();}}
 
 }//end void main loop
   
@@ -2323,22 +2297,6 @@ void pulsePyro(){
     if(pyro4fire){digitalWrite(pyro4.firePin, LOW); pyro4fire = false;}
     else{digitalWrite(pyro4.firePin, HIGH); pyro4fire = true;}}
 }
-
-void convertLocation(){
-  //Convert back to NMEA format as required by the ground reciever
-  //Latitude
-  gpsInt = GPS.location.rawLat().deg;
-  gpsFloat = GPS.location.lat();
-  gpsLat = 'N';
-  if(GPS.location.rawLat().negative){gpsFloat*=-1;gpsLat = 'S';}
-  gpsLatitude = gpsInt*100+ 60*(gpsFloat-gpsInt);
-
-  //Longitude
-  gpsInt = GPS.location.rawLng().deg;
-  gpsFloat = GPS.location.lng();
-  gpsLon = 'E';
-  if(GPS.location.rawLng().negative){gpsFloat*=-1;gpsLon = 'W';}
-  gpsLongitude = gpsInt*100+ 60*(gpsFloat-gpsInt);}
 
 void readEEPROMsettings(){
 

@@ -672,7 +672,7 @@ bool beginLSM9DS1_AG() {
 
   //Set Accelerometer 16G Range, 952 Hz ODR
   write8(LSM9DS1_REGISTER_CTRL_REG6_XL, 0b11001000);
-  accel.ADCmax = (int16_t)(0.98 * 32768);
+  accel.ADCmax = (int16_t)(0.9 * 32768);
   accel.gainX = accel.gainY = accel.gainZ = 0.000735;
 
   //Set Gyroscope 2000dps Range, 952 Hz ODR
@@ -917,7 +917,7 @@ bool beginMPU6050(){
 
   return true;}
 
-bool getMPU6050(){
+void getMPU6050(){
 
   //the MPU6050 accel and gyro output registers are not sequential, so we need to draw 14 bytes
   #define MPU6050_REGISTER_OUTX_H_G (0x3B)
@@ -929,13 +929,12 @@ bool getMPU6050(){
   burstRead(MPU6050_REGISTER_OUTX_H_G, 14);
 
   //assemble the data
-  accel.rawX   = (int16_t)(rawData[1] | (rawData[0] << 8));
-  accel.rawY   = (int16_t)(rawData[3] | (rawData[2] << 8));
-  accel.rawZ   = (int16_t)(rawData[5] | (rawData[4] << 8));
-  gyro.rawX  = (int16_t)(rawData[9] | (rawData[8] << 8));
-  gyro.rawY  = (int16_t)(rawData[11] | (rawData[12] << 8));
-  gyro.rawZ  = (int16_t)(rawData[13] | (rawData[14] << 8));
-}
+  accel.rawX = (int16_t)(rawData[1]  | (rawData[0]  << 8));
+  accel.rawY = (int16_t)(rawData[3]  | (rawData[2]  << 8));
+  accel.rawZ = (int16_t)(rawData[5]  | (rawData[4]  << 8));
+  gyro.rawX  = (int16_t)(rawData[9]  | (rawData[8]  << 8));
+  gyro.rawY  = (int16_t)(rawData[11] | (rawData[10] << 8));
+  gyro.rawZ  = (int16_t)(rawData[13] | (rawData[12] << 8));}
 //***************************************************************************
 //LIS3MDL Magnetometer
 //***************************************************************************
@@ -1163,7 +1162,7 @@ bool beginH3LIS331DL() {
   write8(H3LIS331_REGISTER_CTRL_REG1, 0b00111111);
   
   high1G = 21;
-  highG.gainX = highG.gainY = highG.gainZ = 0.049 * 9.80655;
+  highG.gainX = highG.gainY = highG.gainZ = 0.049 * 9.80665;
   sizeHighGfilter = 15;
   highG.timeBtwnSamp = 1000UL;
 
@@ -2216,7 +2215,7 @@ float ConvertPressMS56XX() {
   int64_t OFF2 = 0;
   int64_t SENS2 = 0;
   uint32_t D1;
-  int32_t p;
+  int32_t p = 0L;
   float pressure;
 
   //-------------------------------------------------------------

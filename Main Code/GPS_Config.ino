@@ -13,7 +13,7 @@
 #include <Adafruit_GPS.h>
 
 //Adafruit GPS setup
-Adafruit_GPS gps(HWSERIAL);
+Adafruit_GPS ultGPS(HWSERIAL);
 
 void restoreGPSdefaults(bool serialOutput){
 
@@ -156,9 +156,9 @@ void configGPS(bool serialOutput, byte gpsVersion, bool VTGoption) {
       HWSERIAL->begin(38400);}}
 
     if(gpsVersion == 4){
-      gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-      gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
-      gps.sendCommand(PMTK_SET_BAUD_57600);}
+      ultGPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+      ultGPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+      ultGPS.sendCommand(PMTK_SET_BAUD_57600);}
   
   }//end configGPS
 
@@ -170,38 +170,27 @@ void GPSpowerSaveMode(bool serialOutput, byte gpsVersion){
     byte gpsSetSuccess = 0;
     if(serialOutput){Serial.println("Configuring u-Blox GPS Power Save mode... ");}
   
-    //Generate the configuration string to config GNSS (GLONASS Off)
-    byte setGNSS[] = {0xB5, 0x62, 0x06, 0x3E, 0x24, 0x00, 0x00, 0x00, 0x16, 0x04, 0x00, 0x08, 0xFF, 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x01, 0x05, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x01, 0x06, 0x04, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0xA5, 0x8E};
+    //Generate the configuration string to enable power save mode (RXM)
+    byte enablePwrSv[] = {0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x01, 0x22, 0x92};
     
-    //Generate the configuration string for Power Save mode with 5 minute updates
-    byte setPwr[] = {0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4F, 0x1F};
-  
-    //Generate configuration string to put reciever into power save mode
-    byte setPwr2[] = {0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x01, 0x22, 0x92}; 
+    //Generate configuration string to put reciever into power save mode (PM2)
+    byte setPwr2[] = {0xB5, 0x62, 0x06, 0x3B, 0x2C, 0x00, 0x01, 0x06, 0x00, 0x00, 0x0E, 0x90, 0x40, 0x01, 0x20, 0x4E, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x4F, 0xC1, 0x03, 0x00, 0x87, 0x02, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x64, 0x40, 0x01, 0x00, 0x67, 0x83}; 
   
     //Generate configuration string to put receiver into 1Hz update mode
     //byte setDataRate1Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};//once per second
     byte setDataRate01Hz[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x10, 0x27, 0x01, 0x00, 0x01, 0x00, 0x4D, 0xDD};//once per 10 seconds
   
-    //Config GNSS
+    //Enable Power Save Mode
     while(gpsSetSuccess < 3) {
-      if(serialOutput){Serial.print("Configuring GNSS for Power Save Mode (GLONASS OFF)... ");}
-      sendUBX(setGNSS, sizeof(setGNSS));
-      gpsSetSuccess += getUBX_ACK(&setGNSS[2]);}
-    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Config GNSS Message Failed!");}
+      if(serialOutput){Serial.print("Enabling Power Save Mode... ");}
+      sendUBX(enablePwrSv, sizeof(enablePwrSv));
+      gpsSetSuccess += getUBX_ACK(&enablePwrSv[2]);}
+    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Enable Power Save Failed!");}
     gpsSetSuccess = 0;
   
-    //Config Power Save
+    //Config Power Save Mode
     while(gpsSetSuccess < 3) {
-      if(serialOutput){Serial.print("Configuring Power Save Mode... ");}
-      sendUBX(setPwr, sizeof(setPwr));
-      gpsSetSuccess += getUBX_ACK(&setPwr[2]);}
-    if (gpsSetSuccess == 3 && serialOutput){Serial.println("Config PSM Message Failed!");}
-    gpsSetSuccess = 0;
-  
-    //Commit PSM
-    while(gpsSetSuccess < 3) {
-      if(serialOutput){Serial.print("Commit Power Save Mode... ");}
+      if(serialOutput){Serial.print("Config Power Save Mode... ");}
       sendUBX(setPwr2, sizeof(setPwr2));
       gpsSetSuccess += getUBX_ACK(&setPwr2[2]);}
     if (gpsSetSuccess == 3 && serialOutput){Serial.println("Commit PSM Message Failed!");}
@@ -216,7 +205,7 @@ void GPSpowerSaveMode(bool serialOutput, byte gpsVersion){
     gpsSetSuccess = 0;}
 
   //Set lower update rate for Adafruit Ultimate GPS
-  if(gpsVersion == 4){gps.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ);}
+  if(gpsVersion == 4){ultGPS.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ);}
   
 }//End PowerSave Mode
 

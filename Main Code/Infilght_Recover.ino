@@ -121,20 +121,17 @@ boolean rapidReset(){
   //read user settings stored in EEPROM
   readEEPROMsettings(); 
 
-  //restart SPI communication
-  SPI.begin();
-
-  //restart hardware serial
-  setHWSERIAL();
-  if(sensors.GPS == 3){HWSERIAL->begin(38400);Serial.println("Starting HWSerial at 38400 baud");}
-  else{HWSERIAL->begin(9600);Serial.println("Starting HWSerial at 9600 baud");}
-
   //Start Sensors
   restartSD();
   beginAccel();
   beginGyro();
   beginHighG();
   beginBaro();
+
+  //restart hardware serial
+  setHWSERIAL();
+  if(sensors.GPS == 3){HWSERIAL->begin(38400);}
+  else{HWSERIAL->begin(9600);}
 
   //set the g-trigger
   gTrigger = 2.5 * g;
@@ -144,9 +141,8 @@ boolean rapidReset(){
     radioBegin(pins.radioRST);
     //Set the radio output power & frequency
     setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
-    if (sensors.radio == 2 && settings.FHSS){settings.TXfreq = 902.300; RIpreLiftoff = 600000UL;}//sync freq
-    setRadioFreq(settings.TXfreq);
-    radioInterval = RIpreLiftoff;}
+    if (sensors.radio == 2 && settings.FHSS){pktInterval.preLiftoff = 600000UL;}//sync freq
+    setRadioFreq(settings.TXfreq);}
   
   //setup the ADC for sampling the battery
   analogReadResolution(16);
@@ -164,12 +160,11 @@ boolean rapidReset(){
   else{
     //Set the radio output power & frequency
     setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
-    if (sensors.radio == 2 && settings.FHSS){settings.TXfreq = 902.300; RIpreLiftoff = 600000UL;}//sync freq
+    if (sensors.radio == 2 && settings.FHSS){pktInterval.preLiftoff = 600000UL;}//sync freq
     setRadioFreq(settings.TXfreq);
     if(settings.testMode){
       Serial.print("Radio Freq: ");Serial.println(settings.TXfreq, 3);
-      Serial.print("Radio Power: ");Serial.println(settings.TXpwr);}
-    radioInterval = RIpreLiftoff;}
+      Serial.print("Radio Power: ");Serial.println(settings.TXpwr);}}
 
   //read the bias from EEPROM  
   calUnion.calByte[0]=EEPROM.read(eeprom.accelBiasX); calUnion.calByte[1]=EEPROM.read(eeprom.accelBiasX+1);

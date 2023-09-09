@@ -286,7 +286,9 @@ void reOpenSD(){
   //outputFile = SD.open(dataString, FILE_WRITE | O_AT_END);
   outputFile = SD.open(fileName, FILE_WRITE);}
 
-void syncSD(){outputFile.flush();}
+void syncSD(){
+  outputFile.flush();
+  if(settings.GPSlog){gpsFile.flush();}}
 
 void readFlightSettingsSD(){
   if(settings.testMode){Serial.println(F("Reading User Settings from SD Card"));}
@@ -360,7 +362,7 @@ void writeSDflightData(){
     writeBoolData(baro.newSamp);
     writeBoolData(baro.newTemp);
     writeBoolData(SDradioTX);
-    writeBoolData(gpsWrite);
+    writeBoolData(gnss.SDwrite);
     writeBoolData(writeVolt);
     dataString[strPosn] = cs;strPosn++;
     writeULongData(sampleTime);
@@ -443,16 +445,14 @@ void writeSDflightData(){
     mag.newSamp = false;}
   else{dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;}
   //GPS Data
-  if(gpsWrite){
-    dataString[strPosn]=gpsLat;strPosn++;
-    writeFloatData(gpsLatitude,6);
-    dataString[strPosn]=gpsLon;strPosn++;
-    writeFloatData(gpsLongitude,6);
+  if(gnss.SDwrite){
+    writeFloatData(gnss.latitude,6);
+    writeFloatData(gnss.longitude,6);
     writeFloatData((float)GPS.speed.mph(),2);
-    writeFloatData(((float)GPS.altitude.meters()-baro.baseAlt),2);
+    writeFloatData(gnss.alt,2);
     writeFloatData((float)GPS.course.deg(),2);
     writeIntData(radio.satNum);
-    gpsWrite=false;}
+    gnss.SDwrite=false;}
   else{
     dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;
     dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;dataString[strPosn]=cs;strPosn++;}
@@ -476,7 +476,7 @@ void writeSDfooter(){
   //Print the initial conditions
   outputFile.println(F("Max Baro Alt,Max GPS Alt,Max Speed,Max Gs,baseAlt,padTime,initial Y ang,initial X ang,accelX0,accelY0,accelZ0,highGz0,magX0,magY0,magZ0,gyroBiasX,gyroBiasY,gyroBiasZ,accelBiasX,accelBiasY,accelBiasZ,highGbiasX,highGbiasY,highGbiasZ,magBiasX,magBiasY,magBiasZ,baroPressureOffset,baroTempOffset"));
   writeULongData((unsigned long)(baro.maxAlt*unitConvert));
-  writeULongData((unsigned long)(maxGPSalt*unitConvert));
+  writeULongData((unsigned long)(gnss.maxAlt*unitConvert));
   writeULongData((unsigned long)(maxVelocity*unitConvert));
   writeFloatData(maxG/9.80665, 2);
   writeFloatData(baro.baseAlt, 2);
@@ -514,13 +514,13 @@ void writeSDfooter(){
   strPosn = 0;
   outputFile.println(F("launch date, UTC time, launch altitude, launch latitude, launch longitude"));
   //Write out the GPS liftoff date
-  outputFile.print(liftoffDay);outputFile.print("/");outputFile.print(liftoffMonth);outputFile.print("/");outputFile.print(liftoffYear);outputFile.print(",");
+  outputFile.print(gnss.liftoff.day);outputFile.print("/");outputFile.print(gnss.liftoff.month);outputFile.print("/");outputFile.print(gnss.liftoff.year);outputFile.print(",");
   //Write out the GPS liftoff time
-  outputFile.print(liftoffHour);outputFile.print(":");outputFile.print(liftoffMin);outputFile.print(":");outputFile.print((int)liftoffSec);outputFile.print(",");
+  outputFile.print(gnss.liftoff.hour);outputFile.print(":");outputFile.print(gnss.liftoff.minute);outputFile.print(":");outputFile.print((int)gnss.liftoff.second);outputFile.print(",");
   //Write out GPS launch location
-  writeFloatData(baseGPSalt,2);
-  dataString[strPosn]=liftoffLat; strPosn++; writeFloatData2(liftoffLatitude,6);
-  dataString[strPosn]=liftoffLon; strPosn++; writeFloatData2(liftoffLongitude,6);
+  writeFloatData(gnss.baseAlt,2);
+  writeFloatData2(gnss.liftoff.latitude,6);
+  writeFloatData2(gnss.liftoff.longitude,6);
   //end of sample - carriage return, newline, and null value
   dataString[strPosn] = '\r';strPosn++;
   dataString[strPosn] = '\n';strPosn++;
@@ -531,12 +531,12 @@ void writeSDfooter(){
   strPosn = 0;
   outputFile.println(F("landing date, UTC time, landing altitude, landing latitude, landing longitude"));
   //Write out the GPS landing date
-  outputFile.print(liftoffDay);outputFile.print("/");outputFile.print(liftoffMonth);outputFile.print("/");outputFile.print(liftoffYear);outputFile.print(",");
+  outputFile.print(gnss.liftoff.day);outputFile.print("/");outputFile.print(gnss.liftoff.month);outputFile.print("/");outputFile.print(gnss.liftoff.year);outputFile.print(",");
   //Write out the GPS landing time
-  outputFile.print(touchdownHour);outputFile.print(":");outputFile.print(touchdownMin);outputFile.print(":");outputFile.print((int)touchdownSec);outputFile.print(",");
-  writeFloatData(touchdownAlt,2);
-  dataString[strPosn]=touchdownLat; strPosn++; writeFloatData2(touchdownLatitude,6);
-  dataString[strPosn]=touchdownLon; strPosn++; writeFloatData2(touchdownLongitude,6);
+  outputFile.print(gnss.touchdown.hour);outputFile.print(":");outputFile.print(gnss.touchdown.minute);outputFile.print(":");outputFile.print((int)gnss.touchdown.second);outputFile.print(",");
+  writeFloatData(gnss.touchdown.alt,2);
+  writeFloatData2(gnss.touchdown.latitude,6);
+  writeFloatData2(gnss.touchdown.longitude,6);
   //end of sample - carriage return, newline, and null value
   dataString[strPosn] = '\r'; strPosn++;
   dataString[strPosn] = '\n'; strPosn++;

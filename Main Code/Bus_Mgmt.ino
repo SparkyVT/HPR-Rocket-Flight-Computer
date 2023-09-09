@@ -283,8 +283,6 @@ void burstRead(uint8_t reg, uint8_t bytes) {
     activeBus->spi->endTransaction();}}
 
 void write8(uint8_t reg, uint8_t val) {
-
-  uint8_t readVal;
   
   //I2C Write
   if(activeBus->type == 'I'){

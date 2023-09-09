@@ -64,18 +64,18 @@ void accelCalibrate(){
     if(micros() - accel.timeLastSamp > accel.timeBtwnSamp){
       getAccel();
       accel.timeLastSamp = micros();
-      accel.sumX0 += accel.x;
-      accel.sumY0 += accel.y;
-      accel.sumZ0 += accel.z;
+      accel.sumX0 += accel.rawX;
+      accel.sumY0 += accel.rawY;
+      accel.sumZ0 += accel.rawZ;
       accelSamps++;
       samplePrint = true;}
     //high-G accelerometer
     if(sensors.highG != 0 && micros() - highG.timeLastSamp > highG.timeBtwnSamp){
       getHighG();
       highG.timeLastSamp = micros();
-      highG.sumX0 += highG.x;
-      highG.sumY0 += highG.y;
-      highG.sumZ0 += highG.z;
+      highG.sumX0 += highG.rawX;
+      highG.sumY0 += highG.rawY;
+      highG.sumZ0 += highG.rawZ;
       highGsamps++;}
 
     if(accelSamps%100 == 0 && samplePrint){
