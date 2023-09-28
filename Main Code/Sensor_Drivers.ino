@@ -672,7 +672,7 @@ bool beginLSM9DS1_AG() {
 
   //Set Accelerometer 16G Range, 952 Hz ODR
   write8(LSM9DS1_REGISTER_CTRL_REG6_XL, 0b11001000);
-  accel.ADCmax = (int16_t)(0.9 * 32768);
+  accel.ADCmax = (int16_t)(0.95 * 32768);
   accel.gainX = accel.gainY = accel.gainZ = 0.000735;
 
   //Set Gyroscope 2000dps Range, 952 Hz ODR

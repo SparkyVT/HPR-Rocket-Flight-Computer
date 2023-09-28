@@ -1884,7 +1884,10 @@ void loop(void){
       
       //calculate the new sensor fusion based velocity
       fusionVel += accelNow * (float)fltTime.dt * mlnth;
-      if(baro.newSamp && baro.Vel < 300 && baro.Vel < baro.maxVel && accelNow < 0.2F && fusionVel < 300.0F && baro.Alt < 13000){
+      //if we have a barometric update and its within acceptable flight parameters, then update the fusion algorithms
+      bool updateFusionBaro = false;
+      if(baro.newSamp && baro.Vel < 300 && baro.Vel < baro.maxVel && accelNow < 0.2F && fusionVel < 300.0F && baro.Alt < 13000){updateFusionBaro = true;}
+      if(updateFusionBaro){
         fusionVel *= 0.99F;
         fusionVel += 0.01F * baro.Vel;}
       radio.vel = (int16_t)fusionVel;
@@ -1894,9 +1897,10 @@ void loop(void){
     
       //calculate the new sensor fusion based altitude
       fusionAlt += fusionVel * (float)fltTime.dt * mlnth;
-      if(baro.newSamp &&  baro.Alt < 9000){
+      if(updateFusionBaro){
         fusionAlt *= 0.95;
-        fusionAlt += 0.05 * baro.Alt;}
+        fusionAlt += 0.05 * baro.Alt;
+        updateFusionBaro = false;}
       if(!altOK && (fusionAlt > settings.altThreshold || settings.testMode)){altOK = true;}
       radio.alt = (int16_t)fusionAlt;
 

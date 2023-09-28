@@ -5,6 +5,7 @@
 //This logic is commonly referenced so it is broken out for convenience
 //-----------CHANGE LOG------------
 //17 JUL 21: initial breakout created
+//19 SEP 23: removed accelerometer based apogee detection due to several early deployments.
 //---------------------------------
 
 void checkEvents(){
@@ -247,14 +248,12 @@ void checkEvents(){
         if(settings.inflightRecover != 0 && !settings.testMode){EEPROM.update(eeprom.lastEvent, radio.event);}}}
   }//End Airstart Flight Mode
 
-  //Accelerometer based apogee detection
-  boolean accelApogee = (accelVel < -10) ? true : false;
-  //Barometric based apogee detection: rocket must be below 9000m and barometric velocity < 0 and accelometer velocity < 70 (needed for Mach proofing)
-  boolean baroApogee = (baro.Vel < -10 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 9000) ? true : false;
+  //Barometric based apogee detection: rocket must be below 13000m and barometric velocity < -10 and accelometer velocity < 70 (needed for Mach proofing)
+  bool baroApogee = (baro.Vel < -10 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 13000) ? true : false;
   //Sensor fusion based apogee detection
-  boolean fusionApogee = (fusionVel < 0) ? true : false;
+  bool fusionApogee = (fusionVel < 0) ? true : false;
   //Check for apogee event
-  if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (accelApogee || baroApogee || fusionApogee)) {
+  if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (baroApogee || fusionApogee)) {
     events.apogee = true;
     fltTime.apogee = fltTime.timeCurrent;
     radio.event = Apogee;
