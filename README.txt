@@ -10,7 +10,7 @@ TRA #12111, L3
 This flight computer is designed for rockets 38mm in diameter or greater, and will fit inside a 38mm tube coupler.
 Dimensions are 4.0in x 1.25in x 0.5in, antenna configuration may add more length
 It has similar capability as a TeleMega, but without a smart-phone app or advanced interfaces  
-Flight-tested on multiple M-powered supersonic flights to over 34K feet and Mach 2.3.  
+Flight-tested on multiple M-and-N powered supersonic flights to over 34K feet and Mach 2.3.  
 For large or high-power projects, a commercially avialble backup computer is strongly recommended.  
 
 --------FEATURES----------
