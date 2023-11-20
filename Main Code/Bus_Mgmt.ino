@@ -40,9 +40,9 @@
 //***************************************************************************
 void setHWSERIAL(){
 
-  Serial.print(F("Setting HW Serial"));Serial.print(sensors.gpsBusNum);Serial.print(F("..."));
+  Serial.print(F("Setting HW Serial"));Serial.print(sensors.gnssBusNum);Serial.print(F("..."));
 
-  switch(sensors.gpsBusNum){
+  switch(sensors.gnssBusNum){
 
     case 1: 
       HWSERIAL = &Serial1;

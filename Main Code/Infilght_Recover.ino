@@ -11,7 +11,7 @@
 //5) if the configuration meets restart conditions, set booleans and resume flight
 //----------------------------
 
-boolean rapidReset(){
+bool rapidReset(){
       
   //Read pin settings from EEPROM
   Serial.print(F("Reading EEPROM..."));
@@ -54,14 +54,14 @@ boolean rapidReset(){
   sensors.highG = EEPROM.read(eeprom.highGID);
   sensors.baro = EEPROM.read(eeprom.baroID);
   sensors.radio = EEPROM.read(eeprom.radioID);
-  sensors.GPS = EEPROM.read(eeprom.GPSID);
+  sensors.GNSS = EEPROM.read(eeprom.GPSID);
   sensors.accelBusType = (char)EEPROM.read(eeprom.accelBusType);
   sensors.gyroBusType = (char)EEPROM.read(eeprom.gyroBusType);
   sensors.magBusType = (char)EEPROM.read(eeprom.magBusType);
   sensors.highGBusType = (char)EEPROM.read(eeprom.highGBusType);
   sensors.baroBusType = (char)EEPROM.read(eeprom.baroBusType);
   sensors.sdBusType = (char)EEPROM.read(eeprom.sdBusType);
-  sensors.gpsBusType = (char)EEPROM.read(eeprom.gpsBusType);
+  sensors.gnssBusType = (char)EEPROM.read(eeprom.gpsBusType);
   sensors.radioBusType = (char)EEPROM.read(eeprom.radioBusType);
   sensors.accelBusNum = EEPROM.read(eeprom.accelBusType);
   sensors.gyroBusNum = EEPROM.read(eeprom.gyroBusNum);
@@ -69,7 +69,7 @@ boolean rapidReset(){
   sensors.highGBusNum = EEPROM.read(eeprom.highGBusNum);
   sensors.baroBusNum = EEPROM.read(eeprom.baroBusNum);
   sensors.sdBusNum = EEPROM.read(eeprom.sdBusNum);
-  sensors.gpsBusNum = EEPROM.read(eeprom.gpsBusNum);
+  sensors.gnssBusNum = EEPROM.read(eeprom.gpsBusNum);
   sensors.radioBusNum = EEPROM.read(eeprom.radioBusNum);
   for(byte i = 0; i < sizeof(settings.callSign); i++){settings.callSign[i] = EEPROM.read(eeprom.callSign+i);}
   settings.callSign[sizeof(settings.callSign)-1] = '\0';
@@ -130,7 +130,7 @@ boolean rapidReset(){
 
   //restart hardware serial
   setHWSERIAL();
-  if(sensors.GPS == 3){HWSERIAL->begin(38400);}
+  if(sensors.GNSS == 3){HWSERIAL->begin(38400);}
   else{HWSERIAL->begin(9600);}
 
   //set the g-trigger
@@ -138,7 +138,7 @@ boolean rapidReset(){
 
   //radio setup
   if(settings.TXenable && settings.inflightRecover > 0){
-    radioBegin(pins.radioRST);
+    beginRadio();
     //Set the radio output power & frequency
     setRadioPWR(settings.TXpwr);//23 max setting; 20mW=13dBm, 30mW=15dBm, 50mW=17dBm, 100mW=20dBm
     if (sensors.radio == 2 && settings.FHSS){pktInterval.preLiftoff = 600000UL;}//sync freq
