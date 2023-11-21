@@ -1,22 +1,22 @@
-EEPROM for version 4.6.0
+EEPROM for version 4.7.0
 Place this file into the root folder of the SD card
 At startup the flight computer will read it and update the EEPROM
 Once finished, the flight computer will delete this file
 -----Device ID Code------
-accel = 2
-mag = 2
-gyro = 2
-highG = 2
-baro = 5
+accel = 3
+mag = 3
+gyro = 3
+highG = 0
+baro = 7
 radio = 1
-GPS = 2
+GPS = 4
 SD = 1
 ------Device Buses--------
-accel = I2
-mag = I2
-gyro = I2
+accel = I0
+mag = I0
+gyro = I0
 highG = S0
-baro = I2
+baro = I0
 radio = S0
 GPS = U1
 SD = IO
@@ -38,10 +38,10 @@ pyro1cont = 14
 pyro1fire = 39
 pyro2cont = 16
 pyro2fire = 15
-pyro3cont = 18
+pyro3cont = 26
 pyro3fire = 17
 pyro4cont = 22
-pyro4fire = 19
+pyro4fire = 27
 nullPin = 56
 beepPin = 23
 battVoltPin = 33
@@ -67,22 +67,22 @@ servo 6 pin = 37
 servo 7 pin = 36
 servo 8 pin = 35
 ----Ham Radio Call Sign----
-callSign = ABC123
+callSign = KK4ELF
 -----Magnetometer-----
 calibrateMode = 0
 -----Hardware ID-----
-HWid = 401
+HWid = 331
 ________________________________
 Device ID Legend
 ________________________________
-Accel: LSM303 = 1, LSM9DS1 = 2, LSM6DS33 = 3
-Gyro: L3GD20H = 1, LSM9DS1 = 2, LSM6DS33 = 3
-Mag: LSM303 = 1, LSM9DS1 = 2, LIS3MDL = 3
-highG: none = 0, ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3, MPU6050 = 4
-baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4, MS5611 = 5, MS5607 = 6, LPS25H = 7
-radio: None = 0, RFM96W 433MHz = 1, RFM95W 915MHz = 2
-GPS: NEO-M8N = 1, SAM/MAX/NEO-M8Q/W = 2, NEO-M9N = 3
-SD: SDcard present = 1, no SDcard = 0
+Accel: LSM303 = 1, LSM9DS1 = 2, LSM6DS33 = 3, MPU6050 = 4, External Library = 5
+Gyro: none = 0, L3GD20H = 1, LSM9DS1 = 2, LSM6DS33 = 3, MPU6050 = 4, External Library = 5
+Mag: none = 0, LSM303 = 1, LSM9DS1 = 2, LIS3MDL = 3, External Library = 4
+highG: none = 0, ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3, External Library = 4
+baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4, MS5611 = 5, MS5607 = 6, LPS25H = 7, External Library = 8
+GPS: none = 0, NEO-M8N = 1, SAM/MAX/NEO-M8Q/W = 2, NEO-M9N = 3, Adafruit Ultimate GPS or External Library = 4
+radio: none = 0, Semtech SX1276/7/8/9 = 1, External Library = 2
+SD: none = 0, SDcard present = 1
 ________________________________
 Device Bus Legend
 ________________________________
