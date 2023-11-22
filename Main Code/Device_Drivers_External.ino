@@ -39,12 +39,9 @@ bool beginExternalAccel(){
   //setMySensorRange(16G);
 
   //tell the system the lsb per G from the data sheet
-  float Sensor_G_per_LSB;
+  float Sensor_G_per_LSB = 1;
   //Sensor_G_per_LSB = 0.000732;
   accel.gainX = accel.gainY = accel.gainZ = Sensor_G_per_LSB;
-
-  //set the 1G reference value
-  g = (int16_t)(1/accel.gainX);
 
   //set the output data rate to at least 1000Hz
   //setMySensorODR();
@@ -184,9 +181,6 @@ bool beginExternalHighG(){
   //Sensor_G_per_LSB = 0.049;
   highG.gainX = highG.gainY = highG.gainZ = Sensor_G_per_LSB;
 
-  //determine the 1G reference value
-  high1G = (int16_t)(1/highG.gainX);
-
   //set the size of the moving average filter
   sizeHighGfilter = 15;
 
@@ -194,7 +188,7 @@ bool beginExternalHighG(){
   //setODR(1000HZ);
 
   //tell the system how frequently to sample the sensor (this should be the ODR)
-   uint32_t ODR = 30;
+  uint32_t ODR = 1000;
   highG.timeBtwnSamp = (uint32_t)(1000000/ODR);
 
   return highG_Response;}

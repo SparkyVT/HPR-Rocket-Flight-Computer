@@ -1096,9 +1096,9 @@ void setup(void) {
   //start the radio
   if(settings.TXenable){
     beginRadio();
-    beginTelemetry();}
-  if(sensors.statusRadio){Serial.println(F("RFM96W/95W OK!"));}
-  else{Serial.println(F("RFM96W/95W not found!"));}
+    beginTelemetry();
+    if(!sensors.statusRadio){Serial.println(F("Radio Not Found!"));}}
+  else{Serial.println("Radio Disabled!");}
   
   //safety override of user settings
   if (settings.apogeeDelay > 5000000UL) {settings.apogeeDelay = 5000000UL;} //5s max apogee delay
@@ -1645,11 +1645,6 @@ void setup(void) {
     if(settings.pyro3Func == 'M'){pins.batt = pins.pyro3Cont;}
     voltReading = analogRead(pins.batt);
     voltage = (float)(voltReading)*3.3*2.72*adcConvert;}
-  
-  //Reset the G-trigger
-  if(accel.orientX == 'Z'){gTrigger -= accel.dirX*accel.biasX;}
-  if(accel.orientY == 'Z'){gTrigger -= accel.dirY*accel.biasY;}
-  if(accel.orientZ == 'Z'){gTrigger -= accel.dirZ*accel.biasZ;}
   
   //Read main deploy setting into its beep array
   if(settings.reportStyle == 'P'){

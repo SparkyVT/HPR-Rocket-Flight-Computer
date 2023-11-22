@@ -339,20 +339,14 @@ bool beginLSM9DS1_AG() {
   //Set Accelerometer 16G Range, 952 Hz ODR
   write8(LSM9DS1_REGISTER_CTRL_REG6_XL, 0b11001000);
   accel.ADCmax = (int16_t)(0.9 * 32768);
-  accel.gainX = accel.gainY = accel.gainZ = 0.000735;
+  accel.gainX = accel.gainY = accel.gainZ = 0.000732;
 
   //Set Gyroscope 2000dps Range, 952 Hz ODR
   write8(LSM9DS1_REGISTER_CTRL_REG1_G, 0b11011000);
   gyro.gainX = gyro.gainY = gyro.gainZ = 0.07;
   gyro.ADCmax = 32768;
   //set time between samples
-  accel.timeBtwnSamp = gyro.timeBtwnSamp = 1000UL;
-
-  //set Accelerometer G level and add G to the gains
-  g = int16_t(1 / accel.gainX);
-  accel.gainX *= 9.80665;
-  accel.gainY *= 9.80665;
-  accel.gainZ *= 9.80665;
+  accel.timeBtwnSamp = gyro.timeBtwnSamp = 1050UL;
 
   return true;}
 
@@ -507,12 +501,6 @@ bool beginLSM6DS33() {
   gyro.ADCmax = 32768;
   gyro.timeBtwnSamp = 602;
 
-  //Set G level and add G to the gains
-  g = int16_t(1 / accel.gainX);
-  accel.gainX *= 9.80665;
-  accel.gainY *= 9.80665;
-  accel.gainZ *= 9.80665;
-
   return true;
 }//end begin
 
@@ -581,12 +569,6 @@ bool beginMPU6050(){
   gyro.ADCmax = 32768;
   //set time between samples
   accel.timeBtwnSamp = gyro.timeBtwnSamp = 1000UL;
-
-  //set Accelerometer G level and add G to the gains
-  g = int16_t(1 / accel.gainX);
-  accel.gainX *= 9.80665;
-  accel.gainY *= 9.80665;
-  accel.gainZ *= 9.80665;
 
   return true;}
 
@@ -761,8 +743,7 @@ void getLPS25H() {
 bool beginADXL377() {
   
   //set gain
-  highG.gainX = highG.gainY = highG.gainZ = 9.80655 / 129;
-  high1G = 129;
+  highG.gainX = highG.gainY = highG.gainZ = 1 / 129;
   sizeHighGfilter = 10;
   highG.timeBtwnSamp = 1000UL;
 
@@ -834,8 +815,7 @@ bool beginH3LIS331DL() {
   //Normal Mode (001), 1000 Hz data rate (11), Enable axes (111)
   write8(H3LIS331_REGISTER_CTRL_REG1, 0b00111111);
   
-  high1G = 21;
-  highG.gainX = highG.gainY = highG.gainZ = 0.049 * 9.80665;
+  highG.gainX = highG.gainY = highG.gainZ = 0.049;
   sizeHighGfilter = 15;
   highG.timeBtwnSamp = 1000UL;
 
@@ -905,8 +885,7 @@ bool beginADS1115(char dataRate) {
   #define ADS1115_REG_CONFIG      (0x01)
   write16(ADS1115_REG_CONFIG, ADS1115settings);
 
-  highG.gainX = highG.gainY = highG.gainZ = 0.0183 * 9.80665;
-  high1G = 55;
+  highG.gainX = highG.gainY = highG.gainZ = 0.0183;
   sizeHighGfilter = 10;
   highG.timeBtwnSamp = 1163UL;
 

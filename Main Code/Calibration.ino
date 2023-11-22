@@ -28,7 +28,7 @@ void accelCalibrate(){
 
   digitalWrite(pins.beep, HIGH);
 
-  //reset the pointers and directions
+  //reset the axis pointers
   accel.ptrX = &accel.rawX;
   accel.ptrY = &accel.rawY;
   accel.ptrZ = &accel.rawZ;
@@ -41,7 +41,20 @@ void accelCalibrate(){
   highG.ptrX = &highG.rawX;
   highG.ptrY = &highG.rawY;
   highG.ptrZ = &highG.rawZ;
-  //resetting the direction pointers isn't necessary because everything is now 1
+  //reset the direction pointers
+  accel.ptrXsign = &accel.dirX;
+  accel.ptrYsign = &accel.dirY;
+  accel.ptrZsign = &accel.dirZ;
+  gyro.ptrXsign = &gyro.dirX;
+  gyro.ptrYsign = &gyro.dirY;
+  gyro.ptrZsign = &gyro.dirZ;
+  mag.ptrXsign = &mag.dirX;
+  mag.ptrYsign = &mag.dirY;
+  mag.ptrZsign = &mag.dirZ;
+  highG.ptrXsign = &highG.dirX;
+  highG.ptrYsign = &highG.dirY;
+  highG.ptrZsign = &highG.dirZ;
+  //reset the direction values
   accel.dirX = accel.dirY = accel.dirZ = 1;
   gyro.dirX = gyro.dirY = gyro.dirZ = 1;
   mag.dirX = mag.dirY = mag.dirZ = 1;
@@ -213,29 +226,29 @@ void setOrientation(){
 
   //read from EEPROM the sensor orientations relative to the board
   accel.orientX = (char)EEPROM.read(eeprom.accel2boardXaxis);
-  accel.dirX = (int8_t)EEPROM.read(eeprom.accel2boardXsign);
+  accel.dirX = (uint8_t)EEPROM.read(eeprom.accel2boardXsign);
   accel.orientY = (char)EEPROM.read(eeprom.accel2boardYaxis);
-  accel.dirY = (int8_t)EEPROM.read(eeprom.accel2boardYsign);
+  accel.dirY = (uint8_t)EEPROM.read(eeprom.accel2boardYsign);
   accel.orientZ = (char)EEPROM.read(eeprom.accel2boardZaxis);
-  accel.dirZ = (int8_t)EEPROM.read(eeprom.accel2boardZsign);
+  accel.dirZ = (uint8_t)EEPROM.read(eeprom.accel2boardZsign);
   gyro.orientX = (char)EEPROM.read(eeprom.gyro2boardXaxis);
-  gyro.dirX = (int8_t)EEPROM.read(eeprom.gyro2boardXsign);
+  gyro.dirX = (uint8_t)EEPROM.read(eeprom.gyro2boardXsign);
   gyro.orientY = (char)EEPROM.read(eeprom.gyro2boardYaxis);
-  gyro.dirY = (int8_t)EEPROM.read(eeprom.gyro2boardYsign);
+  gyro.dirY = (uint8_t)EEPROM.read(eeprom.gyro2boardYsign);
   gyro.orientZ = (char)EEPROM.read(eeprom.gyro2boardZaxis);
-  gyro.dirZ = (int8_t)EEPROM.read(eeprom.gyro2boardZsign);
+  gyro.dirZ = (uint8_t)EEPROM.read(eeprom.gyro2boardZsign);
   mag.orientX = (char)EEPROM.read(eeprom.mag2boardXaxis);
-  mag.dirX = (int8_t)EEPROM.read(eeprom.mag2boardXsign);
+  mag.dirX = (uint8_t)EEPROM.read(eeprom.mag2boardXsign);
   mag.orientY = (char)EEPROM.read(eeprom.mag2boardYaxis);
-  mag.dirY = (int8_t)EEPROM.read(eeprom.mag2boardYsign);
+  mag.dirY = (uint8_t)EEPROM.read(eeprom.mag2boardYsign);
   mag.orientZ = (char)EEPROM.read(eeprom.mag2boardZaxis);
-  mag.dirZ = (int8_t)EEPROM.read(eeprom.mag2boardZsign);
+  mag.dirZ = (uint8_t)EEPROM.read(eeprom.mag2boardZsign);
   highG.orientX = (char)EEPROM.read(eeprom.highG2boardXaxis);
-  highG.dirX = (int8_t)EEPROM.read(eeprom.highG2boardXsign);
+  highG.dirX = (uint8_t)EEPROM.read(eeprom.highG2boardXsign);
   highG.orientY = (char)EEPROM.read(eeprom.highG2boardYaxis);
-  highG.dirY = (int8_t)EEPROM.read(eeprom.highG2boardYsign);
+  highG.dirY = (uint8_t)EEPROM.read(eeprom.highG2boardYsign);
   highG.orientZ = (char)EEPROM.read(eeprom.highG2boardZaxis);
-  highG.dirZ = (int8_t)EEPROM.read(eeprom.highG2boardZsign);
+  highG.dirZ = (uint8_t)EEPROM.read(eeprom.highG2boardZsign);
   
   //use the accelerometer to determine which of the 6 possible system orientations is present
   //Accelerometer Z-axis is pointed up

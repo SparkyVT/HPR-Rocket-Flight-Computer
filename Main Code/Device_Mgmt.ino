@@ -60,7 +60,7 @@ void beginAccel() {
       break;}
 
   //set G level
-  g = int16_t(1 / accel.gainX);
+  g = (int16_t)(1 / accel.gainX);
   accel.gainX *= 9.80665;
   accel.gainY *= 9.80665;
   accel.gainZ *= 9.80665;}
@@ -273,7 +273,12 @@ void beginHighG() {
     default:
       sensors.statusHighG = beginExternalHighG();
       break;}
-}
+
+  //set G level
+  high1G = (int16_t)(1 / highG.gainX);
+  accel.gainX *= 9.80665;
+  accel.gainY *= 9.80665;
+  accel.gainZ *= 9.80665;}
 
 void getHighG() {
 
