@@ -17,15 +17,15 @@ void checkEvents(){
     radio.event = Time_Limit;
     if(settings.fltProfile == 'B'){radio.event = Booster_Time_Limit;}
     if(settings.inflightRecover != 0){EEPROM.update(eeprom.lastEvent, radio.event);}
-    radioTimer.begin(timerSendPkt, pktInterval.postFlight);
+    radioTimer.begin(timerBuildPkt, pktInterval.postFlight);
     fltTime.touchdown = fltTime.timeCurrent;
     gnss.touchdown.hour = GPS.time.hour();
     gnss.touchdown.minute = GPS.time.minute();
     gnss.touchdown.second = GPS.time.second();
     gnss.touchdown.mili = GPS.time.centisecond();}
 
-  //Check false trigger until the flight time has passed the minimum time
-  if (events.falseLiftoffCheck) {
+  //Check false trigger until the flight time has passed the minimum time, but wait at least 1/4 second so the rocket clears the rail
+  if (events.falseLiftoffCheck && fltTime.timeCurrent > 250000) {
     if (fltTime.timeCurrent > fltTime.detectLiftoffTime) {events.falseLiftoffCheck = false;}
     //if a negative acceleration is detected within the initial moments of liftoff and the rocket will not go 100 feet
     //then reset flight variables and resume launch detect
@@ -42,7 +42,7 @@ void checkEvents(){
       pktPosn = 0;
       radio.packetnum = 0;
       sampNum = 0;
-      radioTimer.begin(timerSendPkt, pktInterval.preLiftoff);
+      radioTimer.begin(timerBuildPkt, pktInterval.preLiftoff);
       //reset the high-g filter
       filterPosn = 0;
       highGsum = 0;

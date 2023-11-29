@@ -1,24 +1,24 @@
 //High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 10208 lines of code = 2400 MainFile + 352 Bus_Mgmt + 569 Device_Mgmt + 1954 Device_Drivers + 342 Device_Drivers_External + 911 Calibration + 625 SpeedTrig + 466 Inflight_Recover + 683 SD + 553 Rotation + 410 Telemetry + 327 Event_Logic + 338 SX127X_Driver + 278 UBLOX_GNSS_Config      
+//Code Line Count: 10200 lines of code = 2397 MainFile + 923 Calibration + 327 Event_Logic + 553 Rotation + 625 SpeedTrig + 683 SD + 415 Telemetry + 466 Inflight_Recover + 352 Bus_Mgmt + 574 Device_Mgmt + 1933 Device_Drivers + 336 Device_Drivers_External + 338 SX127X_Driver + 278 UBLOX_GNSS_Config      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features
 //Live telemetry over 433MHz or 915MHz bands (433MHz: USA amateur 70cm band, EUR licencse free) (915MHz: USA FHSS licence free)
-//--Optional APRS packets at 0.5Hz or telemetry data packets at 5Hz
-//--Optional LoRa or GFSK modulation
+//--Optional APRS packets at 0.5Hz or telemetry data packets at 5Hz (APRS in development)
+//--Optional LoRa or GFSK modulation (in development)
 //--Optional 915MHz single channel or FHSS
 //--Auto-adjusting power gain
 //4 programmable high-current pyro outputs with continuity checks
 //Captures high-rate data at approximately 50,000 data points per second on SD card
 //--1000Hz 3-axis digital 16G and 100G accelerometer data logging
 //--1000Hz 3-axis digital 2000dps gyroscope data logging
-//--1000Hz of flight events & continuity data logging
+//--1000Hz of 21 flight events & continuity data logging on 4 pyros
 //--1000Hz of sensor-fuzed speed & altitude
-//--100Hz of roll, pitch, yaw rotation
+//--100Hz of roll, pitch, yaw, and combined pitch-yaw 3D rotation
 //--40Hz of of magnetic data logging and magnetic roll
-//--30Hz-100Hz of digital barometric data logging (Altitude, pressure, temperature)
+//--30Hz-100Hz of digital barometric data logging (Altitude, pressure, temperature - data rate is chip dependent)
 //--30Hz of main battery voltage (1000Hz during pyro events)
 //--20Hz of LoRa telemetry output (time, event, acceleration, speed, altitude, rotation, GNSS altitude, GNSS position, signal strength, packet number)
 //--5Hz-25Hz of GNSS data logging (chip-dependent data rates & constellations)
@@ -38,15 +38,15 @@
 //Barometric based main deploy event
 //Optional GNSS NMEA Log for TRA altitude contest reporting
 //Audible pre-flight continuity report
-//Audible Post-flight max altitude & speed report
+//Audible post-flight max altitude & speed report
 //Mount in any orientation, automatic orientation detection during calibration
 //Bench-test mode activated w/ tactile button; user configurable status messages over USB Serial
 //Built-in self-calibration mode 
 //Report in SI or Metric units
 //Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
-//--Compatible with many different sensors over I2C or SPI
+//--Compatible with any sensor over I2C or SPI, optimized drivers support specific sensors, external libraries can be used for unsupported devices
 //--Configurable GPIO pins and hardware I2C/SPI bus options
-//--GPS can be wired to any available HW Serial port (Ublox M6, M7, M8, M9, & Adafruit Ultimate GPS supported)
+//--GNSS receiver can be wired to any available HW Serial port (UBLOX chipsets & Adafruit Ultimate GPS supported, or use external library)
 //-----------Change Log------------
 //V4_0_0 combines all previous versions coded for specific hardware setups; now compatible across multiple hardware configurations and can be mounted in any orientation
 //V4_1_0 adds upgrades for airstart capability, more flight event codes, improved settings file, PWM Pyro firing, quaternion rotation, improved continuity reporting, and timer interrupts for the radios
@@ -82,7 +82,7 @@
 //Active Stabilization (started)
 //Return-to-Base capability (started)
 //3D position physics model
-//Remote Arm & Shutdown Commands over LoRa
+//Remote Arm & Shutdown Commands over telemetry
 //Ground Station Bluetooth Datalink to smartphone (started)
 //Smartphone App
 //------TO DO LIST------
@@ -501,7 +501,8 @@ uint8_t dataPacket[256];
 bool liftoffSync = false;
 unsigned long TXstartTime;
 bool syncFreq = false;
-uint8_t pktPosn=0;
+uint8_t pktPosn = 0;
+uint8_t pktSize = 0;
 uint16_t sampNum = 0;
 uint8_t packetSamples = 4;
 bool gpsTransmit = false;
@@ -509,8 +510,9 @@ bool TX = false;
 bool SDradioTX = false;
 uint8_t radioMode;
 volatile boolean clearTX = false;
-volatile boolean sendPkt = false;
+volatile boolean buildPkt = false;
 volatile boolean syncFlag = false;
+bool sendPkt = false;
 struct {
   uint32_t preLiftoff = 1000000UL;
   uint32_t inflight = 200000UL;
@@ -533,8 +535,7 @@ struct{
   int16_t maxG = 0;
   int16_t GPSalt = 0;
   int16_t satNum = 0;
-  bool pktCallsign = false;
-  
+  bool pktCallsign = false;  
 } radio;
 //-----------------------------------------
 //flight events
@@ -767,6 +768,7 @@ unsigned long lastVolt = 0UL;
 bool reportCode = true;//true = report max altitude, false = report max velocity
 uint8_t postFlightCode = 0;
 float adcConvert = 0.000015259;
+uint16_t ADCmidValue = 32768;
 const char cs = ',';
 //-----------------------------------------
 //GPS Variables
@@ -1074,7 +1076,15 @@ void setup(void) {
     Serial.println(F("------------------------------------------------------------"));}
 
   //setup the ADC for sampling the battery and ADXL377 if present
-  analogReadResolution(16);
+  #if defined (__MK66FX1M0__) || defined (__MK64FX512__) || defined (__MK20DX256__)
+    //16 bit for Teensy3.5 and 3.6
+    analogReadResolution(16);
+  #elif defined (__IMXRT1062__)
+    //12 bit resolution for Teensy 4.0 & 4.1
+    analogReadResolution(12);
+    adcConvert = 0.000244140625;
+    ADCmidValue = 2048;
+  #endif
 
   //read the flight settings from the SD card
   readFlightSettingsSD();
@@ -1086,9 +1096,6 @@ void setup(void) {
   beginMag();
   beginHighG();
   beginBaro();
-  
-  //set the g-trigger
-  gTrigger = 2.5 * g;
   
   //Initialize the radio
   //if the Adafruit RFM9XW board is used, make sure its on
@@ -1116,10 +1123,10 @@ void setup(void) {
   if (settings.fireTime > 1000000UL){settings.fireTime = 1000000UL;}//max 1.0s of firing time
   if (settings.setupTime > 60000UL) {settings.setupTime = 60000UL;}//max 60 seconds from power-on to preflight start
   if (settings.setupTime < 3000UL) {settings.setupTime = 3000UL;}//min 3 seconds of setup time
-  if (settings.TXpwr > 20){settings.TXpwr = 20;}
-  if (settings.TXpwr < 2){settings.TXpwr = 2;}
+  if (settings.TXpwr > 20){settings.TXpwr = 20;}//power cant exceed 100mW
+  if (settings.TXpwr < 2){settings.TXpwr = 2;}//power setting can't go below 2
   if (settings.FHSS && settings.TXfreq < 900){settings.FHSS = false;}//FHSS not used on 70cm band
-  if(settings.fltProfile == '2' or settings.fltProfile == 'A'){boosterBurpTime = min(1000000UL, settings.boosterSeparationDelay-10000UL);}
+  if (settings.fltProfile == '2' or settings.fltProfile == 'A'){boosterBurpTime = min(1000000UL, settings.boosterSeparationDelay-10000UL);}
   
   //Update the EEPROM with the new settings
   EEPROM.update(eeprom.fltProfile, settings.fltProfile);
@@ -1135,8 +1142,6 @@ void setup(void) {
   for(byte i=0; i<4; i++){EEPROM.update(eeprom.rcdTime + i, ulongUnion.Byte[i]);}
   EEPROM.update(eeprom.silentMode, settings.silentMode);
   EEPROM.update(eeprom.magSwitchEnable, settings.magSwitchEnable);
-  //ulongUnion.val = settings.rotnCalcRate;
-  //for(byte i=0; i++; i<4){EEPROM.update(eeprom.rotnCalcRate + i, ulongUnion.Byte[i]);}
   EEPROM.update(eeprom.inflightRecover, settings.inflightRecover);
   EEPROM.update(eeprom.gpsLogFile, settings.GPSlog);
   ulongUnion.val = settings.fireTime;
@@ -1180,7 +1185,7 @@ void setup(void) {
   Serial.print(F("Pyro 1 Function: ")); Serial.println(pyro1.func);}
   
   //check for silent mode
-  if(settings.testMode && settings.silentMode){pins.beep = pins.nullCont; Serial.println(F("Silent Mode Confirmed"));}
+  if(settings.testMode && settings.silentMode){pins.beep=pins.nullCont; Serial.println(F("Silent Mode Confirmed"));}
 
   //setup the radio
   if(settings.TXenable){
@@ -1715,7 +1720,7 @@ void setup(void) {
     delay(3000);}
 
   //initialize the radio timing
-  radioTimer.begin(timerSendPkt, pktInterval.preLiftoff);
+  radioTimer.begin(timerBuildPkt, pktInterval.preLiftoff);
   if(settings.fltProfile == 'B'){radio.event = Booster_Preflight;}
   
 }//end setup
@@ -1792,9 +1797,9 @@ void loop(void){
     fltTime.liftoff = fltTime.tmClock;
     radio.event = Liftoff;
     radio.alt = 0;
-    radioTimer.begin(timerSendPkt, pktInterval.inflight/pktInterval.samplesPerPkt);
+    radioTimer.begin(timerBuildPkt, pktInterval.inflight/pktInterval.samplesPerPkt);
     noInterrupts();
-    sendPkt = true;
+    buildPkt = true;
     interrupts();
     gnss.liftoff.hour = GPS.time.hour();
     gnss.liftoff.minute = GPS.time.minute();
@@ -1924,7 +1929,7 @@ void loop(void){
         syncTimer.begin(timerSyncPkt, pktInterval.postFlight);
         delayMicroseconds(300000UL);}
       //Set the radio transmitter to post-flight data rate
-      radioTimer.begin(timerSendPkt, pktInterval.postFlight);
+      radioTimer.begin(timerBuildPkt, pktInterval.postFlight);
       //Read max altitude into its beep array
       parseBeep(long(baro.maxAlt*unitConvert), maxAltDigits, 6);
       //Read max velocity into its beep array
@@ -1954,9 +1959,12 @@ void loop(void){
 
   //Radio packet handling
   noInterrupts();
-  bool pktFlag = sendPkt;
+  //use the interrupt to build the packets at regular intervals
+  bool pktFlag = buildPkt;
   interrupts();
   if(settings.TXenable && pktFlag){buildTelmetryPkt();}
+  //send the packet when its ready and the radio is available
+  if(settings.TXenable && sendPkt && !TX && sensors.statusRadio){sendTelemetryPkt();}
 
   //Radio Synchronization packet when 915MHz FHSS is used
   if(settings.FHSS && (events.touchdown || events.timeOut)){
@@ -2011,7 +2019,7 @@ void loop(void){
     
   //post-flight max velocity beeping
   if(fileClose && beepVel && !beep && fltTime.tmClock - timeLastBeep > beep_delay){
-    digitalWrite(pins.beep, HIGH);
+    if(!settings.silentMode){digitalWrite(pins.beep, HIGH);}
     beep = true;
     beep_len = medBeepLen;
     timeBeepStart = fltTime.tmClock;
@@ -2390,6 +2398,6 @@ void processBaroSamp(){
 
 void clearIRQ(){clearTX = true;}
 
-void timerSendPkt(){sendPkt = true;}
+void timerBuildPkt(){buildPkt = true;}
 
 void timerSyncPkt(){syncFlag = true;}

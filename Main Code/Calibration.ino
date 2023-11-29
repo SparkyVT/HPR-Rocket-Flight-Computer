@@ -920,5 +920,4 @@ void wiggleServo( byte servo){
     actionServo8.write(90-servo8trim);
     break;}
   
-
   }//end void wiggle servo+

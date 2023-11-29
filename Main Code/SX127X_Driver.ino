@@ -159,6 +159,8 @@ bool beginSX127X(uint8_t radioRST){
   write8(RegIrqFlagsMask, 0x00);
   write8(RegIrqFlags, 0xFF);  
 
+  if(successFlag){Serial.println("SX127X Radio OK!");}
+
   return successFlag;}
  
 bool setPwrSX127X(int8_t pwr){
@@ -323,9 +325,9 @@ void clearFlagsSX127X(){
 
   if(radioDebug){
     if(debugVal == 0x08){
-      Serial.print("TX Done: ");Serial.println(debugVal, HEX);
-      Serial.print("micros: ");Serial.println(TXtime);}
-    else{Serial.print("TX error: ");Serial.println(debugVal, BIN);}}
+      Serial.print(", TX Done: ");Serial.print(debugVal, HEX);
+      Serial.print(", TX Time: ");Serial.println(TXtime);}
+    else{Serial.print(", TX error: ");Serial.println(debugVal, BIN);}}
   
   //clear flag
   write8(RegIrqFlags, 0xFF);

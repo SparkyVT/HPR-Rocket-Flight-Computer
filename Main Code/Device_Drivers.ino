@@ -743,17 +743,15 @@ void getLPS25H() {
 bool beginADXL377() {
   
   //set gain
-  highG.gainX = highG.gainY = highG.gainZ = 1 / 129;
+  highG.gainX = highG.gainY = highG.gainZ = 1.0 / 129.0;
   sizeHighGfilter = 10;
   highG.timeBtwnSamp = 1000UL;
 
-  Serial.println(F("ADXL377 OK!"));
   return true;}
 
 void getADXL377() {
   
   //measured time is 45 micros per reading
-  const uint16_t ADCmidValue = 32768;
   long highGsumX = 0L;
   long highGsumY = 0L;
   long highGsumZ = 0L;
@@ -1025,7 +1023,7 @@ struct BMP180_calib_data
 } ;
 static BMP180_calib_data _BMP180_coeffs;
 
-boolean beginBMP180() {
+bool beginBMP180() {
 
 #define BMP180_REGISTER_CAL_AC1 0xAA
 #define BMP180_REGISTER_CAL_AC2 0xAC
@@ -1090,13 +1088,13 @@ void getBMP180() {
 
   //Get a BMP180 barometric event if needed
   //See if a new temp is needed
-  const unsigned long tmpRdTime = 4500; //BMP180 needs 4.5ms to read temp
-  const unsigned long bmpRdTime = 25500; //BMP180 needs 25.5ms to read pressure
-  static boolean getTemp = true;
-  static boolean readTemp = false;
-  static boolean readPress = false;
-  static unsigned long tempReadStart;
-  static unsigned long pressReadStart;
+  const uint32_t tmpRdTime = 4500UL; //BMP180 needs 4.5ms to read temp
+  const uint32_t bmpRdTime = 25500UL; //BMP180 needs 25.5ms to read pressure
+  static bool getTemp = true;
+  static bool readTemp = false;
+  static bool readPress = false;
+  static uint32_t tempReadStart;
+  static uint32_t pressReadStart;
 
   if (getTemp) {
     initiateTemp();

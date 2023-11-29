@@ -190,7 +190,7 @@ void buildTelmetryPkt(){
     //hop frequency
     if(settings.FHSS){hopTXfreq();}
     
-    pktPosn=0;
+    pktPosn = 0;
     //start packet build
     dataPacket[pktPosn]=radio.event; pktPosn++;//1
     dataPacket[pktPosn]=gnss.fix; pktPosn++;//2
@@ -215,13 +215,10 @@ void buildTelmetryPkt(){
     //add in the callsign if needed
     if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
     //send the packet
-    TX = radioSendPkt(dataPacket, pktPosn);
-    TXstartTime = micros();
-    int32_t pktSize = pktPosn;
+    sendPkt = true;
+    pktSize = pktPosn;
     pktPosn = 0;
-    if(radioDebug && settings.testMode){
-      if(TX){Serial.println(F("PreFlight Packet Sent"));Serial.print("PktSize: ");Serial.println(pktSize);}
-      else if(!TX){Serial.println(F("PreFlight Packet Failed!"));}}
+    if(radioDebug && settings.testMode){Serial.print(F("PreFlight Packet Sent"));}
     if(settings.FHSS){
       hopNum = nextHop;
       hopFreq = true;
@@ -234,8 +231,8 @@ void buildTelmetryPkt(){
   //build and send inflight packet 
   //packet requirements: 13 bytes per sample, 12 bytes GPS & pktnum, 6 bytes Callsign, 2 bytes for FHSS
   //70cm default: 13 x 4 + 12 + 6 = 70 bytes per packet
-  //915MHz no FHSS: 13 x 4 + 12 = 64 bytes per packet
-  //915MHz FHSS: 13 x 4 + 12 + 2 = 66 bytes per packet
+  //915MHz default no FHSS: 13 x 4 + 12 = 64 bytes per packet
+  //915MHz default w/ FHSS: 13 x 4 + 12 + 2 = 66 bytes per packet
   else if(events.inFlight){  
 
     //update sample number
@@ -298,17 +295,13 @@ void buildTelmetryPkt(){
       if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}//70
 
       //send packet
-      if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
-      TXstartTime = micros();
-      SDradioTX = true;
-
+      sendPkt = true;
       //debug output
-      if(radioDebug && settings.testMode){
-        if(TX){Serial.print(F("InFlight Packet Sent, "));Serial.println(TXstartTime);}
-        else if(!TX){Serial.println(F("InFlight Packet Failed!"));}}
+      if(radioDebug && settings.testMode){Serial.print(F("InFlight Packet Sent "));Serial.print(radio.packetnum)}
 
       //reset counting variables
       sampNum = 0;
+      pktSize = pktPosn;
       pktPosn = 0;
       if(settings.FHSS){
         hopNum = nextHop;
@@ -319,7 +312,7 @@ void buildTelmetryPkt(){
 //------------------------------------------------------------------
 //                  POST-FLIGHT PACKET
 //------------------------------------------------------------------
-  //send post flight packet, 28 bytes or 30 bytes if FHSS
+  //send post flight packet, default 28 bytes or 30 bytes if FHSS
   else if(events.postFlight){
 
       //hop frequency
@@ -348,18 +341,33 @@ void buildTelmetryPkt(){
       //add in the callsign if needed
       if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
       //send the packet
-      if(!TX){TX = radioSendPkt(dataPacket, pktPosn);}
-      TXstartTime = micros();
-      SDradioTX = true;
-      //Serial debug
-      if(radioDebug && settings.testMode){
-        if(TX){Serial.println(F("PostFlight Packet Sent"));}
-        else if(!TX){Serial.println(F("PostFlight Packet Failed!"));}}
+      sendPkt = true;
+      pktSize = pktPosn;
+       //debug output
+      if(radioDebug && settings.testMode){Serial.print(F("Post Flight Packet Sent"));}
+
+      //reset counting variables
       if(settings.FHSS){hopNum = nextHop;}
     }//end postFlight packet
 
   //turn off the flag now that we've processed the packet command
-  sendPkt = false;}//end radioSendPacket
+  buildPkt = false;}//end radioSendPacket
+
+void sendTelemetryPkt(){
+
+  static uint32_t TXlastStart = 0UL;
+
+  TX = radioSendPkt(dataPacket, pktSize);
+  TXstartTime = micros();
+  if(TX){SDradioTX = true;}
+  //Serial debug
+  if(radioDebug && settings.testMode){
+    if(TX){Serial.print(F("...Success! Packet size "));Serial.print(pktSize);}
+    else if(!TX){Serial.print(F("..Failed! Packet size "));Serial.print(pktSize);}
+    Serial.print(", time between packets ");Serial.print(TXstartTime - TXlastStart);}
+  TXlastStart = TXstartTime;
+  //reset the send flag
+  sendPkt = false;}
 
 void hopTXfreq(){
   
