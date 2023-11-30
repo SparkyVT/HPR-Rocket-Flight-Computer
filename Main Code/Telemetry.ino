@@ -297,7 +297,7 @@ void buildTelmetryPkt(){
       //send packet
       sendPkt = true;
       //debug output
-      if(radioDebug && settings.testMode){Serial.print(F("InFlight Packet Sent "));Serial.print(radio.packetnum)}
+      if(radioDebug && settings.testMode){Serial.print(F("InFlight Packet Sent "));Serial.print(radio.packetnum);}
 
       //reset counting variables
       sampNum = 0;
