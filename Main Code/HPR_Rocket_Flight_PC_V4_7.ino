@@ -289,6 +289,9 @@ void setup(void) {
   pinMode(pins.testGnd, OUTPUT); 
   pinMode(pins.radioCS, OUTPUT);       
   pinMode(pins.highG_CS, OUTPUT);
+  //Set the CS pins to HIGH
+  digitalWrite(pins.radioCS, HIGH);
+  digitalWrite(pins.highG_CS, HIGH);
   //Set the pyro firing pins to LOW for safety
   digitalWrite(pins.pyro1Fire, LOW);
   digitalWrite(pins.pyro2Fire, LOW);

@@ -522,6 +522,8 @@ int highGfilter[30] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 uint8_t sizeHighGfilter = 30;
 uint8_t filterPosn = 0;
 float highGsmooth;
+float adcConvert = 0.000015259;
+uint16_t ADCmidValue = 32768;
 union {
    int16_t calValue; 
    uint8_t calByte[2];
@@ -640,8 +642,6 @@ uint16_t voltReading;
 unsigned long lastVolt = 0UL;
 bool reportCode = true;//true = report max altitude, false = report max velocity
 uint8_t postFlightCode = 0;
-float adcConvert = 0.000015259;
-uint16_t ADCmidValue = 32768;
 const char cs = ',';
 //-----------------------------------------
 //GNSS Variables

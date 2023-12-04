@@ -96,7 +96,7 @@ void setHWSERIAL(){
 void startI2C(_bus *myBus, uint8_t busNum){
 
   //start the bus
-  if(settings.testMode){Serial.print("Starting i2c bus ");}
+  if(settings.testMode){Serial.print("Starting I2C bus ");}
   
   myBus->type = 'I';
   
