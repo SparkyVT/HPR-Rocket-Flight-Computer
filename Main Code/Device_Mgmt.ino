@@ -51,7 +51,7 @@ void beginAccel() {
       sensors.statusAccel = sensors.statusGyro = beginMPU6050();
       break;
 
-    case 5://External Library
+    case 5://External Library      
       sensors.statusAccel = beginExternalAccel();
       break;
       
@@ -280,9 +280,9 @@ void beginHighG() {
 
   //set G level
   high1G = (int16_t)(1.0 / highG.gainX);
-  accel.gainX *= 9.80665;
-  accel.gainY *= 9.80665;
-  accel.gainZ *= 9.80665;}
+  highG.gainX *= 9.80665;
+  highG.gainY *= 9.80665;
+  highG.gainZ *= 9.80665;}
 
 void getHighG() {
 

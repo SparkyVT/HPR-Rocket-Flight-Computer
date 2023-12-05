@@ -595,6 +595,7 @@ float maxVelocity = 0.0F;
 float fusionVel = 0.0F;
 float fusionAlt = 0.0F;
 float thresholdVel = 44.3F;
+uint32_t clearRailTime = 250000UL;
 //-----------------------------------------
 //beeper variables
 //-----------------------------------------

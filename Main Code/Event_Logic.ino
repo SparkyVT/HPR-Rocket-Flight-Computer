@@ -25,7 +25,7 @@ void checkEvents(){
     gnss.touchdown.mili = GPS.time.centisecond();}
 
   //Check false trigger until the flight time has passed the minimum time, but wait at least 1/4 second so the rocket clears the rail
-  if (events.falseLiftoffCheck && fltTime.timeCurrent > 250000) {
+  if (events.falseLiftoffCheck && fltTime.timeCurrent > clearRailTime) {
     if (fltTime.timeCurrent > fltTime.detectLiftoffTime) {events.falseLiftoffCheck = false;}
     //if a negative acceleration is detected within the initial moments of liftoff and the rocket will not go 100 feet
     //then reset flight variables and resume launch detect
@@ -48,6 +48,7 @@ void checkEvents(){
       highGsum = 0;
       for(byte i=0; i < (sizeof(highGfilter)/sizeof(highGfilter[0])); i++){highGfilter[i]=0;}
       filterFull = false;
+      //reset the acceleration based altitude and velocity
       accelVel = 0;
       accelAlt = 0;}
   }//end falseLiftoffCheck

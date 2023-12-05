@@ -160,6 +160,8 @@ _bus radioBus;
 _bus sdBus;
 _bus *activeBus;
 
+//typedef void (*getAccel)
+
 //any routines called in the main flight loop need to be as fast as possible, so set them as "always inline" for the compiler
 inline void checkEvents(void) __attribute__((always_inline));
 inline void getDCM2DRotn(void) __attribute__((always_inline));
@@ -684,6 +686,7 @@ void setup(void) {
     maxVelocity = 202/unitConvert;
     pktInterval.postFlight = 1000000UL;
     thresholdVel = 15.5F;
+    clearRailTime = 0UL;
     settings.magSwitchEnable = false;}
 
   //Create and open the next file on the SD card
@@ -856,7 +859,7 @@ void setup(void) {
     if(settings.testMode){Serial.print(F("New Bias: "));Serial.println(highG.biasY);}}
   if(highG.orientZ == 'Z'){
     if(settings.testMode){Serial.print("Old Bias: ");Serial.println(highG.biasZ);}
-    highG.biasZ -= highG.dirZ*((int)(highG.z0 - (float)accel.z0 / (float)A2D));
+    highG.biasZ -= highG.dirZ*(highG.z0 - (int)((float)accel.z0 / (float)A2D));
     if(settings.testMode){Serial.print(F("New Bias: "));Serial.println(highG.biasZ);}}
   //highG.biasX = highGx0 - (int)((float)accel.x0 / (float)A2D) - 27;//old formula is kept for reference
   
