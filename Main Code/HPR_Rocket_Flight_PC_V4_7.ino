@@ -302,8 +302,13 @@ void setup(void) {
   
   //Start Harware Serial communication
   setHWSERIAL();
-  if(sensors.GNSS == 3){HWSERIAL->begin(38400);Serial.println("Starting HWSerial at 38400 baud");}
-  else{HWSERIAL->begin(9600);Serial.println("Starting HWSerial at 9600 baud");}
+  if(sensors.GNSS == 3){
+    HWSERIAL->begin(38400);
+    Serial.println("Starting HWSerial at 38400 baud");}
+  else{
+    HWSERIAL->begin(9600);
+    Serial.println("Starting HWSerial at 9600 baud");}
+  restoreGPSdefaults();
   
   //check if the test mode button is being held
   digitalWrite(pins.testGnd, LOW);
@@ -321,6 +326,9 @@ void setup(void) {
   #if defined (__MK66FX1M0__) || defined (__MK64FX512__) || defined (__MK20DX256__)
     //16 bit for Teensy3.5 and 3.6
     analogReadResolution(16);
+    //analogReadResolution(12);
+    //adcConvert = 0.000244140625;
+    //ADCmidValue = 2048;
   #elif defined (__IMXRT1062__)
     //12 bit resolution for Teensy 4.0 & 4.1
     analogReadResolution(12);

@@ -51,7 +51,10 @@ void beginAccel() {
       sensors.statusAccel = sensors.statusGyro = beginMPU6050();
       break;
 
-    case 5://External Library      
+    case 5:
+      sensors.statusAccel = sensors.statusGyro = beginMPU9250_AG();
+
+    case 6://External Library          
       sensors.statusAccel = beginExternalAccel();
       break;
       
@@ -89,7 +92,11 @@ void getAccel() {
       getMPU6050();
       break;
     
-    case 5://External Library
+    case 5:
+      getMPU9250_AG();
+      break;
+
+    case 6://External Library
       getExternalAccel();
       break;
       
@@ -128,8 +135,12 @@ void beginMag() {
     case 3:
       sensors.statusMag = beginLIS3MDL();
       break;
+
+    case 4:
+      sensors.statusMag = beginMPU9250_M();
+      break;
     
-    case 4://External Library
+    case 5://External Library
       sensors.statusMag = beginExternalMag();
       break;
       
@@ -157,8 +168,12 @@ void getMag() {
     case 3:
       getLIS3MDL();
       break;
+
+    case 4:
+      getMPU9250_M();
+      break;
     
-    case 4://External Library
+    case 5://External Library
       getExternalMag();
       break;
     
@@ -191,16 +206,19 @@ void beginGyro() {
       sensors.statusGyro = beginL3GD20H();
       break;
 
-    case 2://handled in accel setup
+    case 2://LSM9DS1 - handled in accel setup
       break;
 
-    case 3://handled in accel setup
+    case 3://LSM6DS33 - handled in accel setup
       break;
 
-    case 4://handled in accel setup
+    case 4://MPU6050 - handled in accel setup
       break;
 
-    case 5://External Library
+    case 5://MPU9250 - handled in accel setup
+      break;
+
+    case 6://External Library
       sensors.statusGyro = beginExternalGyro();
       break;
 
@@ -221,16 +239,19 @@ void getGyro() {
       getL3GD20H();
       break;
 
-    case 2://done in getAccel()
+    case 2://LSM9DS1 - done in getAccel()
       break;
 
-    case 3://done in getAccel()
+    case 3://LSM6DS33 - done in getAccel()
       break;
 
-    case 4://done in getAccel()
+    case 4://MPU6050 - done in getAccel()
       break;
 
-    case 5://External Library
+    case 5://MPU9250 - done in getAccel()
+      break;
+
+    case 6://External Library
       getExternalGyro();
       break;
 
@@ -527,9 +548,37 @@ bool radioSendPkt(uint8_t* data, uint8_t len){
 
   return response;}
 
+void restoreGPSdefaults(){
+
+  switch (sensors.GNSS) {
+
+    case 0:
+      UBLOXrestorDefaults(true);
+      break;
+
+    case 1: 
+      break;
+
+    case 2:
+      
+      break;
+
+    case 3:
+      break;
+
+    case 4:
+      break;
+
+    default:
+      break;}
+}
+
 void GNSSconfig(){
 
   switch (sensors.GNSS) {
+
+    case 0:
+      break;
 
     case 1: 
       UBLOXconfig(sensors.GNSS, settings.testMode, settings.flyBack);
@@ -555,6 +604,9 @@ void GNSSconfig(){
 void GNSSpowerSave(){
 
   switch (sensors.GNSS) {
+
+    case 0:
+      break;
 
     case 1: 
       UBLOXpowerSave(sensors.GNSS, settings.testMode);
