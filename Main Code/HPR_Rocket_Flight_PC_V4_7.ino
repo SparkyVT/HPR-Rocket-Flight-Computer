@@ -326,13 +326,10 @@ void setup(void) {
   #if defined (__MK66FX1M0__) || defined (__MK64FX512__) || defined (__MK20DX256__)
     //16 bit for Teensy3.5 and 3.6
     analogReadResolution(16);
-    //analogReadResolution(12);
-    //adcConvert = 0.000244140625;
-    //ADCmidValue = 2048;
   #elif defined (__IMXRT1062__)
     //12 bit resolution for Teensy 4.0 & 4.1
     analogReadResolution(12);
-    adcConvert = 0.000244140625;
+    adcConvert = 0.000244140625;//=1/4096
     ADCmidValue = 2048;
   #endif
 

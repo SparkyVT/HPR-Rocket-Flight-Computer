@@ -403,7 +403,7 @@ void syncPkt(){
   if(radioDebug && settings.testMode){
     Serial.print("---Sending Sync Packet: "); Serial.println(freq, 3);
     Serial.print("---Sync nextChnl: ");Serial.print(nextChnl);Serial.print(", Freq: ");Serial.print(freqList915[nextChnl]);
-    Serial.print(", time; ");Serial.println(micros());}
+    Serial.print(", time; ");Serial.print(micros());}
     
   //define packet
   syncPacket[0] = 255;//1

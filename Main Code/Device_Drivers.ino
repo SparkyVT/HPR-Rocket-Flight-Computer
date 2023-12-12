@@ -914,6 +914,10 @@ bool beginADXL377() {
   sizeHighGfilter = 10;
   highG.timeBtwnSamp = 1000UL;
 
+  if(analogRead(A2) > 500 && analogRead(A3) > 500 && analogRead(A4) > 500){
+    Serial.println("ADXL377 OK!");}
+  else{Serial.println("ADXL377 not connected!");}
+
   return true;}
 
 void getADXL377() {
