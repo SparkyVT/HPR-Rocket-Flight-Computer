@@ -308,7 +308,6 @@ void setup(void) {
   else{
     HWSERIAL->begin(9600);
     Serial.println("Starting HWSerial at 9600 baud");}
-  restoreGPSdefaults();
   
   //check if the test mode button is being held
   digitalWrite(pins.testGnd, LOW);

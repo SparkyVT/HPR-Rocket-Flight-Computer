@@ -439,6 +439,9 @@ void beginRadio(){
       break;
 
     case 2:
+      sensors.statusRadio = beginRFD900();
+
+    case 3:
       sensors.statusRadio = beginExternalRadio();
       break;
 
@@ -457,8 +460,11 @@ void setRadioFreq(float freq){
     case 1:
       setFreqSX127X(freq);
       break;
-
+    
     case 2:
+      break;
+
+    case 3:
       setExternalRadioFreq(freq);
       break;
 
@@ -479,6 +485,9 @@ void setRadioPWR(uint16_t pwr){
         break;
 
       case 2:
+        break;
+
+      case 3:
         setExternalRadioPwr(pwr);
         break;
 
@@ -497,8 +506,11 @@ void radioSleep(){
     case 1:
       setModeSX127X(SleepMode);
       break;
-    
+
     case 2:
+      break;
+    
+    case 3:
       externalRadioSleep();
       break;
 
@@ -519,6 +531,9 @@ void clearTXdone(){
       break;
 
     case 2:
+      break;
+
+    case 3:
       clearFlagsExternalRadio();
       break;
 
@@ -540,6 +555,9 @@ bool radioSendPkt(uint8_t* data, uint8_t len){
         break;
 
       case 2:
+        response = sendPktRFD900(data, len);
+
+      case 3:
         response = sendExternalRadioDataPkt(data, len);
         break;
       
@@ -553,17 +571,18 @@ void restoreGPSdefaults(){
   switch (sensors.GNSS) {
 
     case 0:
-      UBLOXrestorDefaults(true);
       break;
 
     case 1: 
+      UBLOXrestorDefaults(true);
       break;
 
     case 2:
-      
+      UBLOXrestorDefaults(true);
       break;
 
     case 3:
+      UBLOXrestorDefaults(true);
       break;
 
     case 4:

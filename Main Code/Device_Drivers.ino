@@ -17,6 +17,7 @@
 //13 JUN 23: Updated to add LPS25H support and correct bugs in LSM6DS33 and LIS3MDL
 //13 AUG 23: Added MPU6050 support, eliminated redundant routines
 //22 OCT 23: Broke out the sensor management functions to make it easier to use external libraries
+//21 DEC 23: Added MPU9250 support
 //--------Supported Sensors---------
 //Accelerometers:LSM303, LSM9DS1, LSM6DS33
 //Gyroscopes: L3GD20H, LSM9DS1, LSM6DS33
@@ -45,6 +46,11 @@
 
 //beginMPU6050(): starts sensor
 //getMPU6050_AG(): gets accelerometer & gyro data
+
+//beginMPU9250_AG(): starts sensor
+//beginMPU9250_M(): starts sensor
+//getMPU9250_AG(): gets accelerometer & gyro data
+//getMPU9250_M(): gets magnetometer data
 
 //beginLIS3MDL(): starts sensor
 //getLIS3MDL(): gets magnetometer data
@@ -593,8 +599,7 @@ void getMPU6050(){
   //***************************************************************************
 //MPU9250 Accelerometer & Gyroscope
 //***************************************************************************
-bool beginMPU9250_AG()
-{
+bool beginMPU9250_AG(){
 // Addresses for the registers
 #define MPU9250_IMU_ADDRESS (0x68)
 #define REGISTER_GYRO_CONFIG (0x1B)
@@ -611,38 +616,28 @@ bool beginMPU9250_AG()
 #define REGISTER_INT_PIN_CFG (0x37)
 #define REGISTER_VALUE_BYPASS_EN (0x02)
   // Define bus settings and start bus
-  if (sensors.accelBusType == 'I')
-  {
+  if (sensors.accelBusType == 'I'){
     accelBus.i2cAddress = gyroBus.i2cAddress = MPU9250_IMU_ADDRESS;
     accelBus.i2cRate = gyroBus.i2cRate = 400000;
-    startI2C(&accelBus, sensors.accelBusNum);
-  }
-  else
-  {
+    startI2C(&accelBus, sensors.accelBusNum);}
+  else{
     accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     accelBus.cs = gyroBus.cs = pins.accelCS;
     startSPI(&accelBus, sensors.accelBusNum);
-    accelBus.readMask = gyroBus.readMask = 0x80;
-  }
+    accelBus.readMask = gyroBus.readMask = 0x80;}
   gyroBus = accelBus;
 
   // if I2C, check if there is a sensor at this address
-  if (sensors.accelBusType == 'I')
-  {
-    if (!testSensor(MPU9250_IMU_ADDRESS))
-    {
+  if (sensors.accelBusType == 'I'){
+    if (!testSensor(MPU9250_IMU_ADDRESS)){
       Serial.println(F("MPU9250 no reply!"));
-      return false;
-    }
-  }
+      return false;}}
 
   // check whoami
   byte id = read8(0x75);
-  if (id != 0x71)
-  {
+  if (id != 0x71){
     Serial.println(F("MPU9250 not found!"));
-    return false;
-  }
+    return false;}
   Serial.println(F("MPU9250 Accelerometer/Gyroscope OK!"));
   // PWR_MGMT_1---wake up device
   write8(REGISTER_PWR_MGMT_1, 0);
@@ -659,14 +654,12 @@ bool beginMPU9250_AG()
   gyro.ADCmax = 32768;
   // set time between samples
   accel.timeBtwnSamp = gyro.timeBtwnSamp = 1000UL;
-  return true;
-}
+  return true;}
 
-void getMPU9250_AG()
-{
+void getMPU9250_AG(){
 
-// the MPU6050 accel and gyro output registers are not sequential, so we need to draw 14 bytes
-#define MPU6050_REGISTER_OUTX_H_G (0x3B)
+  // the MPU6050 accel and gyro output registers are not sequential, so we need to draw 14 bytes
+  #define MPU6050_REGISTER_OUTX_H_G (0x3B)
 
   // setup the bus
   activeBus = &accelBus;
@@ -680,13 +673,12 @@ void getMPU9250_AG()
   accel.rawZ = (int16_t)(rawData[5] | (rawData[4] << 8));
   gyro.rawX = (int16_t)(rawData[9] | (rawData[8] << 8));
   gyro.rawY = (int16_t)(rawData[11] | (rawData[10] << 8));
-  gyro.rawZ = (int16_t)(rawData[13] | (rawData[12] << 8));
-}
+  gyro.rawZ = (int16_t)(rawData[13] | (rawData[12] << 8));}
+
 //***************************************************************************
 //MPU9250 Magnetometer
 //***************************************************************************
-bool beginMPU9250_M()
-{
+bool beginMPU9250_M(){
 #define MAGNETOMETER_I2C_ADDRESS (0x0C)
 #define REGISTER_AK8963_CNTL_1 (0x0A)
 #define REGISTER_AK8963_WIA (0x00)
@@ -696,37 +688,27 @@ bool beginMPU9250_M()
 #define REGISTER_AK8963_HXL (0x03)
 
   // Define bus settings and start bus
-  if (sensors.magBusType == 'I')
-  {
+  if (sensors.magBusType == 'I'){
     magBus.i2cAddress = MAGNETOMETER_I2C_ADDRESS;
     magBus.i2cRate = 400000;
-    startI2C(&magBus, sensors.magBusNum);
-  }
-  else
-  {
+    startI2C(&magBus, sensors.magBusNum);}
+  else{
     magBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
     magBus.cs = pins.magCS;
     magBus.readMask = 0x80;
     magBus.incMask = 0x40;
-    startSPI(&magBus, sensors.magBusNum);
-  }
+    startSPI(&magBus, sensors.magBusNum);}
   // If I2C, check if there is a sensor at this address
-  if (sensors.magBusType == 'I')
-  {
-    if (!testSensor(MAGNETOMETER_I2C_ADDRESS))
-    {
+  if (sensors.magBusType == 'I'){
+    if (!testSensor(MAGNETOMETER_I2C_ADDRESS)){
       Serial.println(F("MPU9250 Magnetometer not respond!"));
-      return false;
-    }
-  }
+      return false;}}
 
   // check whoami
   byte id = read8(REGISTER_AK8963_WIA);
-  if (id != MAGNETOMETER_WHO_AM_I_CODE)
-  {
+  if (id != MAGNETOMETER_WHO_AM_I_CODE){
     Serial.println(F("MPU9250 Magnetometer not found!"));
-    return false;
-  }
+    return false;}
   Serial.println(F("MPU9250 Magnetometer OK!"));
   // Set magnetometer hertz
   write8(REGISTER_AK8963_CNTL_1, AK8963_CONT_MODE_100HZ);
@@ -736,14 +718,12 @@ bool beginMPU9250_M()
   mag.ADCmax = 32768;
   mag.timeBtwnSamp = 25000UL;
 
-  return true;
-}
+  return true;}
 
-void getMPU9250_M()
-{
+void getMPU9250_M(){
 
-// This routine reads 7 bytes from the magnetometer
-#define AK8963_REGISTER_OUT_X_L_M (0x03)
+  // This routine reads 7 bytes from the magnetometer
+  #define AK8963_REGISTER_OUT_X_L_M (0x03)
 
   // set the pointe for the active bus
   activeBus = &magBus;
@@ -752,8 +732,8 @@ void getMPU9250_M()
   burstRead(AK8963_REGISTER_OUT_X_L_M, 7);
   mag.rawX = (int16_t)(rawData[1] | ((int16_t)rawData[0] << 8));
   mag.rawY = (int16_t)(rawData[3] | ((int16_t)rawData[2] << 8));
-  mag.rawZ = (int16_t)(rawData[5] | ((int16_t)rawData[4] << 8));
-}
+  mag.rawZ = (int16_t)(rawData[5] | ((int16_t)rawData[4] << 8));}
+
 //***************************************************************************
 //LIS3MDL Magnetometer
 //***************************************************************************

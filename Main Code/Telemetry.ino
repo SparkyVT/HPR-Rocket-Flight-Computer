@@ -245,7 +245,7 @@ void buildTelmetryPkt(){
     dataPacket[pktPosn] = radio.event; pktPosn++;//1
     //set the packet time, applying corrections for differences in the exact packet timing
     uint32_t sampleInterval = pktInterval.inflight/pktInterval.samplesPerPkt;
-    uint32_t radioTime = radio.packetnum * pktInterval.inflight + (sampNum-1) * sampleInterval;
+    uint32_t radioTime = radio.packetnum * pktInterval.inflight + (sampNum-1) * sampleInterval; 
     int32_t timeDiff = (int32_t)radioTime - (int32_t)fltTime.timeCurrent;
     if(abs(timeDiff) < sampleInterval){radio.fltTime = (uint16_t)(radioTime/(sampleInterval/5));}
     else{radio.fltTime = (uint16_t)(fltTime.timeCurrent/(sampleInterval/5));}
