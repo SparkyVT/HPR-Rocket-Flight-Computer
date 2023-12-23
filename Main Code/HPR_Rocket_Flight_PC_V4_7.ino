@@ -669,9 +669,13 @@ void setup(void) {
     Serial.print(F("highG.Z is pointed to real world: "));Serial.print((highG.dirZ == 1) ? '+' : '-');Serial.println(highG.orientZ);}
 
   //if the ADS1115 is present then restart at the higher rate
-  if(sensors.highG == 1 && settings.testMode){
-    Serial.println(F("Restarting ADS1115 at high rate"));
-    beginADS1115('F');}
+  if(sensors.highG == 1){
+    if(settings.testMode){Serial.println(F("Restarting ADS1115 at high rate"));}
+    beginADS1115('F');
+    //we need to multiply the gain again because we just reset it
+    highG.gainX *= 9.80665;
+    highG.gainY *= 9.80665;
+    highG.gainZ *= 9.80665;}
 
   //Overrides for bench test mode
   if(settings.testMode){
@@ -850,10 +854,11 @@ void setup(void) {
   if(settings.testMode){
     Serial.println(F("Re-calibrating high-G accelerometer..."));
     Serial.print(F("HighG.Z0: "));Serial.println(highG.z0);}
+  //Z0 + correction = correctZ0
+  //correctZ0 = accel.z0/A2D
+  //correction = correctZ0 - Z0
+  //corrected bias = original bias - directionX *(highG.z0 - accel.z0/A2D)
   if(highG.orientX == 'Z'){
-    //Z0 + correction = correctZ0
-    //correctZ0 = accel.z0/A2D
-    //correction = correctZ0 - Z0
     if(settings.testMode){Serial.print("Old Bias: ");Serial.println(highG.biasX);}
     highG.biasX -= highG.dirX*(highG.z0 - (int)((float)accel.z0 / (float)A2D));
     if(settings.testMode){Serial.print(F("New Bias: "));Serial.println(highG.biasX);}}
@@ -1083,7 +1088,7 @@ void loop(void){
 
     //Compute the current g-load. Use the high-G accelerometer if the IMU is pegged and a high-G accelerometer is present
     if(abs(accel.z) < accel.ADCmax){accelNow = (float)(accel.z - g) * accel.gainZ;}
-    else if(sensors.highG != 0){accelNow = (highG.z - (float)high1G) *  highG.gainZ;}
+    else if(sensors.highG != 0){accelNow = (float)(highG.z - high1G) *  highG.gainZ;}
     else{accelNow = (float)(accel.z - g) * accel.gainZ;}
 
     //Integrate velocity and altitude data prior to apogee

@@ -81,7 +81,7 @@ Mag: none = 0, LSM303 = 1, LSM9DS1 = 2, LIS3MDL = 3, MPU9250 = 4, External Libra
 highG: none = 0, ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3, External Library = 4
 baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4, MS5611 = 5, MS5607 = 6, LPS25H = 7, External Library = 8
 GPS: none = 0, NEO-M8N = 1, SAM/MAX/NEO-M8Q/W = 2, NEO-M9N = 3, Adafruit Ultimate GPS or External Library = 4
-radio: none = 0, Semtech SX1276/7/8/9 = 1, RFD900 = 2, External Library = 3
+radio: none = 0, Semtech SX1276/7/8/9 = 1, External Library = 2
 SD: none = 0, SDcard present = 1
 ________________________________
 Device Bus Legend
