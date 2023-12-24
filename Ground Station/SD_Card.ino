@@ -4,15 +4,18 @@ void readRadioSettingsSD(){
   settingsFile = SD.open("Settings.txt", FILE_READ);
 
   //Read in the user defined variables
-  //parseNextVariable(false);n=0;
   //Station Settings
   settings.LCD = (boolean)(parseNextVariable(true));
+  Serial.print("LCD: ");Serial.println(settings.LCD);
   settings.LCDbrightness = (uint8_t)(parseNextVariable(true));
+  Serial.print("brightness: ");Serial.println(settings.LCDbrightness);
   settings.LCDcontrast = (uint8_t)(parseNextVariable(true));
   settings.displayMetric = (boolean)(parseNextVariable(true)); if(settings.displayMetric){unitConvert = 1.0F;}
   settings.LCDcolorEvents = (boolean)(parseNextVariable(true));
   parseNextVariable(false);for(byte i = 0; i < sizeof(settings.callSign);i++){settings.callSign[i] = dataString[i];} 
+  Serial.print("Callsign: ");for(byte i = 0; i<sizeof(settings.callSign);i++){Serial.print(settings.callSign[i]);}Serial.println(" ");
   settings.enableSD = (boolean)(parseNextVariable(true));
+  Serial.print("SD: ");Serial.println(settings.enableSD);
   settings.enableGPS = (boolean)(parseNextVariable(true));
   settings.blueTooth = (boolean)(parseNextVariable(true));
   settings.debugSerial = (boolean)(parseNextVariable(true));

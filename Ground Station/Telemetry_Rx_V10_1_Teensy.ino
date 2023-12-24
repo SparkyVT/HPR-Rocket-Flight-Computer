@@ -136,7 +136,7 @@ radio *activeRadio;
 //Data Packet variables
 //---------------------------
 uint8_t len;
-char dataString[256];
+char dataString[512];
 boolean SDstatus = false;
 char sustainerFileName[13] = "FLIGHT01.txt";
 char boosterFileName[14] = "BOOSTER01.txt";
@@ -423,7 +423,7 @@ void setup() {
   charGPSlon = EEPROM.read(29);
 
   //configure GPS
-  configGPS();
+  //configGPS();
   
   //Display the startup screen
   Serial.println("starting LCD");
@@ -605,7 +605,7 @@ void loop() {
     if(SDinit && sustainerFileOpen){sustainerFile.sync();}
 
     //display last coordinates on LCD
-    if(settings.LCD){signalLostLCD();}
+    signalLostLCD();
     
     signalEst = false;}
 

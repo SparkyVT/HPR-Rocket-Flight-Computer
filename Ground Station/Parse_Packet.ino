@@ -95,10 +95,10 @@ void inflightPacket(byte rxPacket[]){
           radioInt.unionByte[0] = (byte)rxPacket[pktPosn];pktPosn++;//12
           radioInt.unionByte[1] = (byte)rxPacket[pktPosn];pktPosn++;//13
           accel = radioInt.unionInt;
-          if(!apogee && accel > maxG){maxG = accel;}
-          
-          //write to the SD card
-          if(SDinit){writeInflightData();}}
+          if(!apogee && accel > maxG){maxG = accel;}}
+
+        //write to the SD card
+        if(SDinit){writeInflightData();}
 
         if(settings.debugSerial){Serial.println("Inflight Data Written");}
         //set the next channel
