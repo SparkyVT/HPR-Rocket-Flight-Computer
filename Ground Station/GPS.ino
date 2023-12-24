@@ -42,7 +42,7 @@ void configGPS() {
   setDataRate[6] = 0x64; setDataRate[12] = 0x7A; setDataRate[13] = 0x12;
   
   //25Hz Max data rate for NEO-M9N
-  setDataRate[6] = 0x33; setDataRate[12] = 0x49; setDataRate[13] = 0xEC;
+  //setDataRate[6] = 0x33; setDataRate[12] = 0x49; setDataRate[13] = 0xEC;
 
   //Faster Baud Rate for the higher update rates
   byte setBaudRate[] = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x23, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xAF, 0x70};
@@ -268,3 +268,23 @@ void printHex(uint8_t *data, uint8_t length) // prints 8-bit data in hex
       j = 0;}
     else j++;}
   Serial.println();}
+
+float calcGPSdist(float Alat, float Alon, float Blat, float Blon){
+
+  //calculate the difference between the points
+  float diffLat = Alat - Blat;
+  float diffLon = Alon - Blon;
+
+  //convert latitude degrees to meters
+  diffLat *= 111111.1;
+
+  //https://www.sco.wisc.edu/2022/01/21/how-big-is-a-degree/#:~:text=Therefore%20we%20can%20easily%20compute,further%20subdivisions%20of%20a%20degree.&text=circumference%20of%2025%2C000%20miles.
+  //convert longitude degrees to meters through a simple interpolation table
+  if     (fabs(diffLon) <= 15.0){ diffLon = fabs(diffLon) * 107325.1 + (15 - fabs(diffLon)) * 3786;}
+  else if(fabs(diffLon) <= 30.0){ diffLon = fabs(diffLon) *  96225.0 + (30 - fabs(diffLon)) * 11100.1;}
+  else if(fabs(diffLon) <= 45.0){ diffLon = fabs(diffLon) *  78567.4 + (45 - fabs(diffLon)) * 17657.6;}
+  else if(fabs(diffLon) <= 60.0){ diffLon = fabs(diffLon) *  55555.6 + (60 - fabs(diffLon)) * 23011.8;}
+  else if(fabs(diffLon) <= 75.0){ diffLon = fabs(diffLon) *  28757.7 + (75 - fabs(diffLon)) * 26797.9;}
+  else                          { diffLon =                            (90 - fabs(diffLon)) * 28757.7;}//why one would launch rockets at the north pole is beyond me       
+
+  return sqrt(diffLat * diffLat + diffLon * diffLon);}

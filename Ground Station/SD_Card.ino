@@ -102,10 +102,8 @@ float parseNextVariable(boolean flag){
     writeIntData(GPSlock);
     writeIntData(baseAlt);
     writeIntData(baseGPSalt);
-    dataString[strPosn]=charGPSlat;strPosn++;
-    writeFloatData(GPSlatitude,4);
-    dataString[strPosn]=charGPSlon;strPosn++;
-    writeFloatData(GPSlongitude,4);
+    writeFloatData(GPSlatitude,6);
+    writeFloatData(GPSlongitude,6);
     dataString[strPosn] = '\r';strPosn++;
     dataString[strPosn] = '\n';strPosn++;
     dataString[strPosn] = '\0';
@@ -125,7 +123,6 @@ float parseNextVariable(boolean flag){
     }
 
 void writeInflightData(){
-  strPosn = 0;
   writeIntData(event);
   //writeFloatData((float)(sampleTime) * 0.01, 2);
   writeTimeStamp(sampleTime);
@@ -135,22 +132,14 @@ void writeInflightData(){
   writeIntData(spin);
   writeFloatData((float)(offVert) * 0.1, 1);
   writeIntData(GPSalt);
-  dataString[strPosn]=charGPSlat;strPosn++;
-  writeFloatData(GPSlatitude, 4);
-  dataString[strPosn]=charGPSlon;strPosn++;
-  writeFloatData(GPSlongitude, 4);
+  writeFloatData(GPSlatitude, 6);
+  writeFloatData(GPSlongitude, 6);
   writeIntData(signalStrength);
   writeIntData(packetnum);
   //end of sample - carriage return, newline, and null value
   dataString[strPosn] = '\r';strPosn++;
   dataString[strPosn] = '\n';strPosn++;
-  dataString[strPosn] = '\0';
-  if(parseSustainer){sustainerFile.write(dataString, strPosn);}
-  if(parseBooster){boosterFile.write(dataString, strPosn);}
-  
-  //sync the SD card
-  if(SDinit && parseSustainer){sustainerFile.sync();}
-  if(SDinit && parseBooster){boosterFile.sync();}}
+  dataString[strPosn] = '\0';}
   
 void writePostflightData(){
   //write the final data to the SD card
@@ -166,10 +155,8 @@ void writePostflightData(){
   writeIntData(maxGPSalt);
   writeIntData(GPSlock);
   writeIntData(GPSalt);
-  dataString[strPosn]=charGPSlat;strPosn++;
-  writeFloatData(GPSlatitude, 4);
-  dataString[strPosn]=charGPSlon;strPosn++;
-  writeFloatData(GPSlongitude, 4);
+  writeFloatData(GPSlatitude, 6);
+  writeFloatData(GPSlongitude, 6);
   if(parseSustainer){
     sustainerFile.write(dataString,strPosn);
     strPosn=0;

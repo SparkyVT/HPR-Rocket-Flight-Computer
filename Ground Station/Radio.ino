@@ -258,24 +258,20 @@ bool radioRecvPkt(uint8_t* data){
 
 float readRadioFreq(){
 
-  //uint32_t frf = ((freq * 1000000.0) / 32000000)*524288;
-  uint32_t frf;
-  union{
-    uint32_t val;
-    uint8_t Byte[4];
-  } ulongUnion;
-
-  ulongUnion.val = frf;
-  
   #define RegFrfMsb 0x06
   #define RegFrfMid 0x07
   #define RegFrfLsb 0x08
 
+  union{
+    uint32_t val;
+    uint8_t Byte[4];
+  } ulongUnion;
+  
   //read back the frequency
   ulongUnion.Byte[2] = read8(RegFrfMsb);
   ulongUnion.Byte[1] = read8(RegFrfMid);
   ulongUnion.Byte[0] = read8(RegFrfLsb);
-  frf = ulongUnion.val;
+  uint32_t frf = ulongUnion.val;
 
   float frq = 32*(float)frf/524288.0F;
 
