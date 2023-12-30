@@ -24,15 +24,18 @@ void checkEvents(){
     gnss.touchdown.second = GPS.time.second();
     gnss.touchdown.mili = GPS.time.centisecond();}
 
-  //Check false trigger until the flight time has passed the minimum time
+  //Check false trigger until the flight time has passed the minimum check-time
   if (events.falseLiftoffCheck) {
     if (fltTime.timeCurrent > fltTime.detectLiftoffTime) {events.falseLiftoffCheck = false;}
-    //if a negative acceleration is detected within the initial moments of liftoff and the rocket will not go 100 feet
-    //but wait at least 1/4 second so the rocket clears the rail
+    //if the acceleration drops below the trigger threshold
+    //and the flight time is greater than 0.25 seconds but less than 0.5 seconds
+    //and the integrated velocity inidicates the rocket will not go 100 feet
     //then reset flight variables and resume launch detect
-    //100 feet is declared to be the minimum altitude at which the rocket will attempt to deploy recovery devices
-    //this will ensure that devices are deployed if the motor CATOs after a short boost
-    if (accel.z < gTrigger && accelVel < thresholdVel && fltTime.timeCurrent < clearRailTime) {
+    //--------------Developer's Note--------------------------------------------------------------------------
+    //100 feet is the minimum altitude at which the flight computer will attempt to deploy recovery devices
+    //this increases the chance of a successful deployment if the motor CATOs after a short boost
+    //0.25 seconds is the typical time to depart the rail so that transient negative accelerations cannot reset the system
+    if (accel.z < gTrigger && accelVel < thresholdVel && fltTime.timeCurrent > clearRailTime) {
       if(settings.testMode){Serial.println("False Trigger Reset");}
       //reset the key triggers
       events = resetEvents;
@@ -51,7 +54,9 @@ void checkEvents(){
       filterFull = false;
       //reset the acceleration based altitude and velocity
       accelVel = 0;
-      accelAlt = 0;}
+      accelAlt = 0;
+      //sync the SD card
+      syncSD();}
   }//end falseLiftoffCheck
 
   //check for booster burnout: if the z acceleration is negative

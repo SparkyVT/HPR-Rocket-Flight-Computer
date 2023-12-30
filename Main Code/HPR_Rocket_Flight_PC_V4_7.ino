@@ -677,7 +677,7 @@ void setup(void) {
     highG.gainY *= 9.80665;
     highG.gainZ *= 9.80665;}
 
-  //Overrides for bench test mode
+  //Overrides for bench test mode   
   if(settings.testMode){
     if(settings.TXenable){
       settings.TXpwr = 2;
@@ -692,9 +692,9 @@ void setup(void) {
     gTrigger = (int)(1.5*g); //1.5G trigger
     baro.maxAlt = 11101/unitConvert;
     maxVelocity = 202/unitConvert;
-    pktInterval.postFlight = 1000000UL;
+    pktInterval.postFlight = 1000000UL;   
     thresholdVel = 15.5F;
-    clearRailTime = 0UL;
+    clearRailTime = 20000UL;
     settings.magSwitchEnable = false;}
 
   //Create and open the next file on the SD card
