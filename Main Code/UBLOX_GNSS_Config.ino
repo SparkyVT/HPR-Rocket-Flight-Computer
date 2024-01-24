@@ -25,7 +25,7 @@ void UBLOXrestorDefaults(bool serialOutput){
     gpsSetSuccess += getUBX_ACK(&setDefaults[2]);}
   if (gpsSetSuccess == 3 && serialOutput){Serial.println("Restore factory defaults failed!");}}
 
-void UBLOXconfig(bool serialOutput, byte gpsVersion, bool VTGoption) {
+void UBLOXconfig(byte gpsVersion, bool serialOutput, bool VTGoption) {
   
   byte gpsSetSuccess = 0;
 

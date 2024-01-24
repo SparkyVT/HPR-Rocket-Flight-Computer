@@ -245,7 +245,7 @@ void createNextFileSD(){
   outputFile.print(F(" Code V"));
   outputFile.print(codeVersion);
   outputFile.print(F(",accelX,accelY,accelZ,gyroX,gyroY,gyroZ,highGx,highGy,highGz,"));
-  if(settings.testMode){outputFile.print(F("cyclesBtwn,writeFlags,sampleTime,writeTime"));}
+  if(settings.testMode){outputFile.print(F("cyclesBtwn,writeFlags,sampleTime,writeTime,"));}
   outputFile.println(F("smoothHighGz,rollZ,yawY,pitchX,offVert,intVel,intAlt,fusionVel,fusionAlt,fltEvents,radioCode,pyroCont,pyroFire,pyroPin,baroAlt,altMoveAvg,baroVel,baroPress,baroTemp,battVolt,magX,magY,magZ,gnssLat,gnssLon,gnssSpeed,gnssAlt,gnssAngle,gnssSatellites,radioPacketNum"));
   outputFile.flush();
 

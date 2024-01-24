@@ -103,9 +103,8 @@
   #include <i2c_t3.h>
   //NOTE: typedef declarations must be in the main file and not the tabs
   typedef i2c_t3 TwoWire;
-#endif
 //Teensy 4.X
-#if defined (__IMXRT1062__)
+#else
   #include <Wire.h>
 #endif
 
@@ -126,8 +125,19 @@ PWMServo actionServo7;
 PWMServo actionServo8;
 
 //Timer for the radio
-IntervalTimer radioTimer;
-IntervalTimer syncTimer;
+
+#if defined (STM32_CORE_VERSION)
+  #if defined (TIM1)
+    TIM_TypeDef *Instance = TIM1;
+  #else
+    TIM_TypeDef *Instance = TIM2;
+  #endif
+  HardwareTimer *radioTimer = new HardwareTimer(Instance);
+  HardwareTimer *syncTimer  = new HardwareTimer(Instance);
+#else
+  IntervalTimer radioTimer;
+  IntervalTimer syncTimer;
+#endif
 
 //GLOBAL VARIABLES
 //-----------------------------------------
