@@ -1,6 +1,4 @@
-*NOTE: I get many messages expressing interest in this system.  I plan on offering an Arduino programmable filght computer with open source code by mid-2024.
-Until then, there are 5 hardware options to use this code.  Scroll to the bottom to view the 5 options.  My website is not yet running, but you can contact me at 
-https://www.rocketryforum.com/members/sparkyvt.810/
+*NOTE: I get many messages expressing interest in this system.  I plan on offering an Arduino programmable filght computer with open source code by mid-2024.  Until then, there are 5 hardware options to use this code.  Scroll to the bottom to view the 5 options.  My website is not yet running, but you can contact me at https://www.rocketryforum.com/members/sparkyvt.810/
 
 HPR Rocket Flight Computer
 Original sketch by SparkyVT
@@ -77,8 +75,7 @@ TinyGPS++
 SDfat and/or SD
 
 ----------------HARDWARE OPTIONS----------------
-OPTION 1: Assemble the unit yourself.  Purchase a Teensy 4.0 or 4.1 and integrate the system with commercially availble sensor breakout boards.  If you want to use high-current pyro outputs, then it is up to you
-to develop the continuity and firing circuitry.  I have threaded standoffs and screws that are a perfect fit for the Adafruit breakout boards.
+OPTION 1: Assemble the unit yourself.  Purchase a Teensy 4.0 or 4.1 and integrate the system with commercially availble sensor breakout boards.  If you want to use high-current pyro outputs, then it is up to you to develop the continuity and firing circuitry.  I have threaded standoffs and screws that are a perfect fit for the Adafruit breakout boards.
 
 OPTION 2: Purchase a custom Teensy breakout board and add your own sensors.  The breakout includes a Teensy 4.1, integrates 4x high-current pyro outputs, and 6 easy-to-use terminal blocks to integrate into your high-power rocket.  Includes Qwiic connector to easily integrate your custom sensor package over I2C.
 
