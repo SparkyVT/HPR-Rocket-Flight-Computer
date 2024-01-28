@@ -77,13 +77,11 @@ SDfat and/or SD
 ----------------HARDWARE OPTIONS----------------
 OPTION 1: Assemble the unit yourself.  Purchase a Teensy 4.0 or 4.1 and integrate the system with commercially availble sensor breakout boards.  If you want to use high-current pyro outputs, then it is up to you to develop the continuity and firing circuitry.  I have threaded standoffs and screws that are a perfect fit for the Adafruit breakout boards.
 
-OPTION 2: Purchase a custom Teensy breakout board and add your own sensors.  The breakout includes a Teensy 4.1, integrates 4x high-current pyro outputs, and 6 easy-to-use terminal blocks to integrate into your high-power rocket.  Includes Qwiic connector to easily integrate your custom sensor package over I2C.
+OPTION 2: Contact me for a custom Teensy breakout board and add your own sensors.  The breakout includes a Teensy 4.1, integrates 4x high-current pyro outputs, and 6 easy-to-use terminal blocks to integrate into your high-power rocket.  Includes Qwiic connector to easily integrate your custom sensor package over I2C.
 
+OPTION 3: Contact me for a fully-functional Frankenstein-board.  This integrates all sensors breakout boards onto a single main board that is 4.0 x 1.25 x 0.5 inches.  Comes fully assembled, pre-programmed, calibrated, and tested.  Configurations will vary, but quality will not.  
 
-OPTION 3: Purchase a fully-functional Frankenstein-board.  This integrates all sensors breakout boards onto a single main board that is 4.0 x 1.25 x 0.5 inches.  Comes fully assembled, pre-programmed, calibrated, and tested.  Configurations will vary, but quality will not.  
-
-
-OPTION 4: Try your hand at assembling the Frankenstein-board yourself.  This is a single bare-board with no breakouts attached.  You will need to reflow the GNSS chip and hand-solder approximately 30 components.  Instructions included.
+OPTION 4: Try your hand at assembling the Frankenstein-board yourself.  This is a single bare-board with no breakouts attached.  You will need to reflow the GNSS chip and hand-solder approximately 30 components.  Instructions included.  Contact me for for a bare-board.
 
 OPTION 5: Purchase a fully assembled and tested ground station.  Includes ground unit with 2 radios and 20x4 LCD mounted in a custom form-fitting box.  
 
