@@ -83,5 +83,5 @@ OPTION 3: Contact me for a fully-functional Frankenstein-board.  This integrates
 
 OPTION 4: Try your hand at assembling the Frankenstein-board yourself.  This is a single bare-board with no breakouts attached.  You will need to reflow the GNSS chip and hand-solder approximately 30 components.  Instructions included.  Contact me for for a bare-board.
 
-OPTION 5: Purchase a fully assembled and tested ground station.  Includes ground unit with 2 radios and 20x4 LCD mounted in a custom form-fitting box.  
+OPTION 5: Contact me for a fully assembled and tested ground station.  Includes ground unit with 2 radios and 20x4 LCD mounted in a custom form-fitting box.  
 
