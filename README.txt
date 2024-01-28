@@ -1,5 +1,5 @@
-*NOTE: I get many messages regarding interest in this system.  I plan on offering an Arduino programmable filght computer with open source code by mid-2024.
-Until then, there are 5 hardware options to use this code.  Scroll to the bottom to view the 5 options.  Until I get the website up and running, you can contact me at 
+*NOTE: I get many messages expressing interest in this system.  I plan on offering an Arduino programmable filght computer with open source code by mid-2024.
+Until then, there are 5 hardware options to use this code.  Scroll to the bottom to view the 5 options.  My website is not yet running, but you can contact me at 
 https://www.rocketryforum.com/members/sparkyvt.810/
 
 HPR Rocket Flight Computer
