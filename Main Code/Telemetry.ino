@@ -184,7 +184,7 @@ void buildTelmetryPkt(){
 //------------------------------------------------------------------
 //                  PRE-FLIGHT PACKET
 //------------------------------------------------------------------
-  //send the preflight packet, 45 bytes
+  //send the preflight packet, 37 bytes
   if(events.preLiftoff){
     
     //hop frequency
@@ -217,6 +217,7 @@ void buildTelmetryPkt(){
     //send the packet
     sendPkt = true;
     pktSize = pktPosn;
+    if(implicitHdr){pktSize = 70;}
     pktPosn = 0;
     if(radioDebug && settings.testMode){Serial.print(F("PreFlight Packet Sent"));}
     if(settings.FHSS){
@@ -343,6 +344,7 @@ void buildTelmetryPkt(){
       //send the packet
       sendPkt = true;
       pktSize = pktPosn;
+      if(implicitHdr){pktSize = 70;}
        //debug output
       if(radioDebug && settings.testMode){Serial.print(F("Post Flight Packet Sent"));}
 
@@ -377,16 +379,35 @@ void hopTXfreq(){
   if(radioDebug && settings.testMode){
     Serial.print("Hopping Freq: ");Serial.print(freqList915[nextChnl], 3);
     Serial.print(", HopNum: ");Serial.print(nextHop);Serial.print(", time; ");Serial.println(micros());}
-    
+
+  //set the radio to the new frequency
   setRadioFreq(freqList915[nextChnl]);
+
+  //identify the next channel in the hop sequence
   hopNum = nextHop;
   nextHop = hopNum + 1;
   if(nextHop >= 2000){nextHop = 0;}
+  //don't use the hail channel, move to the next one in the sequence
+  while(hopSequence[nextHop] == hailChnl){
+    nextHop++;
+    if(nextHop >= 2000){nextHop = 0;}}
+
+  //set the channel nunbers to include in the packets
   currentChnl = hopSequence[hopNum];
   nextChnl = hopSequence[nextHop];
+
+  //identify the channel 2 hops forward in the sequence
   nextHop2 = nextHop + 1;
   if(nextHop2 >= 2000){nextHop2 = 0;}
+  //don't use the hail channel, move to the next one in the sequence
+  while(hopSequence[nextHop2] == hailChnl){
+    nextHop2++;
+    if(nextHop2 >= 2000){nextHop2 = 0;}}
+  
+  //set the channel number to include in the packets
   nextChnl2 = hopSequence[nextHop2];
+
+  //reset the flag hopFreq
   hopFreq = false;}
 
 void syncPkt(){
@@ -395,6 +416,7 @@ void syncPkt(){
   uint8_t syncPacket[4];
   //hop to the hailing channel
   freq = freqList915[hailChnl];
+  //at liftoff we perform an immediate sync packet on the current channel to get the ground station in sync with the higher update rate
   if(liftoffSync){freq = freqList915[currentChnl];}
   if(!liftoffSync){setRadioFreq(freqList915[hailChnl]);}
   liftoffSync = false;

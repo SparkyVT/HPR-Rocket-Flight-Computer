@@ -1984,11 +1984,11 @@ void getMS56XX() {
 }//end getMS56XX
 
 float ConvertTempMS56XX() {
-
+  uint32_t D2;
   uint16_t C6 = MS56XX_PROM[5];
   uint16_t C5 = MS56XX_PROM[4];
 
-  uint32_t D2 = (rawData[0] << 16) | (rawData[1] << 8) | rawData[2];
+  D2 = (uint32_t)(rawData[0] << 16 | (rawData[1] << 8) | rawData[2]);
 
   MS56XX_dT = D2 - (C5 << 8);
 

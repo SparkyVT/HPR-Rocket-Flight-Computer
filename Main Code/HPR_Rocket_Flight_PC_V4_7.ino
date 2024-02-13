@@ -77,7 +77,7 @@
 //V4_5_4 fixes a bug in the sensor timing that reduced the effective data capture rate
 //V4_5_5 removes launch detection user options since the algorithm is proven reliable, fixes a timing bug with the barometers, makes GPS configuration code more portable, adds LPS25H support, fixes bugs with LSM6DS33 and LIS3MDL, fixes SD card pre-processor bugs, added support for Adafruit Ultimate GPS
 //V4_6_0 improves portability of quaternion rotation code, added MPU6050 support, fixed calibration routine bug, cleaned up some of the GPS data processing, corrected major bug in high-G moving average, fixed a bug with the UBLOX power save mode
-//V4_7_0 adds support for any sensor with an external library, fixed a bug at liftoff that caused intermittent resetting when moving up the rail, created breakout file for sensor management, cleaned up some of the structs
+//V4_7_0 adds support for any sensor with an external library, fixed a bug at liftoff that caused intermittent resetting when moving up the rail, created breakout file for sensor management, cleaned up some of the structs, corrected 70cm bandwidth problem
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
@@ -338,7 +338,7 @@ void setup(void) {
   #elif defined (__IMXRT1062__)
     //12 bit resolution for Teensy 4.0 & 4.1
     analogReadResolution(12);
-    adcConvert = 0.000244140625;//=1/4096
+    adcConvert = 1/4096;
     ADCmidValue = 2048;
   #endif
 
@@ -381,8 +381,11 @@ void setup(void) {
   if (settings.setupTime < 3000UL) {settings.setupTime = 3000UL;}//min 3 seconds of setup time
   if (settings.TXpwr > 20){settings.TXpwr = 20;}//power cant exceed 100mW
   if (settings.TXpwr < 2){settings.TXpwr = 2;}//power setting can't go below 2
-  if (settings.FHSS && settings.TXfreq < 900){settings.FHSS = false;}//FHSS not used on 70cm band
+  if (settings.FHSS && settings.TXfreq < 900.000F){settings.FHSS = false;}//FHSS not used on 70cm band
   if (settings.fltProfile == '2' or settings.fltProfile == 'A'){boosterBurpTime = min(1000000UL, settings.boosterSeparationDelay-10000UL);}
+  if (settings.TXfreq < 420.000F){settings.TXfreq = 421.000F;}//cannot be below the 70cm band, reset to 421MHz band
+  if (settings.TXfreq > 450.000F && settings.TXfreq < 902.300F){settings.TXfreq = 902.200F;}//cannot be above the 70cm ham band and below 915MHz ISM band
+  if (settings.TXfreq < 928.000F){settings.TXfreq = 914.900F;}//cannot be above 915MHz ISM band
   
   //Update the EEPROM with the new settings
   EEPROM.update(eeprom.fltProfile, settings.fltProfile);
@@ -445,6 +448,10 @@ void setup(void) {
 
   //setup the radio
   if(settings.TXenable){
+    //70cm ham band
+    if( settings.TXfreq > 400.000F && settings.TXfreq < 500.000F){
+      if(!configRadio70cm()){Serial.println("70cm Modem Config Failed!");}
+      else{Serial.println("70cm Modem Config Success!");}}
     //915MHz FHSS
     if (settings.FHSS){
       pktInterval.preLiftoff = 600000UL;

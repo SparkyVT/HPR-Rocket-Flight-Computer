@@ -473,6 +473,32 @@ void setRadioFreq(float freq){
       break;}
 }
 
+bool configRadio70cm(){
+
+  bool response = false;
+
+  switch(sensors.radio){
+    
+    case 0:
+      break;
+
+    case 1:
+      response = config70cmSX127X();
+      break;
+    
+    case 2:
+      break;
+
+    case 3:
+      response = configExternalRadio70cm();
+      break;
+
+    default:
+      response =configExternalRadio70cm();
+      break;}
+
+  return response;}
+
 void setRadioPWR(uint16_t pwr){
 
     switch(sensors.radio){

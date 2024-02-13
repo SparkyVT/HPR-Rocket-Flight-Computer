@@ -443,6 +443,7 @@ struct{
 uint8_t dataPacket[256];
 bool liftoffSync = false;
 unsigned long TXstartTime;
+bool implicitHdr = false;
 bool syncFreq = false;
 uint8_t pktPosn = 0;
 uint8_t pktSize = 0;

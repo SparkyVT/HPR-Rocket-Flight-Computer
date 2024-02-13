@@ -238,6 +238,64 @@ bool sendPktSX127X(uint8_t* data, uint8_t len){
   
   return true;}
 
+bool config70cmSX127X(){
+
+  //NOTE: the maximum allowable bandwidth on 70cm Ham band is 100kHz.  To keep the same data rate
+  //we need to halve the bandwidth but up the bitrate.  SF6 is the only way to do this, 
+  //but it requires a special configuration
+
+  #define RegDectectOptimize    0x31
+  #define RegDetectionThreshold 0x37
+
+  //set bus
+  activeBus = &radioBus;
+  bool successFlag = true;
+
+  //configure the modem to 62.5kHz bw, 4/5 cr, implicit header
+  uint8_t modemConfig = 0b01100011;
+  write8(RegModemConfig1, modemConfig);
+  delay(10);
+  uint8_t debugVal = read8(RegModemConfig1);
+  if(debugVal != modemConfig){
+    Serial.print("Config1 Failed: ");
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+
+  //configure the modem to sf6, normal TX mode, CRC on, RX MSB 0
+  modemConfig = 0b01100100;
+  write8(RegModemConfig2, modemConfig);
+  delay(10);
+  debugVal = read8(RegModemConfig2);
+  if(debugVal != modemConfig){
+    Serial.print("Config2 Failed: ");
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+
+  //Set the bit field DetectionOptimize of register RegLoRaDetectOptimize to value "0b101"
+  modemConfig = 0b11100101;
+  write8(RegDectectOptimize, modemConfig);
+  delay(10);
+  debugVal = read8(RegDectectOptimize);
+  if(debugVal != modemConfig){
+    Serial.print("RegDectectOptimize Failed: ");
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+
+  //Write 0x0C in the register RegDetectionThreshold
+  modemConfig = 0x0C;
+  write8(RegDetectionThreshold, modemConfig);
+  delay(10);
+  debugVal = read8(RegDetectionThreshold);
+  if(debugVal != modemConfig){
+    Serial.print("RegDetectionThreshold Failed: ");
+    Serial.println(debugVal, BIN);
+    successFlag = false;}
+
+  //set flag for implicit header
+  implicitHdr = true;
+
+  return successFlag;}
+
 bool setFreqSX127X(float freq){
 
   boolean successFlag = true;

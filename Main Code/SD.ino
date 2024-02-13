@@ -426,8 +426,8 @@ void writeSDflightData(){
   writeIntData(pins.firePin);
   //Barometer
   if (baro.newSamp) {
-    writeFloatData(baro.Alt, 2);
-    writeFloatData(baro.smoothAlt, 2);
+    writeFloatData2(baro.Alt, 2);
+    writeFloatData2(baro.smoothAlt, 2);
     writeFloatData(baro.Vel, 2);
     writeFloatData(baro.pressure, 2);
     baro.newSamp=false;}
@@ -450,7 +450,7 @@ void writeSDflightData(){
     writeFloatData(gnss.latitude,6);
     writeFloatData(gnss.longitude,6);
     writeFloatData((float)GPS.speed.mph(),2);
-    writeFloatData(gnss.alt,2);
+    writeFloatData2(gnss.alt,2);
     writeFloatData((float)GPS.course.deg(),2);
     writeIntData(radio.satNum);
     gnss.SDwrite=false;}
@@ -613,7 +613,7 @@ void writeLongData(long dataValue){
   while(dataString[strPosn]!= '\0'){strPosn++;}
   dataString[strPosn] = cs;
   strPosn++;}//end void
-  
+
 void writeFloatData2(float dataValue, byte decimals) {
   dtostrf(dataValue, 2, decimals, dataString + strPosn);
   updateStrPosn();}//end void
