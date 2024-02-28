@@ -36,30 +36,38 @@ df = pd.read_csv(
     delimiter = ",", 
     skiprows = 0, 
     skipfooter= 8, 
-    index_col = False)
+    index_col = False)      
 
 df.columns.values[0] = "timeStamp"
 
-teensyGen = 3.2
+teensyGen = 3.3
 if teensyGen == 1:
     accelGain = 0.012 #LSM303
     gainHighG = 0.0183 #ADXL377 & ADS1115 Combo
     centerPoint = 13125 #ADXL377 & ADS1115 Combo
     centerPoint = 0
+    gyroGain = 0.07
 elif teensyGen == 3:
     accelGain = 0.000732 #LSM9DS1
     gainHighG = 1/129 #ADXL377 and Teensy ADC
     highGoffset = 1
     centerPoint = 0
+    gyroGain = 0.07
 elif teensyGen == 3.1:
     accelGain = 0.012 #LSM303
     gainHighG = 1/129 #ADXL377 and Teensy ADC
     centerPoint = 0
-elif teensyGen == 3.2 or teensyGen == 3.3:
+    gyroGain = 0.07
+elif teensyGen == 2 or teensyGen == 3.2 or teensyGen == 3.3:
     accelGain = 0.000732 #LSM9DS1
     centerPoint = 0
     gainHighG = 0.049 #H3LIS331DL
-    
+    gyroGain = 0.07
+elif teensyGen == 4:
+    accelGain = 1/2048
+    gainHighG = .12395
+    centerPoint = 0
+    gyroGain = 1/16.4
 
 if 'Alt' in df.columns: df.rename(columns = {'Alt' : 'baroAlt'}, inplace=True)
 """-------------------------------
@@ -116,7 +124,9 @@ if 'gZ' in df.columns:
     df['gyroX']*= -1
 if 'vel' in df.columns: df.rename(columns = {'vel' : 'intVel'}, inplace=True)
 if 'alt' in df.columns: df.rename(columns = {'alt' : 'intAlt'}, inplace=True)
-if 'analog' in df.columns: df.rename(columns = {'analog' : 'smoothHighGz'}, inplace=True)
+if 'analog' in df.columns: 
+    df.rename(columns = {'analog' : 'smoothHighGz'}, inplace=True)
+    df['highGz'] = df['smoothHighGz']
 if 'gps_alt' in df.columns: df.rename(columns = {'gps_alt' : 'gpsAlt'}, inplace=True)
 if 'pitch' in df.columns: df.rename(columns = {'pitch' : 'pitchX'}, inplace=True)
 if 'yaw'   in df.columns: df.rename(columns = {'yaw' : 'yawY'}, inplace=True)
@@ -132,7 +142,7 @@ if 'gpsLon'  in df.columns: df.rename(columns = {'gpsLon' : 'gnssLon'}, inplace=
 if 'events'  in df.columns: 
     df.rename(columns = {'events' : 'fltEvents'}, inplace=True)
     df.loc[:,'fltEvents']=df.loc[:,'fltEvents'].astype('str')
-apogee = df[df['fltEvents'].str[6] == "1"].index[0]
+apogee = df[df['fltEvents'].str[4] == "1"].index[0]
 if apogee >= df.index.max()-10: apogee = df[df['fltEvents'].str[4] == "1"].index[0]
 burnout = df[df['fltEvents'].str[1:3] == "10"].index[0]
 
@@ -151,7 +161,7 @@ gph = accel.head(burnout).plot(
     x = 'flightTime', 
     xlabel = "Flight Time",
     y = ['accelX_Conv', 'accelY_Conv', 'accelZ_Conv', 'highGz_Conv'],
-    ylabel = "Acceleration (m/s2)",
+    ylabel = "Acceleration (G-load)",
     title = "Booster Motor Thrust",
     label=['accelX','accelY','accelZ','HighG'])
 #gph.set_ylim(-5, 15)
@@ -159,7 +169,7 @@ accel.head(apogee).plot(
     x = 'flightTime', 
     xlabel = "Flight Time",
     y = [ 'highGz_Conv', 'accelZ_Conv'],
-    ylabel = "Acceleration (m/s2)",
+    ylabel = "Acceleration (G-load)",
     title = "Booster Motor Thrust",
     label=['HighG','accelZ'])
 plotData = np.asarray(accel)
@@ -174,14 +184,14 @@ for i in range(stopPosn):
     else:
         accel.at[i, 'accelVel'] = accel.at[i-1, 'accelVel'] + (accel.at[i, 'accelZ_Conv'] - 1) * 9.80665 * (accel.at[i, 'timeStamp'] - accel.at[i-1, 'timeStamp'])/1000000
         accel.at[i, 'highGvel'] = accel.at[i-1, 'highGvel'] + (accel.at[i, 'highGz']*0.049 - 1) * 9.80665 * (accel.at[i, 'timeStamp'] - accel.at[i-1, 'timeStamp'])/1000000                                          
-
-accel.loc[0:stopPosn].plot(
-    x = 'flightTime',
-    xlabel = "Flight Time",
-    y = ['accelVel','highGvel'],
-    ylabel = "Velocity m/s",
-    title = "Integrated Acceleration: LSM9DS1 vs H3LIS331DL",
-    label=['LSM9DS1', 'H3LIS331DL'])
+if teensyGen != 1 and teensyGen != 3 and teensyGen != 3.1:
+    accel.loc[0:stopPosn].plot(
+        x = 'flightTime',
+        xlabel = "Flight Time",
+        y = ['accelVel','highGvel'],
+        ylabel = "Velocity m/s",
+        title = "Integrated Acceleration: LSM9DS1 vs H3LIS331DL",
+        label=['LSM9DS1', 'H3LIS331DL'])
 
 accel.at[apogee, 'highGvel']
 accel.at[apogee, 'accelVel']
@@ -214,7 +224,7 @@ accel.at[apogee, 'accelVel']
 FUSION VELOCITY PLOT
 -------------------------------"""
 #vel = df.loc[:, ['timeStamp','accelZ','intVel','fusionVel','baroVel']]         
-vel = df.loc[:, ['timeStamp','accelZ','intVel','baroVel','altMoveAvg','intAlt','baroAlt','gnssAlt']]
+vel = df.loc[:, ['timeStamp','accelZ','intVel','baroVel','altMoveAvg','intAlt','baroAlt','gnssAlt','fusionVel']]
 vel['flightTime'] = vel['timeStamp']/1000000
 peakBaroVel = 0
 lastGNSSposn = 0
@@ -226,7 +236,8 @@ for i in range(apogee):
         vel.at[i,'fusionVel2'] = 0
         
     else: vel.at[i, 'fusionVel2'] = vel.at[i-1, 'fusionVel2'] + (vel.at[i, 'accelZ']*accelGain - 1) * 9.80665 * (vel.at[i, 'flightTime'] - vel.at[i-1, 'flightTime'])
-    if pd.notnull(vel.at[i, 'baroVel']) and vel.at[i, 'baroVel'] < vel.at[i, 'fusionVel2'] and vel.at[i, 'fusionVel2'] < 300 and vel.at[i, 'baroVel'] < peakBaroVel and vel.at[i, 'accelZ'] * accelGain < 0.2:
+    #if pd.notnull(vel.at[i, 'baroVel']) and vel.at[i, 'baroVel'] < vel.at[i, 'fusionVel2'] and vel.at[i, 'fusionVel2'] < 300 and vel.at[i, 'baroVel'] < peakBaroVel and vel.at[i, 'accelZ'] * accelGain < 0.2:
+    if pd.notnull(vel.at[i, 'baroVel']) and vel.at[i, 'fusionVel2'] < 300 and vel.at[i, 'baroVel'] < peakBaroVel and vel.at[i, 'accelZ'] * accelGain < 0.2:
         vel.at[i, 'fusionVel2'] = vel.at[i, 'fusionVel2'] * 0.99 + vel.at[i, 'baroVel'] * 0.01
     
     if i>0 and vel.at[i, 'gnssAlt'] !=  vel.at[i-1, 'gnssAlt']: lastGNSSposn = i
@@ -244,14 +255,14 @@ for i in range(apogee, df.index.max()):
 '''plot velocity up until apogee'''
 gph = vel.fillna(method='pad').head(apogee).plot(
     x = 'flightTime', 
-    y=['intVel', 'baroVel', 'fusionVel2'], 
+    y=['intVel', 'baroVel','fusionVel', 'fusionVel2'], 
     ylabel = "Velocity (m/s)",
     title="Velocity Until Apogee")
 #gph.set_ylim(0, 400)
 '''plot velocity for the last few seconds before apogee'''
 vel.loc[apogee-8000:apogee,:].fillna(method='pad').plot(
     x = 'flightTime', 
-    y = ['intVel', 'baroVel', 'fusionVel2'], 
+    y = ['intVel', 'baroVel', 'fusionVel2', 'fusionVel'], 
     ylabel = "Velocity (m/s)",
     title="Velocity Near Apogee")
 '''plot velocity through the entire flight'''
@@ -266,7 +277,7 @@ vel.loc[:,'intVel'].max()
 FUSION ALTITUDE PLOT
 -------------------------------"""
 if df.at[0, 'gnssAlt'] != 0: df['gnssAlt'] -= df.at[0, 'gnssAlt']
-alt = df.loc[:, ['timeStamp','accelZ','baroAlt','altMoveAvg','baroVel','intVel','intAlt','gnssAlt']]
+alt = df.loc[:, ['timeStamp','accelZ','baroAlt','altMoveAvg','baroVel','intVel','intAlt','gnssAlt','fusionVel','fusionAlt']]
 alt['flightTime'] = alt['timeStamp']/1000000     
 
 for i in range(apogee):
@@ -274,39 +285,47 @@ for i in range(apogee):
     if i > 0: dt = (alt.at[i, 'timeStamp'] - alt.at[i-1, 'timeStamp'])/1000000
     
     """Update Velocity"""
-    if i ==0: alt.at[i, 'fusionVel'] = 0    
-    else: alt.at[i, 'fusionVel'] = alt.at[i-1, 'fusionVel'] + (alt.at[i, 'accelZ']*accelGain - 1) * 9.80665 * dt
+    if i ==0: alt.at[i, 'fusionVel2'] = 0    
+    else: alt.at[i, 'fusionVel2'] = alt.at[i-1, 'fusionVel2'] + (alt.at[i, 'accelZ']*accelGain - 1) * 9.80665 * dt
     
-    if pd.notnull(alt.at[i, 'baroVel']) and alt.at[i, 'fusionVel'] < 300 and i > 0 and alt.at[i, 'accelZ'] * accelGain < 0.2:
-        alt.at[i, 'fusionVel'] = (alt.at[i-1, 'fusionVel'] + (alt.at[i, 'accelZ']*accelGain - 1) * 9.80665 * dt) * 0.99 + alt.at[i, 'baroVel'] * 0.01
+    if pd.notnull(alt.at[i, 'baroVel']) and alt.at[i, 'fusionVel2'] < 300 and i > 0 and alt.at[i, 'accelZ'] * accelGain < 0.2:
+        alt.at[i, 'fusionVel2'] = (alt.at[i-1, 'fusionVel2'] + (alt.at[i, 'accelZ']*accelGain - 1) * 9.80665 * dt) * 0.99 + alt.at[i, 'baroVel'] * 0.01
     
     """Update Altitude"""
-    if i == 0: alt.at[i, 'fusionAlt'] = 0
-    else: alt.at[i, 'fusionAlt'] = alt.at[i-1, 'fusionAlt'] +  alt.at[i, 'fusionVel'] * dt
+    if i == 0: alt.at[i, 'fusionAlt2'] = 0
+    else: alt.at[i, 'fusionAlt2'] = alt.at[i-1, 'fusionAlt2'] +  alt.at[i, 'fusionVel2'] * dt
 
-    if pd.notnull(alt.at[i, 'altMoveAvg']) and i > 0: alt.at[i, 'fusionAlt'] = alt.at[i-1, 'fusionAlt'] * 0.95 + alt.at[i, 'altMoveAvg'] * 0.05
+    if pd.notnull(alt.at[i, 'altMoveAvg']) and i > 0: alt.at[i, 'fusionAlt2'] = alt.at[i-1, 'fusionAlt2'] * 0.95 + alt.at[i, 'baroAlt'] * 0.05
 
 # """-------------------------------
 # ADJUSTED INTEGRATED ALTITUDE PLOT
 # -------------------------------"""
-# dt = 0
-# alt.at[0,'accelAlt2'] = 0
-# alt.at[0,'accelVel2'] = 0
+dt = 0
+alt.at[0,'accelAlt2'] = 0
+alt.at[0,'accelVel2'] = 0
 
-# for i in range(1, apogee):
+for i in range(1, apogee):
     
-#     dt = (alt.at[i, 'timeStamp'] - alt.at[i-1, 'timeStamp'])/1000000
+    dt = (alt.at[i, 'timeStamp'] - alt.at[i-1, 'timeStamp'])/1000000
     
-#     """Update velocity"""
-#     alt.at[i, 'accelVel2' ] = alt.at[i-1, 'accelVel2'] + ((df.at[i, 'accelZ'] * accelGain) * math.cos(df.at[i, 'offVert'] * 0.1 * math.pi / 180) -1) * 9.80655 * dt
+    """Method #1"""
+    #velocity: velNew = velOld + (accelZ * cos(offVert) - 1 ) * dt
+    #alt.at[i, 'accelVel2' ] = alt.at[i-1, 'accelVel2'] + ((df.at[i, 'accelZ'] * accelGain) * math.cos(df.at[i, 'offVert'] * 0.1 * math.pi / 180) - 1) * 9.80655 * dt
     
-#     """Update altitude"""
-#     alt.at[i, 'accelAlt2'] = alt.at[i-1, 'accelAlt2'] + alt.at[i, 'accelVel2'] * dt * math.cos(df.at[i, 'offVert'] * 0.1 * math.pi / 180)
+    #altitude: altNew = AltOld + velNew * dt * cos(offVert)
+    #alt.at[i, 'accelAlt2'] = alt.at[i-1, 'accelAlt2'] + alt.at[i, 'accelVel2'] * dt * math.cos(df.at[i, 'offVert'] * 0.1 * math.pi / 180)
+    
+    """Method #2"""
+    #formula 2: VelNew = VelPrev + (accel * cos(offVert) - 1) * cos(offVert)
+    alt.at[i, 'accelVel2'] = alt.at[i-1, 'accelVel2'] + ((df.at[i, 'accelZ']) * accelGain * math.cos(df.at[i, 'offVert'] * 0.1 * math.pi / 180) - 1) * 9.80655 * dt
+    
+    #formula 2: altNew = altOld + velNew * dt
+    alt.at[i, 'accelAlt2'] = alt.at[i-1, 'accelAlt2'] + alt.at[i, 'accelVel2'] * dt
 
 '''plot altitude up until apogee'''
 alt.fillna(method='pad').head(apogee).plot(
     x = 'flightTime', 
-    y = ['baroAlt', 'altMoveAvg', 'fusionAlt', 'intAlt', 'gnssAlt','accelAlt2'],
+    y = ['baroAlt', 'altMoveAvg', 'fusionAlt', 'intAlt', 'gnssAlt'],
     ylabel = 'Altitude (m)',
     xlabel = 'Flight Time',
     label = ['Raw Baro Alt', 'Smooth Baro Alt', 'Sensor Fusion', 'IMU Alt','SatNav Alt'],
@@ -314,58 +333,70 @@ alt.fillna(method='pad').head(apogee).plot(
 '''plot altitude for the last few seconds up until apogee'''
 alt.loc[apogee-2000:apogee,:].fillna(method='pad').plot(
     x = 'flightTime', 
-    y = ['baroAlt', 'altMoveAvg', 'fusionAlt'],
+    #y = ['baroAlt', 'altMoveAvg', 'fusionAlt', 'accelAlt2', 'intAlt'],
+    y = ['baroAlt', 'altMoveAvg', 'fusionAlt', 'fusionAlt2'],
     ylabel = "Altitude (m)",
-    label = ['Raw Baro Alt', 'Smooth Baro Alt', 'Sensor Fusion'],
+    #label = ['Raw Baro Alt', 'Smooth Baro Alt', 'Sensor Fusion', 'accelAlt2', 'intAlt'],
+    label = ['Raw Baro Alt', 'Smooth Baro Alt', 'Sensor Fusion', 'Sensor Fusion2'],
     title='Altitude Near Apogee')
 '''plot altitude through the entire flight'''
+#data rate
+dataRate = apogee/alt.flightTime[apogee]
 alt.fillna(method='pad').plot(
     x = 'flightTime', 
-    y = ['baroAlt', 'altMoveAvg', 'fusionAlt', 'intAlt', 'gnssAlt'],
-    label = ['Raw Baro Alt', 'Smooth Baro Alt', 'Sensor Fusion', 'IMU Alt','SatNav Alt'],
+    y = ['baroAlt', 'altMoveAvg', 'fusionAlt', 'fusionAlt2','intAlt', 'gnssAlt'],
+    label = ['Raw Baro Alt', 'Smooth Baro Alt', 'Onboard Fusion', 'Sensor Fusion2','IMU Alt','SatNav Alt'],
     ylabel = 'Altitude (m)',
-    title = "Altitude: Liftoff to Touchdown")
+    title = "Altitude: Liftoff to Touchdown, Data Rate: " + str(dataRate)[0:4] +' SPS')
 
-"""-------------------------------
-GNSS PLOT
--------------------------------"""
-df.loc[:, 'latitude']=df.loc[:,'gnssLat'].str[1:10].astype('float32')
-df.loc[:, 'longitude']=df.loc[:,'gnssLon'].str[1:10].astype('float32')
-df['gnssAlt']=df['gnssAlt'].fillna(method ='pad')
-df['latitude'] = df['latitude'].fillna(method ='pad')
-df['longitude'] = df['longitude'].fillna(method ='pad')
-df['latitude'] -= df.at[0, 'latitude']
-df['longitude'] -= df.at[0, 'longitude']
-df['latitude'] *= 1.15*5280
-df['longitude'] *= 0.91*5280
-gph = df.plot(
-    x = 'latitude',
-    y = 'longitude',
-    title = 'Ground Track from Pad (ft)',
-    legend = False,
-    ylabel = 'South-North',
-    xlabel = 'West-East').annotate("Apogee",(df.at[apogee, 'latitude'], df.at[apogee, 'longitude']))
+# """-------------------------------
+# GNSS PLOT
+# -------------------------------"""
+# df.loc[:, 'latitude']=df.loc[:,'gnssLat'].str[1:10].astype('float32')
+# df.loc[:, 'longitude']=df.loc[:,'gnssLon'].str[1:10].astype('float32')
+# df['gnssAlt']=df['gnssAlt'].fillna(method ='pad')
+# df['latitude'] = df['latitude'].fillna(method ='pad')
+# df['longitude'] = df['longitude'].fillna(method ='pad')
+# df['latitude'] -= df.at[0, 'latitude']
+# df['longitude'] -= df.at[0, 'longitude']
+# df['latitude'] *= 1.15*5280
+# df['longitude'] *= 0.91*5280
+# gph = df.plot(
+#     x = 'latitude',
+#     y = 'longitude',
+#     title = 'Ground Track from Pad (ft)',
+#     legend = False,
+#     ylabel = 'South-North',
+#     xlabel = 'West-East').annotate("Apogee",(df.at[apogee, 'latitude'], df.at[apogee, 'longitude']))
 
-altRange = (df['gnssAlt'].max() - df['gnssAlt'].min())*3.2808
+# altRange = (df['gnssAlt'].max() - df['gnssAlt'].min())*3.2808
 
-gph = plt.figure(figsize=(15,8)).gca(projection='3d')
-gph.plot(df['latitude'], df['longitude'], df['gnssAlt']*3.2808, "b.--")
-gph.set_xlim(-1*altRange/2, altRange/2)
-gph.set_ylim(-1*altRange/2, altRange/2)
-gph.set_zlim(df['gnssAlt'].min()*3.2808, df['gnssAlt'].max()*3.2808)
-gph.set_title('Flight Progression', fontsize= 20)
-gph.set_xlabel('West-East', fontsize = 14)
-gph.set_ylabel('South-North', fontsize = 14)
-gph.set_zlabel('Altitude (ft)', fontsize = 14)
+# gph = plt.figure(figsize=(15,8)).gca(projection='3d')
+# gph.plot(df['latitude'], df['longitude'], df['gnssAlt']*3.2808, "b.--")
+# gph.set_xlim(-1*altRange/2, altRange/2)
+# gph.set_ylim(-1*altRange/2, altRange/2)
+# gph.set_zlim(df['gnssAlt'].min()*3.2808, df['gnssAlt'].max()*3.2808)
+# gph.set_title('Flight Progression', fontsize= 20)
+# gph.set_xlabel('West-East', fontsize = 14)
+# gph.set_ylabel('South-North', fontsize = 14)
+# gph.set_zlabel('Altitude (ft)', fontsize = 14)
+
+# df['gnssSatellites'] = df['gnssSatellites'].fillna(method = 'pad')
+# df.plot(
+#     x = 'flightTime',
+#     y = 'gnssSatellites',
+#     title = 'Satellites Used for Fix',
+#     xlabel = 'Flight Time',
+#     legend = False)
 
 """-------------------------------
 GYRO PLOT
 -------------------------------"""
 gyro = df.loc[:, ['timeStamp', 'gyroX', 'gyroY', 'gyroZ']]
 gyro['flightTime'] = gyro['timeStamp']/1000000
-gyro['gyroXdps'] = gyro['gyroX']*0.07
-gyro['gyroYdps'] = gyro['gyroY']*0.07
-gyro['gyroZdps'] = gyro['gyroZ']*0.07
+gyro['gyroXdps'] = gyro['gyroX']*gyroGain
+gyro['gyroYdps'] = gyro['gyroY']*gyroGain
+gyro['gyroZdps'] = gyro['gyroZ']*gyroGain
 #gyro.head(apogee).plot(x = 'flightTime', y = ['gyroZdps', 'gyroYdps', 'gyroXdps'], ylabel = "Degrees per Second")
 #gyro.head(apogee).plot(x = 'flightTime', y = ['gyroYdps', 'gyroXdps'], ylabel = "Degrees per Second")
 
@@ -396,10 +427,15 @@ rotn['offVert_Conv'] = rotn['offVert']/10
 rotn.head(apogee).plot(
     x = 'flightTime', 
     y = ['pitch_Conv', 'yaw_Conv', 'offVert_Conv'], 
-    ylabel = 'Onboard Rotation (degrees)',
+    ylabel = 'Onboard Rotation to Apogee(degrees)',
     xlabel = 'Flight Time',
     label = ['pitchX', 'yawY','Off Vertical'])
-
+rotn.plot(
+    x = 'flightTime', 
+    y = ['pitch_Conv', 'yaw_Conv', 'offVert_Conv'], 
+    ylabel = 'Onboard Rotation to Touchdown(degrees)',
+    xlabel = 'Flight Time',
+    label = ['pitchX', 'yawY','Off Vertical'])
 """-------------------------
 ORIGINAL DCM2D METHOD
 ---------------------------"""
@@ -410,12 +446,12 @@ origRotn['flightTime'] = origRotn['timeStamp']/1000000
 
 '''Initialize the pitch and yaw'''
 deg2rad = math.pi / 180
-rotn2rad = 0.07 * deg2rad / 1000000
+rotn2rad = gyroGain * deg2rad / 1000000
 offset = 0
 
 origRotn.at[0, 'dt'] = 0
-origRotn.at[0, 'dx'] = df.at[0, 'pitchX'] * 0.1 * 1000000 / 0.07
-origRotn.at[0, 'dy'] = df.at[0, 'yawY']   * 0.1 * 1000000 / 0.07
+origRotn.at[0, 'dx'] = df.at[0, 'pitchX'] * 0.1 * 1000000 / gyroGain
+origRotn.at[0, 'dy'] = df.at[0, 'yawY']   * 0.1 * 1000000 / gyroGain
 origRotn.at[0, 'dz'] = 0
 
 for i in range(1,apogee,1):
@@ -435,9 +471,9 @@ for i in range(1,apogee,1):
   origRotn.at[i, 'dy'] = origRotn.at[i-1, 'dy'] + (cosZ * origRotn.at[i, 'gyroY'] + sinZ * origRotn.at[i, 'gyroX']) * origRotn.at[i, 'dt']
   
   """Compute Pitch, Yaw, Roll"""
-  origRotn.at[i, 'rollZ']  = origRotn.at[i, 'dz'] * 0.07 / 1000000
-  origRotn.at[i, 'pitchX'] = origRotn.at[i, 'dx'] * 0.07 / 1000000
-  origRotn.at[i, 'yawY']   = origRotn.at[i, 'dy'] * 0.07 / 1000000
+  origRotn.at[i, 'rollZ']  = origRotn.at[i, 'dz'] * gyroGain / 1000000
+  origRotn.at[i, 'pitchX'] = origRotn.at[i, 'dx'] * gyroGain / 1000000
+  origRotn.at[i, 'yawY']   = origRotn.at[i, 'dy'] * gyroGain / 1000000
     
   """Calculate off vertical"""
   tanYaw = math.tan(origRotn.at[i, 'yawY'] * deg2rad)**2
@@ -447,8 +483,22 @@ for i in range(1,apogee,1):
 origRotn.head(apogee).plot(x = 'flightTime', y = ['pitchX', 'yawY', 'offVert'], ylabel = "DCM2D Off-Vertical Rotation", xlabel="Flight Time")
 origRotn.loc[apogee, 'offVert']
 origRotn.head(apogee).plot(x = 'flightTime', y = ['rollZ'])
-origRotn.head(apogee).plot(x = 'flightTime', y = ['dt'])
 origRotn.head(apogee).max()
+
+"""-------------------------------
+dt plot of time between cycles (indicates possible problems with the SD card)
+-------------------------------"""
+dtData = df.loc[:, ['timeStamp']]
+dtData['flightTime'] = dtData['timeStamp']/1000000
+dtData.at[0, 'dt'] = 0
+dtData.idxmax()[1]
+
+for i in range(1, dtData.idxmax()[1]):
+    dtData.at[i, 'dt'] = dtData.at[i, 'timeStamp'] - dtData.at[i-1, 'timeStamp']
+    if dtData.at[i, 'dt'] < 0: dtData.at[i, 'dt'] = 0
+    
+dtData.head(apogee).plot(x = 'flightTime', y = ['dt'])
+dtData.plot(x = 'flightTime', y = ['dt'])
 
 """-------------------------------
 Quaternion Differential Method at intervals with continuous rotation integration
@@ -496,7 +546,7 @@ quatRotn.loc[:, 'QuatDiff3'] = quatRotn.loc[:, 'QuatDiff3'].astype('float32')
 quatRotn.loc[:, 'QuatDiff4'] = quatRotn.loc[:, 'QuatDiff4'].astype('float32')
 
 deg2rad = math.pi / 180
-quatRotn2rad = 0.07 * deg2rad/1000000
+quatRotn2rad = gyroGain * deg2rad/1000000
 rad2deg = 1/deg2rad
 offset = 0
 prevRollZ = 0
@@ -684,6 +734,28 @@ rotnCompare.head(apogee).plot(
 #compare.head(apogee).loc[:,['offVert_Quat', 'offVert_DCM2D']].max()
 
 """-------------------------------
+3D PHYSICS MODEL
+-------------------------------"""
+physMod = pd.merge(
+    df['timeStamp','accelX','accelY','accelZ'],
+    quatRotn[['timeStamp','pitchX','yawY','rollZ','offVert']],
+    how="inner",
+    on='timeStamp',
+    left_on=None,
+    right_on=None,
+    left_index=False,
+    right_index=False,
+    sort=True,
+    #suffixes=("_DCM2D", "_Quat"),
+    copy=True,
+    indicator=False,
+    validate=None,
+)
+
+
+
+
+"""-------------------------------
 BATTERY VOLTAGE PLOT
 -------------------------------"""
 df['battVolt'] = df['battVolt'].fillna(method = 'pad')
@@ -694,6 +766,18 @@ df.plot(
         ylabel = 'Battery Voltage',
         legend = False,
         title = 'Battery Voltage')
+
+"""-------------------------------
+BAROMETRIC TEMPERATURE PLOT
+-------------------------------"""
+baro = df.loc[:, ['flightTime','baroPress','baroAlt','altMoveAvg', 'baroVel','baroTemp']]
+baro = baro[baro['baroTemp'].notnull()].reset_index(drop = True)
+baro.plot(
+    x = 'flightTime',
+    y = 'baroTemp',
+    xlabel = 'Flight Time',
+    ylabel = 'Temperature (C)',
+    title = 'Barometric Temperature')
 
 """-------------------------------
 MAGNETOMETER DATA PLOT

@@ -57,35 +57,37 @@ df['flightTime']= df['timeStamp']/1000000
 """-------------------------------
 SET ACCELEROMETER GAINS
 -------------------------------"""
-teensyGen = 3.2
+teensyGen = 1.0
 if teensyGen == 1:
     accelGain = 0.012 #LSM303
     gainHighG = 0.0183 #ADXL377 & ADS1115 Combo
-    centerPoint = 13125 #ADXL377 & ADS1115 Combo
-    centerPoint = 0
+    #centerPoint = 13125 #ADXL377 & ADS1115 Combo
+    centerPoint = 0    
 elif teensyGen == 3:
     accelGain = 0.000732 #LSM9DS1
-    gainHighG = 1/129 #ADXL377 and Teensy ADC
-    highGoffset = 1
+    #accelGain = 1/2048
+    #gainHighG = 1/129 #ADXL377 and Teensy ADC
+    gainHighG = 0.12395
+    highGoffset = 0
     centerPoint = 0
 elif teensyGen == 3.1:
     accelGain = 0.012 #LSM303
     gainHighG = 1/129 #ADXL377 and Teensy ADC
     centerPoint = 0
-elif teensyGen == 3.2 or teensyGen == 3.3:
+elif teensyGen == 2.0 or teensyGen == 3.2 or teensyGen == 3.3 or teensyGen == 4:
     accelGain = 0.000732 #LSM9DS1
     centerPoint = 0
     gainHighG = 0.049 #H3LIS331DL
 
 #Calculate the cycle times    
-dataRate = df.loc[:,'timeStamp'].index.max()/15
+dataRate = df.loc[:,'timeStamp'].index.max()/(df.loc[:,'timeStamp'].max()/1000000)
 for i in range(df.timeStamp.index.max()):
     
     if i == 0: df.at[i, 'dt'] = 0
     else: df.at[i, 'dt'] = df.at[i, 'timeStamp'] - df.at[i-1, 'timeStamp']
 
 #plot the cycle times
-df['dt'].plot(
+df.plot(
     x = 'flightTime',
     xlabel = "Flight Time",
     y = 'dt',
@@ -193,12 +195,14 @@ df.fillna(method='pad').plot(
         title = 'GNSS Coords RXd')
 
 #plot telemetry packets
+sentPacket = 0
 for i in range(df.timeStamp.index.max()):
     if pd.isna(df.at[i, 'radioPacketNum']): df.at[i, 'packetNum']=0
     else: df.at[i, 'packetNum']=1
+    sentPacket += df.at[i, 'packetNum']
 df.plot(
         y='packetNum',
         x='flightTime',
-        title = 'Packets Sent',
+        title = 'Packets Sent: ' + str(sentPacket)[0:3],
         legend = False)
 
