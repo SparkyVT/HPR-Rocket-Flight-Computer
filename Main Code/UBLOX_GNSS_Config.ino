@@ -147,7 +147,7 @@ void UBLOXconfig(byte gpsVersion, bool serialOutput, bool VTGoption) {
     if (gpsSetSuccess == 3 && serialOutput){Serial.println("Ublox Baud Rate 38400 Failed!");}
     else if(gpsVersion == 2){
       HWSERIAL->end();
-      HWSERIAL->clear();
+      HWSERIAL->flush();
       HWSERIAL->begin(38400);}}
   
   }//end configGPS

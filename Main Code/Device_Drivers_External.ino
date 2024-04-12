@@ -15,11 +15,11 @@ Step 4: Place the EEPROMsettings.txt file in the root folder with the Settings.t
 
 //Include statements
 //#include <mySensor.h>
-#include <Adafruit_GPS.h>
+//#include <Adafruit_GPS.h>
 
 //make necessary declarations
 //Adafruit GPS setup
-Adafruit_GPS ultGPS(HWSERIAL);
+//Adafruit_GPS ultGPS(HWSERIAL);
 
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
@@ -253,23 +253,25 @@ void getExternalBaro(){
 void externalGNSS_PSM(){
 
   //Set lower update rate for Adafruit Ultimate GPS
-  ultGPS.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ);}
+  //ultGPS.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ);
+  }
 
 void ExternalGNSSconfig(){
 
     //setup for the Adafruit Ultimate GPS
 
     //restrict the output sentences
-    ultGPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+    //ultGPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
 
     //increase the update rate
-    ultGPS.sendCommand(PMTK_SET_NMEA_UPDATE_10HZ);
+    //ultGPS.sendCommand(PMTK_SET_NMEA_UPDATE_10HZ);
 
     //increase the baud rate
-    ultGPS.sendCommand(PMTK_SET_BAUD_57600);
+    //ultGPS.sendCommand(PMTK_SET_BAUD_57600);
       
     //restart Serial output at a higher rate
-    Serial.begin(57600);}
+    //Serial.begin(57600);
+    }
 
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------

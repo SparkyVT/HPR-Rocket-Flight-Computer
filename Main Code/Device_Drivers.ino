@@ -1190,7 +1190,7 @@ bool beginBMP180() {
 
   //Define bus settings and start bus - ONLY I2C!!
   baroBus.i2cAddress = BMP180_ADDRESS;
-  baroBus.i2cRate = 1000000;
+  baroBus.i2cRate = 400000;
   startI2C(&baroBus, sensors.baroBusNum);
 
   //establish contact

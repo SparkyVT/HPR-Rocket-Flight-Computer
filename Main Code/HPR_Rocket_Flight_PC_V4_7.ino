@@ -1,7 +1,7 @@
 //High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 10223 lines = 1640 MainFile + 773 Header + 923 Calibration + 327 Event_Logic + 553 Rotation + 625 SpeedTrig + 683 SD + 418 Telemetry + 466 Inflight_Recover + 352 Bus_Mgmt + 578 Device_Mgmt + 1931 Device_Drivers + 336 Device_Drivers_External + 340 SX127X_Driver + 278 UBLOX_GNSS_Config      
+//Code Line Count: 10223 lines = 1677 MainFile + 773 Header + 923 Calibration + 327 Event_Logic + 553 Rotation + 625 SpeedTrig + 683 SD + 418 Telemetry + 466 Inflight_Recover + 352 Bus_Mgmt + 578 Device_Mgmt + 1931 Device_Drivers + 336 Device_Drivers_External + 340 SX127X_Driver + 278 UBLOX_GNSS_Config      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features
@@ -125,7 +125,6 @@ PWMServo actionServo7;
 PWMServo actionServo8;
 
 //Timer for the radio
-
 #if defined (STM32_CORE_VERSION)
   #if defined (TIM1)
     TIM_TypeDef *Instance = TIM1;
@@ -284,6 +283,12 @@ void setup(void) {
   settings.HWid[4] = (char)EEPROM.read(eeprom.HWunitNum);
   settings.HWid[5] = '\0';
   Serial.println(F("complete!"));
+
+  //check for unitialized EEPROM
+  if(sensors.accel == 255){
+    Serial.println("WARNING: EEPROM IS UNITIALIZED! SYSTEM CANNOT CONTINUE UNTIL HARDWARE VALUES ARE SET");
+    Serial.println("PLEASE LOAD EEPROMsettings.txt ONTO THE SD CARD ROOT TO PROCEED");
+    while(1){}}
   
   //Set the mode of the output pins
   pinMode(pins.nullCont, INPUT);
@@ -385,7 +390,7 @@ void setup(void) {
   if (settings.fltProfile == '2' or settings.fltProfile == 'A'){boosterBurpTime = min(1000000UL, settings.boosterSeparationDelay-10000UL);}
   if (settings.TXfreq < 420.000F){settings.TXfreq = 421.000F;}//cannot be below the 70cm band, reset to 421MHz band
   if (settings.TXfreq > 450.000F && settings.TXfreq < 902.300F){settings.TXfreq = 902.200F;}//cannot be above the 70cm ham band and below 915MHz ISM band
-  if (settings.TXfreq < 928.000F){settings.TXfreq = 914.900F;}//cannot be above 915MHz ISM band
+  if (settings.TXfreq > 928.000F){settings.TXfreq = 914.900F;}//cannot be above 915MHz ISM band
   
   //Update the EEPROM with the new settings
   EEPROM.update(eeprom.fltProfile, settings.fltProfile);
@@ -449,7 +454,7 @@ void setup(void) {
   //setup the radio
   if(settings.TXenable){
     //70cm ham band
-    if( settings.TXfreq > 400.000F && settings.TXfreq < 500.000F){
+    if( settings.TXfreq == 400.000F && settings.TXfreq < 500.000F){
       if(!configRadio70cm()){Serial.println("70cm Modem Config Failed!");}
       else{Serial.println("70cm Modem Config Success!");}}
     //915MHz FHSS
@@ -998,7 +1003,7 @@ int cyclesBtwn = 0;
 uint32_t sampleTime = 0UL;
 uint32_t sampleStart = 0UL;
 uint32_t sampleTimeCheck = 0UL;
-
+  uint32_t debugTimer = 0UL;
 void loop(void){
 
   //debug

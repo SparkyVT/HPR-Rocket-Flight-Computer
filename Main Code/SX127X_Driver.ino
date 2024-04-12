@@ -241,7 +241,7 @@ bool sendPktSX127X(uint8_t* data, uint8_t len){
 bool config70cmSX127X(){
 
   //NOTE: the maximum allowable bandwidth on 70cm Ham band is 100kHz.  To keep the same data rate
-  //we need to halve the bandwidth but up the bitrate.  SF6 is the only way to do this, 
+  //we need to halve the bandwidth but increase the bitrate.  SF6 is the only way to do this, 
   //but it requires a special configuration
 
   #define RegDectectOptimize    0x31

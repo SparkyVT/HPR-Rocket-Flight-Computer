@@ -219,7 +219,7 @@ void buildTelmetryPkt(){
     pktSize = pktPosn;
     if(implicitHdr){pktSize = 70;}
     pktPosn = 0;
-    if(radioDebug && settings.testMode){Serial.print(F("PreFlight Packet Sent"));}
+    if(radioDebug && settings.testMode){if(settings.serialDebug==3){Serial.println("");} Serial.print(F("PreFlight Packet Sent"));}
     if(settings.FHSS){
       hopNum = nextHop;
       hopFreq = true;
@@ -298,7 +298,9 @@ void buildTelmetryPkt(){
       //send packet
       sendPkt = true;
       //debug output
-      if(radioDebug && settings.testMode){Serial.print(F("InFlight Packet Sent "));Serial.print(radio.packetnum);}
+      if(radioDebug && settings.testMode){
+        if(settings.serialDebug==3){Serial.println("");}
+        Serial.print(F("InFlight Packet Sent "));Serial.print(radio.packetnum);}
 
       //reset counting variables
       sampNum = 0;
@@ -346,7 +348,7 @@ void buildTelmetryPkt(){
       pktSize = pktPosn;
       if(implicitHdr){pktSize = 70;}
        //debug output
-      if(radioDebug && settings.testMode){Serial.print(F("Post Flight Packet Sent"));}
+      if(radioDebug && settings.testMode){if(settings.serialDebug==3){Serial.println("");}Serial.print(F("Post Flight Packet Sent"));}
 
       //reset counting variables
       if(settings.FHSS){hopNum = nextHop;}
@@ -377,8 +379,9 @@ void hopTXfreq(){
 
   //Serial debug
   if(radioDebug && settings.testMode){
+    if(settings.serialDebug==3){Serial.println("");}
     Serial.print("Hopping Freq: ");Serial.print(freqList915[nextChnl], 3);
-    Serial.print(", HopNum: ");Serial.print(nextHop);Serial.print(", time; ");Serial.println(micros());}
+    Serial.print(", HopNum: ");Serial.print(nextHop);Serial.print(", time; ");Serial.print(micros());}
 
   //set the radio to the new frequency
   setRadioFreq(freqList915[nextChnl]);
