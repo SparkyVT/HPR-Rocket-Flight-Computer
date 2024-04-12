@@ -1,5 +1,4 @@
-*NOTE: If you are planning to use this code or board files, please send me a Private Message (PM) on Rocketry Forum 
-to ensure I have posted the latest updates.  https://www.rocketryforum.com/members/sparkyvt.810/
+*NOTE: I get many messages expressing interest in this system.  I plan on offering an Arduino programmable filght computer with open source code by mid-2024.  Until then, there are 5 hardware options to use this code.  Scroll to the bottom to view the 5 options.  My website is not yet running, but you can contact me at https://www.rocketryforum.com/members/sparkyvt.810/
 
 HPR Rocket Flight Computer
 Original sketch by SparkyVT
@@ -61,43 +60,28 @@ Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
    Pressure Sensor: MS5611 (recommended), MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
               GNSS: UBLOX M6, M7, M8, M9 (NEO footprint supported in PCB file) or Adafruit Ultimate GPS
     LoRa Telemetry: RFM96W or RFM95W, both capable of TX on 433MHz or 915MHz (433MHz USA: Amateur License Required, EUR: License Free)
-   Tactile Buttons: 0.2 in spacing
-               PCB: Use the provided PCBexpress design file or create your own
-           Battery: 2-cell 400mAh 20C LiPo recommended (DO NOT EXCEED 10V with provided PCB)
 
 --------GROUND STATION COMPONENTS----------
-                  MCU: Teensy 3.2
-            Telemetry: RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
-                  GPS: Ublox SAM-M8Q (optional)
-                  IMU: Sparkfun LSM9DS1 breakout
-                  LCD: 20X4 Sparkfun LCD
-              SD Card: Adafruit SD Card breakout board
-              Antenna: 433Mhz 5-element Yagi (Ham Only) or 900Mhz (License Free)
-                 Case: File provided for 3D printed case
-           BNC to SMA: 6-inch cable
-            SMA cable: 6-inch cable
-              Battery: Recommended 7.4V 2-cell LiPo 450MAh
-      1K Ohm Resistor: 1/8 Watt
-     10K Ohm Resistor: 1/8 Watt
+               MCU: Arduino Nano 33 BLE
+         Telemetry: RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
+               GPS: Ublox SAM-M8Q (optional)
+               IMU: Sparkfun LSM9DS1 breakout
+               LCD: 20X4 Sparkfun LCD
+           SD Card: Adafruit SD Card breakout board
+           Antenna: 433Mhz 5-element Yagi (Ham Only) or 900Mhz (License Free)
 
 --------ADDITIONAL LIBRARIES REQUIRED----------
 TinyGPS++
 SDfat and/or SD
 
---------INTENDED FUTURE REVISIONS----------
-1) Upgrade ground station with GPS, digital compass, & Bluetooth
-2) Develop Android App for ground station
-3) Optional remote start & shutdown command
+----------------HARDWARE OPTIONS----------------
+OPTION 1: Assemble the unit yourself.  Purchase a Teensy 4.0 or 4.1 and integrate the system with commercially availble sensor breakout boards.  If you want to use high-current pyro outputs, then it is up to you to develop the continuity and firing circuitry.  I have threaded standoffs and screws that are a perfect fit for the Adafruit breakout boards.
 
---------NOTES----------
-Note: All of the above components were purchased through Digikey.  Other
-sources for the same components should work, but are untested and may not
-fit the provided PCB
+OPTION 2: Contact me for a custom Teensy breakout board and add your own sensors.  The breakout includes a Teensy 4.1, integrates 4x high-current pyro outputs, and 6 easy-to-use terminal blocks to integrate into your high-power rocket.  Includes Qwiic connector to easily integrate your custom sensor package over I2C.
 
-Note: 1.25in x 4.0in size board.  Will fit in a 38mm coupler tube.
-Components mount on both sides.  See provided pictures for examples.
+OPTION 3: Contact me for a fully-functional Frankenstein-board.  This integrates all sensors breakout boards onto a single main board that is 4.0 x 1.25 x 0.5 inches.  Comes fully assembled, pre-programmed, calibrated, and tested.  Configurations will vary, but quality will not.  
 
-Note: Estimated Flight Computer Cost = $150
-Note: Estimated Ground Station Cost = $150 (does not include antenna)
-Note: Estimated build time = 3hrs
-Note: Estimated programming, setup, calibration, & debugging time = 4hrs
+OPTION 4: Try your hand at assembling the Frankenstein-board yourself.  This is a single bare-board with no breakouts attached.  You will need to reflow the GNSS chip and hand-solder approximately 30 components.  Instructions included.  Contact me for for a bare-board.
+
+OPTION 5: Contact me for a fully assembled and tested ground station.  Includes ground unit with 2 radios and 20x4 LCD mounted in a custom form-fitting box.  
+
