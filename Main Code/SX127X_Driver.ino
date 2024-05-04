@@ -216,7 +216,9 @@ bool sendPktSX127X(uint8_t* data, uint8_t len){
   radioMode = 1;
 
   //clear flags
-  write8(RegIrqFlags, 0xFF);
+  uint8_t myFlags = read8(RegIrqFlags);
+  if(myFlags != 0x00){Serial.print("Prior TX Error: ");Serial.println(myFlags);}
+  write8(RegIrqFlags, 0x00);
   
   //set the FIFO pointer to start of the buffer
   write8(RegFifoAddrPtr, 0x00);
@@ -381,7 +383,7 @@ void clearFlagsSX127X(){
   //read the IRQ flags
   uint8_t debugVal = read8(RegIrqFlags);
 
-  if(radioDebug){
+  if(radioDebug && settings.testMode){
     if(debugVal == 0x08){
       Serial.print(", TX Done: ");Serial.print(debugVal, HEX);
       Serial.print(", TX Time: ");Serial.println(TXtime);}

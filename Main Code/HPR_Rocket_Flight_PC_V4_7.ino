@@ -1,7 +1,7 @@
 //High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 10223 lines = 1677 MainFile + 773 Header + 923 Calibration + 327 Event_Logic + 553 Rotation + 625 SpeedTrig + 683 SD + 418 Telemetry + 466 Inflight_Recover + 352 Bus_Mgmt + 578 Device_Mgmt + 1931 Device_Drivers + 336 Device_Drivers_External + 340 SX127X_Driver + 278 UBLOX_GNSS_Config      
+//Code Line Count: 10750 lines = 1675 MainFile + 773 Header + 923 Calibration + 334 Event_Logic + 553 Rotation + 625 SpeedTrig + 684 SD + 443 Telemetry + 466 Inflight_Recover + 352 Bus_Mgmt + 690 Device_Mgmt + 2208 Device_Drivers + 346 Device_Drivers_External + 400 SX127X_Driver + 278 UBLOX_GNSS_Config      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features
@@ -77,7 +77,7 @@
 //V4_5_4 fixes a bug in the sensor timing that reduced the effective data capture rate
 //V4_5_5 removes launch detection user options since the algorithm is proven reliable, fixes a timing bug with the barometers, makes GPS configuration code more portable, adds LPS25H support, fixes bugs with LSM6DS33 and LIS3MDL, fixes SD card pre-processor bugs, added support for Adafruit Ultimate GPS
 //V4_6_0 improves portability of quaternion rotation code, added MPU6050 support, fixed calibration routine bug, cleaned up some of the GPS data processing, corrected major bug in high-G moving average, fixed a bug with the UBLOX power save mode
-//V4_7_0 adds support for any sensor with an external library, fixed a bug at liftoff that caused intermittent resetting when moving up the rail, created breakout file for sensor management, cleaned up some of the structs, corrected 70cm bandwidth problem
+//V4_7_0 adds support for any sensor with an external library, fixed a bug at liftoff that caused intermittent resetting when moving up the rail, created breakout file for sensor management, cleaned up some of the structs, added LSM6DSOX support, fixed more LIS3MDL bugs
 //-------FUTURE UPGRADES----------
 //Active Stabilization (started)
 //Return-to-Base capability (started)
@@ -996,7 +996,7 @@ void setup(void) {
   //initialize the radio timing
   radioTimer.begin(timerBuildPkt, pktInterval.preLiftoff);
   if(settings.fltProfile == 'B'){radio.event = Booster_Preflight;}
-  
+  Serial.println("End Setup");
 }//end setup
 
 int cyclesBtwn = 0;
@@ -1349,13 +1349,11 @@ void loop(void){
     timeLastBeep = fltTime.tmClock;}
     
   //GPS Code
-  //restore defaults if we go a long time without a lock
-  /*if(!configGPSdefaults && micros() - timeLastGPS > 10000000UL){
-    restoreGPSdefaults(settings.testMode);
-    configGPSdefaults = true; 
-    gpsFix = 0;
-    fixCount = 0;
-    configGPSflight = false;}*/
+  //restore defaults if desired
+  bool restoreDefaults = false;
+  if(restoreDefaults){
+    restoreGPSdefaults();
+    restoreDefaults = false;}
   //5 seconds after touchdown put GPS into Power Save Mode (PSM)
   if(!gnss.configPwrSave && (events.touchdown || events.timeOut) && micros() - fltTime.touchdown > 5000000UL){GNSSpowerSave();gnss.configPwrSave = true;}
   //Read from serial

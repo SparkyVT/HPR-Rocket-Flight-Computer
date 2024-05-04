@@ -343,12 +343,24 @@ bool beginLSM9DS1_AG() {
   Serial.println(F("LSM9DS1 Accelerometer/Gyroscope OK!"));
 
   //Set Accelerometer 16G Range, 952 Hz ODR
-  write8(LSM9DS1_REGISTER_CTRL_REG6_XL, 0b11001000);
+  uint8_t setVal = 0b11001000;
+  write8(LSM9DS1_REGISTER_CTRL_REG6_XL, setVal);
+  delay(10);
+  uint8_t val = read8(LSM9DS1_REGISTER_CTRL_REG6_XL);
+  if(val != setVal){
+    Serial.print("Accel CTRL REG6 Error: ");Serial.println(val); 
+    return false;}
   accel.ADCmax = (int16_t)(0.9 * 32768);
   accel.gainX = accel.gainY = accel.gainZ = 0.000732;
 
   //Set Gyroscope 2000dps Range, 952 Hz ODR
-  write8(LSM9DS1_REGISTER_CTRL_REG1_G, 0b11011000);
+  setVal = 0b11011000;
+  write8(LSM9DS1_REGISTER_CTRL_REG1_G, setVal);
+  delay(10);
+  val = read8(LSM9DS1_REGISTER_CTRL_REG1_G);
+  if(val != setVal){
+    Serial.print("Accel CTRL REG1_G Error: ");Serial.println(val); 
+    return false;}
   gyro.gainX = gyro.gainY = gyro.gainZ = 0.07;
   gyro.ADCmax = 32768;
   //set time between samples
@@ -530,6 +542,91 @@ void getLSM6DS33() {
   accel.rawZ  = (int16_t)(rawData[10] | (rawData[11] << 8));}
 
 //***************************************************************************
+//LSM6DSOX Accelerometer & Gyroscope
+//***************************************************************************
+bool beginLSM6DSOX() {
+
+  //Addresses for the registers
+  #define LSM6DSOX_ADDRESS_ACCELGYRO            (0x6A)
+  #define LSM6DSOX_WHOAMI                       (0x0F)
+  #define LSM6DSOX_REGISTER_CTRL1_XL            (0x10)
+  #define LSM6DSOX_REGISTER_CTRL2_G             (0x11)
+
+  //Define bus settings and start bus
+  if (sensors.accelBusType == 'I') {
+    accelBus.i2cAddress = gyroBus.i2cAddress = LSM6DSOX_ADDRESS_ACCELGYRO;
+    accelBus.i2cRate = gyroBus.i2cRate = 400000;
+    startI2C(&accelBus, sensors.accelBusNum);}
+  else {
+    accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
+    accelBus.cs = gyroBus.cs = pins.accelCS;
+    accelBus.readMask = gyroBus.readMask = 0x80;
+    startSPI(&accelBus, sensors.accelBusNum);}
+  gyroBus = accelBus;
+
+  //if I2C, check if there is a sensor at this address
+  if (sensors.accelBusType == 'I') {
+    if (!testSensor(LSM6DSOX_ADDRESS_ACCELGYRO)) {
+      Serial.println(F("LSM6DSOX no reply!"));
+      return false;}}
+
+  //check whoami
+  byte id = read8(LSM6DSOX_WHOAMI);
+  if (id != 0b01101100) {
+    Serial.println(F("LSM6DSOX not found!"));
+    return false;}
+  Serial.println(F("LSM6DSOX OK!"));
+
+  //CTRL_REG1_ODR: 1000 = 1.66kHz, 1001 = 3.33kHz, 1010 = 6.66kHz
+  //CTRL_REG1_FS: 00 = 2G, 01 = 16G, 10 = 4G, 11 = 8G
+  //CTRL_REG1_BW: 00 = 400Hz, 01 = 200Hz, 10 = 100Hz, 11 = 50Hz
+  //Accelerometer set 16G Range, 1.66kHz ODR, 400Hz BW
+  uint8_t setVal = 0b10000100;
+  write8(LSM6DSOX_REGISTER_CTRL1_XL, setVal);
+  delay(10);
+  uint8_t val = read8(LSM6DSOX_REGISTER_CTRL1_XL);
+  if(val != setVal){
+    Serial.print("Accel CTRL1 Error: ");Serial.println(val); 
+    return false;}
+  accel.gainX = accel.gainY = accel.gainZ = 0.000488;
+  accel.ADCmax = (int16_t)(0.98 * 32768);
+  accel.timeBtwnSamp = 602;
+
+  //Gyroscope set 2000dps Range, 1.66kHz ODR
+  setVal = 0b10001100;
+  write8(LSM6DSOX_REGISTER_CTRL2_G, setVal);
+  delay(10);
+  val = read8(LSM6DSOX_REGISTER_CTRL2_G);
+  if(val != setVal){
+    Serial.print("Accel CTRL2_G Error: ");Serial.println(val); 
+    return false;}
+  gyro.gainX = gyro.gainY = gyro.gainZ = 0.07;
+  gyro.ADCmax = 32768;
+  gyro.timeBtwnSamp = 602;
+
+  return true;
+}//end begin
+
+void getLSM6DSOX() {
+
+  //this routine uses the LSM6DS33 burst read to rapidly read 12 bytes from the sensors
+  #define LSM6DSOX_REGISTER_OUTX_L_G (0x22)
+
+  //setup the bus
+  activeBus = &accelBus;
+  
+  //read the data
+  burstRead(LSM6DSOX_REGISTER_OUTX_L_G, 12);
+
+  //assemble the data
+  gyro.rawX   = (int16_t)(rawData[0] | (rawData[1] << 8));
+  gyro.rawY   = (int16_t)(rawData[2] | (rawData[3] << 8));
+  gyro.rawZ   = (int16_t)(rawData[4] | (rawData[5] << 8));
+  accel.rawX  = (int16_t)(rawData[6] | (rawData[7] << 8));
+  accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
+  accel.rawZ  = (int16_t)(rawData[10] | (rawData[11] << 8));}
+
+//***************************************************************************
 //MPU6050 Accelerometer & Gyroscope
 //***************************************************************************
 bool beginMPU6050(){
@@ -596,7 +693,7 @@ void getMPU6050(){
   gyro.rawX  = (int16_t)(rawData[9]  | (rawData[8]  << 8));
   gyro.rawY  = (int16_t)(rawData[11] | (rawData[10] << 8));
   gyro.rawZ  = (int16_t)(rawData[13] | (rawData[12] << 8));}
-  //***************************************************************************
+//***************************************************************************
 //MPU9250 Accelerometer & Gyroscope
 //***************************************************************************
 bool beginMPU9250_AG(){
@@ -740,7 +837,7 @@ void getMPU9250_M(){
 bool beginLIS3MDL() {
 
   //Addresses for the registers
-  #define LIS3MDL_ADDRESS_MAG                  (0x1E)
+  #define LIS3MDL_ADDRESS_MAG                  (0x1C)
   #define LIS3MDL_WHOAMI                       (0x0F)
   #define LIS3MDL_REGISTER_CTRL_REG1           (0x20)
   #define LIS3MDL_REGISTER_CTRL_REG2           (0x21)
@@ -770,26 +867,55 @@ bool beginLIS3MDL() {
     return false;}
   Serial.println(F("LIS3MDL OK!"));
 
-  //Temp Sensor Off, UltraHigh Perf, 40Hz
-  write8(LIS3MDL_REGISTER_CTRL_REG1, 0b01111000);
+  //CTRL_REG1: Temp Sensor Off, UltraHigh Perf, 40Hz
+  uint8_t setVal = 0b01111000;
+  write8(LIS3MDL_REGISTER_CTRL_REG1, setVal);
+  delay(10);
+  uint8_t val = read8(LIS3MDL_REGISTER_CTRL_REG1);
+  if(val != setVal){
+    Serial.print("Mag CTRL1 Error: ");Serial.println(val); 
+    return false;}
 
+  //CTRL_REG2: gain level
   if(settings.magSwitchEnable){
     //Set gain to 8 Gauss
-    write8(LIS3MDL_REGISTER_CTRL_REG2, 0b00100000);
+    setVal = 0b00100000;
+    write8(LIS3MDL_REGISTER_CTRL_REG2, setVal);
+
     mag.gainX = mag.gainY = mag.gainZ = (float)(1 / 3421);
     mag.biasX /= 2;
     mag.biasY /= 2;
     mag.biasZ /= 2;}
   else{
     //Set gain to 4 Gauss
-    write8(LIS3MDL_REGISTER_CTRL_REG2, 0x00);
+    setVal = 0x00;
+    write8(LIS3MDL_REGISTER_CTRL_REG2, setVal);
     mag.gainX = mag.gainY = mag.gainZ = (float)(1 / 6842);}
 
-  //Mag Continuous Conversion
-  write8(LIS3MDL_REGISTER_CTRL_REG3, 0x00);
+  //Check the CTRL_REG2 settings
+  delay(10);
+  val = read8(LIS3MDL_REGISTER_CTRL_REG2);
+  if(val != setVal){
+    Serial.print("Mag CTRL2 Error: ");Serial.println(val); 
+    return false;}
 
-  //Mag Reverse Magnetometer MSB / LSB Order, Z-Axis high-perf mode
-  write8(LIS3MDL_REGISTER_CTRL_REG3, 0b00001100);
+  //CTRL_REG3: Mag Continuous Conversion
+  setVal = 0x00;
+  write8(LIS3MDL_REGISTER_CTRL_REG3, setVal);
+  delay(10);
+  val = read8(LIS3MDL_REGISTER_CTRL_REG2);
+  if(val != setVal){
+    Serial.print("Mag CTRL3 Error: ");Serial.println(val); 
+    return false;}
+
+  //CTRL_REG4: Z-Axis high-perf mode
+  setVal = 0b00001100;
+  write8(LIS3MDL_REGISTER_CTRL_REG4, setVal);
+  delay(10);
+  val = read8(LIS3MDL_REGISTER_CTRL_REG4);
+  if(val != setVal){
+    Serial.print("Mag CTRL4 Error: ");Serial.println(val); 
+    return false;}
 
   //set time between samples
   mag.timeBtwnSamp = 25000UL;

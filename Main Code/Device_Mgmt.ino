@@ -53,8 +53,13 @@ void beginAccel() {
 
     case 5:
       sensors.statusAccel = sensors.statusGyro = beginMPU9250_AG();
+      break;
+    
+    case 6:
+      sensors.statusAccel = sensors.statusGyro= beginLSM6DSOX();
+      break;
 
-    case 6://External Library          
+    case 7://External Library          
       sensors.statusAccel = beginExternalAccel();
       break;
       
@@ -95,8 +100,12 @@ void getAccel() {
     case 5:
       getMPU9250_AG();
       break;
+    
+    case 6:
+      getLSM6DSOX();
+      break;
 
-    case 6://External Library
+    case 7://External Library
       getExternalAccel();
       break;
       
@@ -152,7 +161,7 @@ void beginMag() {
 void getMag() {
 
   //get the sensor data
-  switch (sensors.accel) {
+  switch (sensors.mag) {
 
     case 0://not present
       break;
@@ -218,7 +227,10 @@ void beginGyro() {
     case 5://MPU9250 - handled in accel setup
       break;
 
-    case 6://External Library
+    case 6://LSM6DSOX - handled in accel setup
+      break;
+
+    case 7://External Library
       sensors.statusGyro = beginExternalGyro();
       break;
 
@@ -251,7 +263,10 @@ void getGyro() {
     case 5://MPU9250 - done in getAccel()
       break;
 
-    case 6://External Library
+    case 6://LSM6DSOX - done in getAccel()
+      break;
+    
+    case 7://External Library
       getExternalGyro();
       break;
 
