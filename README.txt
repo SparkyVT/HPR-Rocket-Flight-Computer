@@ -19,10 +19,10 @@ Live telemetry over 433MHz or 915MHz LoRa (433MHz: USA amateur 70cm band, EUR li
 4 high-current pyro outputs with continuity checks
 Advanced MEMS sensor package: GNSS, accelerometers, gyroscope, magnetometer, barometer, and LoRa radio
 High Data-Capture rate: approximately 50,000 samples per second recorded to SD card
---1000Hz 3-axis digital 24G and 100G accelerometer data logging
---1000Hz 3-axis digital 2000dps gyroscope data logging
---1000Hz of flight events & continuity data logging
---1000Hz of sensor-fuzed speed & altitude
+--1600Hz 3-axis digital 24G and 100G accelerometer data logging
+--1600Hz 3-axis digital 2000dps gyroscope data logging
+--1600Hz of flight events & continuity data logging
+--1600Hz of sensor-fuzed speed & altitude
 --100Hz of pitch, yaw, roll rotation
 --40Hz of of magnetic data logging and magnetic roll
 --30Hz-100Hz of digital barometric data logging (Altitude, pressure, temperature)
@@ -49,12 +49,12 @@ Bench-test mode activated w/ tactile button; user configurable status messages o
 Report in SI or Metric units
 Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
 --Connect any sensor to any available I2C or SPI bus
---Create your own custom setup with configurable pins for continuity, firing, and servos
+--Create your own custom hardware setup with configurable pins for continuity, firing, and servos
 --Connect UBLOX GPS unit to any available HW Serial port
 
 --------FLIGHT COMPUTER COMPONENTS----------
     Microprocessor: Teensy 4.1, 3.5, or 3.6 (compatible with provided PCB file) or Teensy 4.0/3.2 (no PCB file provided)
-               IMU: LSM6DS0X (recommended), LSM9DS1, LSM6DS33, MPU6050, or LSM303 & L3GD20H combo
+               IMU: LSM6DSOX (recommended), LSM9DS1, LSM6DS33, MPU6050, or LSM303 & L3GD20H combo
       Magnetometer: LIS3MDL (recommended), LSM9DS1, or LSM303
 100G Accelerometer: H3LIS331DL (recommended), ADXL377, or ADXL377 & ADS1115 combo
    Pressure Sensor: MS5611 (recommended), MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
@@ -77,7 +77,7 @@ SDfat and/or SD
 ----------------HARDWARE OPTIONS----------------
 OPTION 1: Assemble the unit yourself.  Purchase a Teensy 4.0 or 4.1 and integrate the system with commercially availble sensor breakout boards.  If you want to use high-current pyro outputs, then it is up to you to develop the continuity and firing circuitry.  I have threaded standoffs and screws that are a perfect fit for the Adafruit breakout boards.
 
-OPTION 2: Contact me for a custom Teensy breakout board and add your own sensors.  The breakout includes a Teensy 4.1, integrates 4x high-current pyro outputs, and 6 easy-to-use terminal blocks to integrate into your high-power rocket.  Includes Qwiic connector to easily integrate your custom sensor package over I2C.
+OPTION 2: Contact me for a custom Teensy breakout board and add your own sensors.  The breakout includes a Teensy 4.1, integrates 4x high-current pyro outputs, and 6 easy-to-use terminal blocks to integrate into your high-power rocket.  Includes Qwiic connector to easily integrate your custom sensor package over I2C. Optional UBLOX SAM-M8Q integrated GNSS.
 
 OPTION 3: Contact me for a fully-functional Frankenstein-board.  This integrates all sensors breakout boards onto a single main board that is 4.0 x 1.25 x 0.5 inches.  Comes fully assembled, pre-programmed, calibrated, and tested.  Configurations will vary, but quality will not.  
 
