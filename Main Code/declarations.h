@@ -182,9 +182,9 @@ struct{
     int Ki = 245;//4
     int Kd = 249;//4
     int totalFlights = 253;//2
-    int gyroBiasX = 155;//2
-    int gyroBiasY = 157;//2
-    int gyroBiasZ = 159;//2
+    int gyroBiasX = 255;//2
+    int gyroBiasY = 257;//2
+    int gyroBiasZ = 259;//2
 } eeprom;
 //-----------------------------------------
 //Sensor device data

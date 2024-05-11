@@ -9,24 +9,49 @@
 //17 JUL 21: initial file breakout created
 //02 AUG 21: revision of PID control system, fixed bugs in DCM2D
 //26 DEC 21: initial coding of return system
+//11 MAY 24: updated for Teensy4.0/4.1 FPU at 64bit precision
 //---------------------------------
+#if defined (__IMXRT1062__)
+void getQuatRotn(double dx, double dy, double dz, double gyroGain){
+
+  //Local Vectors
+  static double Quat[5] = {0.0, 1.0, 0.0, 0.0, 0.0};  
+  double QuatDiff[5];
+  double Rotn1[4];
+  double Rotn2[4];
+  double Rotn3[4];
+  double quatLen;
+  double a,b,c,d,a2,b2,c2,d2,ab,ac,ad,bc,bd,cd;
+
+  //Local rotation holders
+  static double prevRollZ = 0;
+  static double quatRollZ = 0;
+  static double fullRollZ = 0;
+
+  const double rotn2rad = gyroGain * DEG_TO_RAD / 1000000;
+
+#else
 
 void getQuatRotn(float dx, float dy, float dz, float gyroGain){
-
   //Local Vectors
   static float Quat[5] = {0.0, 1.0, 0.0, 0.0, 0.0};  
   float QuatDiff[5];
   float Rotn1[4];
   float Rotn2[4];
   float Rotn3[4];
-  
+  float quatLen;
+  float a,b,c,d,a2,b2,c2,d2,ab,ac,ad,bc,bd,cd;
+
   //Local rotation holders
   static long prevRollZ = 0;
   static long quatRollZ = 0;
   static long fullRollZ = 0;
 
+  const float rotn2rad = gyroGain * DEG_TO_RAD / 1000000;
+
+#endif
+
   //convert to radians
-  const float rotn2rad = gyroGain * (3.14159265359 / 180) / 1000000;
   dx *= rotn2rad;
   dy *= rotn2rad;
   dz *= rotn2rad;
@@ -44,27 +69,27 @@ void getQuatRotn(float dx, float dy, float dz, float gyroGain){
   Quat[4] += QuatDiff[4];
   
   //re-normalize
-  float quatLen = powf( Quat[1]*Quat[1] + Quat[2]*Quat[2] + Quat[3]*Quat[3] + Quat[4]*Quat[4], -0.5);
+  quatLen = powf( Quat[1]*Quat[1] + Quat[2]*Quat[2] + Quat[3]*Quat[3] + Quat[4]*Quat[4], -0.5);
   Quat[1] *= quatLen;
   Quat[2] *= quatLen;
   Quat[3] *= quatLen;
   Quat[4] *= quatLen;
 
   //compute the components of the rotation matrix
-  float a = Quat[1];
-  float b = Quat[2];
-  float c = Quat[3];
-  float d = Quat[4];
-  float a2 = a*a;
-  float b2 = b*b;
-  float c2 = c*c;
-  float d2 = d*d;
-  float ab = a*b;
-  float ac = a*c;
-  float ad = a*d;
-  float bc = b*c;
-  float bd = b*d;
-  float cd = c*d;
+  a = Quat[1];
+  b = Quat[2];
+  c = Quat[3];
+  d = Quat[4];
+  a2 = a*a;
+  b2 = b*b;
+  c2 = c*c;
+  d2 = d*d;
+  ab = a*b;
+  ac = a*c;
+  ad = a*d;
+  bc = b*c;
+  bd = b*d;
+  cd = c*d;
       
   //Compute rotation matrix
   Rotn1[1] = a2 + b2 - c2 - d2;
@@ -116,11 +141,10 @@ void getDCM2DRotn(long dx, long dy, long dz, float gyroGain){
   static float rawX = 0.0F;
   static float rawY = 0.0F;
   static float rawZ = 0.0F;
-  const float deg2rad = 3.141592653589793238462 / 180;
   
   //Calculate new Z angle from gyro data
   rawZ += dz;
-  float radNewRoll = dz * gyroGain * deg2rad  * mlnth;//convert to radians
+  float radNewRoll = dz * gyroGain * DEG_TO_RAD  * mlnth;//convert to radians
   
   //compute sin(roll) and cos(roll)
   float sinNewRoll = sinSmallAngle(radNewRoll);

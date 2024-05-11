@@ -1,7 +1,7 @@
 //High-Power Rocketry Flight Computer (TeensyFlight)
 //Original sketch by Bryan Sparkman, TRA #12111, NAR #85720, L3
 //Built for Teensy 3.2, 3.5, 3.6, 4.0, and 4.1
-//Code Line Count: 10750 lines = 1675 MainFile + 773 Header + 923 Calibration + 334 Event_Logic + 553 Rotation + 625 SpeedTrig + 684 SD + 443 Telemetry + 466 Inflight_Recover + 352 Bus_Mgmt + 690 Device_Mgmt + 2208 Device_Drivers + 346 Device_Drivers_External + 400 SX127X_Driver + 278 UBLOX_GNSS_Config      
+//Code Line Count: 10775 lines = 1675 MainFile + 773 Header + 923 Calibration + 334 Event_Logic + 578 Rotation + 625 SpeedTrig + 684 SD + 443 Telemetry + 466 Inflight_Recover + 352 Bus_Mgmt + 690 Device_Mgmt + 2208 Device_Drivers + 346 Device_Drivers_External + 400 SX127X_Driver + 278 UBLOX_GNSS_Config      
 //--------FEATURES----------
 //Dual-deploy flight computer capable to over 100,000ft 
 //Two-stage & airstart capable with tilt-sensing safety features
@@ -357,7 +357,7 @@ void setup(void) {
   beginMag();
   beginHighG();
   beginBaro();
-  
+
   //Initialize the radio
   //if the Adafruit RFM9XW board is used, make sure its on
   if(pins.radioEN != pins.nullCont){pinMode(pins.radioEN, OUTPUT);digitalWrite(pins.radioEN, HIGH);}
@@ -608,6 +608,12 @@ void setup(void) {
   accel.biasY = calUnion.calValue;
   calUnion.calByte[0]=EEPROM.read(eeprom.accelBiasZ); calUnion.calByte[1]=EEPROM.read(eeprom.accelBiasZ+1);
   accel.biasZ = calUnion.calValue;
+  calUnion.calByte[0]=EEPROM.read(eeprom.gyroBiasX); calUnion.calByte[1]=EEPROM.read(eeprom.gyroBiasX+1);
+  gyro.biasX = calUnion.calValue;
+  calUnion.calByte[0]=EEPROM.read(eeprom.gyroBiasY); calUnion.calByte[1]=EEPROM.read(eeprom.gyroBiasY+1);
+  gyro.biasY = calUnion.calValue;
+  calUnion.calByte[0]=EEPROM.read(eeprom.gyroBiasZ); calUnion.calByte[1]=EEPROM.read(eeprom.gyroBiasZ+1);
+  gyro.biasZ = calUnion.calValue;
   calUnion.calByte[0]=EEPROM.read(eeprom.highGbiasX); calUnion.calByte[1]=EEPROM.read(eeprom.highGbiasX+1);
   highG.biasX = calUnion.calValue;
   calUnion.calByte[0]=EEPROM.read(eeprom.highGbiasY); calUnion.calByte[1]=EEPROM.read(eeprom.highGbiasY+1);
@@ -663,6 +669,9 @@ void setup(void) {
     Serial.print(F("accel.biasX: "));Serial.println(accel.biasX);
     Serial.print(F("accel.biasY: "));Serial.println(accel.biasY);
     Serial.print(F("accel.biasZ: "));Serial.println(accel.biasZ);
+    Serial.print(F("gyro.biasX: "));Serial.println(gyro.biasX);
+    Serial.print(F("gyro.biasY: "));Serial.println(gyro.biasY);
+    Serial.print(F("gyro.biasZ: "));Serial.println(gyro.biasZ);
     Serial.print(F("highG.biasX: "));Serial.println(highG.biasX);
     Serial.print(F("highG.biasY: "));Serial.println(highG.biasY);
     Serial.print(F("highG.biasZ: "));Serial.println(highG.biasZ);
@@ -781,9 +790,11 @@ void setup(void) {
 
   if(settings.testMode){Serial.println(F("Sampling Sensors"));}
   //sample the sensors for 3 seconds to determine the offsets and initial values
-  gyro.biasX = 0;
-  gyro.biasY = 0;
-  gyro.biasZ = 0;
+  //all gyros must be calibrated at the pad except the LSM6DSOX
+  if(sensors.gyro != 6){
+    gyro.biasX = 0;
+    gyro.biasY = 0;
+    gyro.biasZ = 0;}
   getHighG();//clear out the buffer, useful only for the ADXL377 combo
   int16_t accelSamps = 0;
   int16_t gyroSamps = 0;
@@ -839,9 +850,11 @@ void setup(void) {
   Serial.print("accel samples: "); Serial.println(accelSamps);
   Serial.print("highG samples: "); Serial.println(highGsamps);
   Serial.print("mag samples: "); Serial.println(magSamps);
-  gyro.biasX = (int)round(gyro.sumX0 / gyroSamps);
-  gyro.biasY = (int)round(gyro.sumY0 / gyroSamps);
-  gyro.biasZ = (int)round(gyro.sumZ0 / gyroSamps);
+  //LSM6DSOX is accurate enough to not need calibration
+  if(sensors.gyro != 6){
+    gyro.biasX = (int)round(gyro.sumX0 / gyroSamps);
+    gyro.biasY = (int)round(gyro.sumY0 / gyroSamps);
+    gyro.biasZ = (int)round(gyro.sumZ0 / gyroSamps);}
   accel.x0 = (int)round(accel.sumX0 / accelSamps);
   accel.y0 = (int)round(accel.sumY0 / accelSamps);
   accel.z0 = (int)round(accel.sumZ0 / accelSamps);
@@ -895,12 +908,11 @@ void setup(void) {
   //highG.biasX = highGx0 - (int)((float)accel.x0 / (float)A2D) - 27;//old formula is kept for reference
   
   //Compute the acceleromter based rotation angle
-  const float rad2deg = 57.29577951308; //degrees per radian
-  if (accel.y0 >= 0) {yawY0 = asinf(min(1, (float)accel.y0 / (float)g)) * rad2deg;}
-  else {yawY0 = asinf(max(-1, (float)accel.y0 / (float)g)) * rad2deg;}
+  if (accel.y0 >= 0) {yawY0 = asinf(min(1, (float)accel.y0 / (float)g)) * RAD_TO_DEG;}
+  else {yawY0 = asinf(max(-1, (float)accel.y0 / (float)g)) * RAD_TO_DEG;}
 
-  if (accel.x0 >= 0) {pitchX0 = asinf(min(1, (float)accel.x0 / (float)g)) * rad2deg;}
-  else {pitchX0 = asinf(max(-1, (float)accel.x0 / (float)g)) * rad2deg;}
+  if (accel.x0 >= 0) {pitchX0 = asinf(min(1, (float)accel.x0 / (float)g)) * RAD_TO_DEG;}
+  else {pitchX0 = asinf(max(-1, (float)accel.x0 / (float)g)) * RAD_TO_DEG;}
 
   //update quaternion rotation
   getQuatRotn(pitchX0*1000000/gyro.gainZ, yawY0*1000000/gyro.gainZ, 0, gyro.gainZ);
@@ -1003,7 +1015,7 @@ int cyclesBtwn = 0;
 uint32_t sampleTime = 0UL;
 uint32_t sampleStart = 0UL;
 uint32_t sampleTimeCheck = 0UL;
-  uint32_t debugTimer = 0UL;
+uint32_t debugTimer = 0UL;
 void loop(void){
 
   //debug

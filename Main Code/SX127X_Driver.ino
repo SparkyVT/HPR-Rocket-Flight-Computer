@@ -191,7 +191,7 @@ bool setPwrSX127X(int8_t pwr){
 
     //write to the power config register
     int8_t radioPwr = (0x80 | (pwr-2));
-    Serial.print("Power Set: ");Serial.println(radioPwr, HEX);
+    if(settings.testMode){Serial.print("Power Set: ");Serial.println(radioPwr, HEX);}
     write8(regPaConfig, radioPwr);
     delay(10);
     debugVal = read8(regPaConfig);

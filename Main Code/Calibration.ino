@@ -67,8 +67,9 @@ void accelCalibrate(){
   highG.biasX = highG.biasY = highG.biasZ = 0;
   highG.sumX0 = highG.sumY0 = highG.sumZ0 = 0; 
 
-  int16_t accelSamps = 0;
-  int16_t highGsamps = 0;
+  int32_t accelSamps = 0;
+  int32_t highGsamps = 0;
+  int32_t gyroSamps = 0;
   uint32_t sampTime = 3000000;
   uint32_t calibrationStart = micros();
   bool samplePrint = false;
@@ -90,25 +91,38 @@ void accelCalibrate(){
       highG.sumY0 += highG.rawY;
       highG.sumZ0 += highG.rawZ;
       highGsamps++;}
+    //gyroscope
+    if(micros() - gyro.timeLastSamp > gyro.timeBtwnSamp){
+      getGyro();
+      gyro.timeLastSamp = micros();
+      gyro.sumX0 += gyro.rawX;
+      gyro.sumY0 += gyro.rawY;
+      gyro.sumZ0 += gyro.rawZ;
+      gyroSamps++;}
 
     if(accelSamps%100 == 0 && samplePrint){
       Serial.print("Accel: ");Serial.print(accel.x);Serial.print(',');Serial.print(accel.y);Serial.print(',');Serial.println(accel.z);
       Serial.print("HighG: ");Serial.print(highG.x);Serial.print(',');Serial.print(highG.y);Serial.print(',');Serial.println(highG.z);
+      Serial.print("Gyro: ");Serial.print(gyro.x);Serial.print(',');Serial.print(gyro.y);Serial.print(',');Serial.println(gyro.z);
       samplePrint = false;}
   }//end sample period
       
     //calculate the bias
-    accel.biasX = (int)(accel.sumX0 / accelSamps);
-    accel.biasY = (int)(accel.sumY0 / accelSamps);
-    accel.biasZ = (int)(accel.sumZ0 / accelSamps);
-    highG.biasX = (int)(highG.sumX0 / highGsamps);
-    highG.biasY = (int)(highG.sumY0 / highGsamps);
-    highG.biasZ = (int)(highG.sumZ0 / highGsamps);
+    accel.biasX = (int16_t)(accel.sumX0 / accelSamps);
+    accel.biasY = (int16_t)(accel.sumY0 / accelSamps);
+    accel.biasZ = (int16_t)(accel.sumZ0 / accelSamps);
+    highG.biasX = (int16_t)(highG.sumX0 / highGsamps);
+    highG.biasY = (int16_t)(highG.sumY0 / highGsamps);
+    highG.biasZ = (int16_t)(highG.sumZ0 / highGsamps);
+    gyro.biasX  = (int16_t)(gyro.sumX0  / gyroSamps);
+    gyro.biasY  = (int16_t)(gyro.sumY0  / gyroSamps);
+    gyro.biasZ  = (int16_t)(gyro.sumZ0  / gyroSamps);
 
     //reset the counters
     accel.sumX0 = accel.sumY0 = accel.sumZ0 = 0;
     highG.sumX0 = highG.sumY0 = highG.sumZ0 = 0;
-    
+    gyro.sumX0  = gyro.sumY0  = gyro.sumZ0  = 0;
+
     //determine the altimeter orientation
     setOrientation();
 
@@ -119,6 +133,9 @@ void accelCalibrate(){
     writeCalibration(highG.biasX, eeprom.highGbiasX);
     writeCalibration(highG.biasY, eeprom.highGbiasY);
     writeCalibration(highG.biasZ, eeprom.highGbiasZ);
+    writeCalibration(gyro.biasX, eeprom.gyroBiasX);
+    writeCalibration(gyro.biasY, eeprom.gyroBiasY);
+    writeCalibration(gyro.biasZ, eeprom.gyroBiasZ);
         
     digitalWrite(pins.beep, LOW);
     Serial.println(F("Calculated values are:"));
@@ -128,6 +145,9 @@ void accelCalibrate(){
     Serial.print(F("highG.biasX: "));Serial.println(highG.biasX);
     Serial.print(F("highG.biasY: "));Serial.println(highG.biasY);
     Serial.print(F("highG.biasZ: "));Serial.println(highG.biasZ);  
+    Serial.print(F("gyro.biasX: "));Serial.println(gyro.biasX);
+    Serial.print(F("gyro.biasY: "));Serial.println(gyro.biasY);
+    Serial.print(F("gyro.biasZ: "));Serial.println(gyro.biasZ);
     
   }//end accelerometer/gyro calibration
 

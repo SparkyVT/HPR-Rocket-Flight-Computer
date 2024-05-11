@@ -18,11 +18,12 @@
 //13 AUG 23: Added MPU6050 support, eliminated redundant routines
 //22 OCT 23: Broke out the sensor management functions to make it easier to use external libraries
 //21 DEC 23: Added MPU9250 support
+//07 MAY 24: Added LSM6DSOX support, fixed LIS3MDL bugs
 //--------Supported Sensors---------
-//Accelerometers:LSM303, LSM9DS1, LSM6DS33
-//Gyroscopes: L3GD20H, LSM9DS1, LSM6DS33
+//Accelerometers:LSM303, LSM9DS1, LSM6DS33, LSM6DSOX
+//Gyroscopes: L3GD20H, LSM9DS1, LSM6DS33, LSM6DSOX
 //Magnetometers: LSM303, LSM9DS1, LIS3MDL
-//High-G Accelerometers: H3LIS331DL, ADS1115 & ADXL377 Combo, ADXL377 & Teensy3.5 ADC combo
+//High-G Accelerometers: H3LIS331DL, ADXL377 w/ ADS1115 ADC, ADXL377 w/ Teensy3.5/4.1 ADC
 //Barometric: BMP180, BMP280, BMP388, MPL3115A2, MS5611, MS5607, LPS25H
 //WARNING: Some Bosch sensors may be sensitive to RF interference, specifically the BMP280 and BMP388
 //----------------------------
