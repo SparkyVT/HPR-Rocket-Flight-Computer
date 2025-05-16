@@ -36,7 +36,7 @@ void checkEvents(){
     //this increases the chance of a successful deployment if the motor CATOs after a short boost
     //0.25 seconds is the typical time to depart the rail so that transient negative accelerations cannot reset the system
     if (accel.z < gTrigger && accelVel < thresholdVel && fltTime.timeCurrent > clearRailTime) {
-      if(settings.testMode){Serial.println("False Trigger Reset");}
+      if(settings.testMode){Serial.println("False Trigger Reset");} 
       //reset the key triggers
       events = resetEvents;
       fltTime.timeCurrent = 0UL;

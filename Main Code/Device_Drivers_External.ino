@@ -326,20 +326,6 @@ bool sendExternalRadioDataPkt(uint8_t* data, uint8_t len){
 
   return response;}
 
-bool configExternalRadio70cm(){
-
-  bool response = false;
-  
-  //add external library commands here to configure the radio for 70cm
-  
-  return response;}
-
-void clearFlagsExternalRadio(){
-
-  //if there are interrupts or flags that need to be cleared, put the code in this section
-  //otherwise just leave it blank
-}
-
 void externalRadioSleep(){
   //write the commands to send the radio to sleep mode
 

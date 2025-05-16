@@ -19,9 +19,10 @@
 //22 OCT 23: Broke out the sensor management functions to make it easier to use external libraries
 //21 DEC 23: Added MPU9250 support
 //07 MAY 24: Added LSM6DSOX support, fixed LIS3MDL bugs
+//11 MAY 25: Added LSM6DS3TR support
 //--------Supported Sensors---------
-//Accelerometers:LSM303, LSM9DS1, LSM6DS33, LSM6DSOX
-//Gyroscopes: L3GD20H, LSM9DS1, LSM6DS33, LSM6DSOX
+//Accelerometers:LSM303, LSM9DS1, LSM6DS33, LSM6DSOX, LSM6DS3TR
+//Gyroscopes: L3GD20H, LSM9DS1, LSM6DS33, LSM6DSOX, LSM6DS3TR
 //Magnetometers: LSM303, LSM9DS1, LIS3MDL
 //High-G Accelerometers: H3LIS331DL, ADXL377 w/ ADS1115 ADC, ADXL377 w/ Teensy3.5/4.1 ADC
 //Barometric: BMP180, BMP280, BMP388, MPL3115A2, MS5611, MS5607, LPS25H
@@ -44,6 +45,9 @@
 
 //beginLSM6DS33(): starts sensor
 //getLSM6DS33(): gets accelerometer & gyro data
+
+//beginLSM6DS3TR(): starts sensor
+//getLSM6DS3TR(): gets accelerometer & gyro data
 
 //beginMPU6050(): starts sensor
 //getMPU6050_AG(): gets accelerometer & gyro data
@@ -470,6 +474,81 @@ void getLSM9DS1_M() {
   mag.rawZ  = (int16_t)(rawData[4] | (rawData[5] << 8));}
 
 //***************************************************************************
+//LSM6DS3TR Accelerometer & Gyroscope
+//***************************************************************************
+bool beginLSM6DS3TR() {
+
+  //Addresses for the registers
+  #define LSM6DS3TR_ADDRESS_ACCELGYRO            (0x6A)
+  #define LSM6DS3TR_WHOAMI                       (0x0F)
+  #define LSM6DS3TR_REGISTER_CTRL1_XL            (0x10)
+  #define LSM6DS3TR_REGISTER_CTRL2_G             (0x11)
+
+  //Define bus settings and start bus
+  if (sensors.accelBusType == 'I') {
+    accelBus.i2cAddress = gyroBus.i2cAddress = LSM6DS3TR_ADDRESS_ACCELGYRO;
+    accelBus.i2cRate = gyroBus.i2cRate = 1000000;
+    startI2C(&accelBus, sensors.accelBusNum);}
+  else {
+    accelBus.spiSet = gyroBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
+    accelBus.cs = gyroBus.cs = pins.accelCS;
+    accelBus.readMask = gyroBus.readMask = 0x80;
+    startSPI(&accelBus, sensors.accelBusNum);}
+  gyroBus = accelBus;
+
+  //if I2C, check if there is a sensor at this address
+  if (sensors.accelBusType == 'I') {
+    if (!testSensor(LSM6DS3TR_ADDRESS_ACCELGYRO)) {
+      Serial.println(F("LSM6DS3TR no reply!"));
+      return false;}}
+
+  //check whoami
+  byte id = read8(LSM6DS3TR_WHOAMI);
+  if (id != 0b01101010) {
+    Serial.println(F("LSM6DS3TR not found!"));
+    return false;}
+  Serial.println(F("LSM6DS3TR OK!"));
+
+  //CTRL1_XL_ODR: 1000 = 1.66kHz, 1001 = 3.33kHz, 1010 = 6.66kHz
+  //CTRL1_XL_FS: 00 = 2G, 01 = 16G, 10 = 4G, 11 = 8G
+  //CTRL1_XL_LPF_BW_SEL: UNKNOWN - assumed 0 = off, 1 = on
+  //CTRL1_XL_BW0_XL: 0 = 1.5kHz, 1 = 400kHz
+  //Accelerometer set 16G Range, 1.66kHz ODR, off, 400kHz
+  write8(LSM6DS3TR_REGISTER_CTRL1_XL, 0b10000100);
+  accel.gainX = accel.gainY = accel.gainZ = 0.000488;
+  accel.ADCmax = (int16_t)(0.98 * 32768);
+  accel.timeBtwnSamp = 602;
+
+  //Gyroscope set 2000dps Range, 1.66kHz ODR
+  write8(LSM6DS3TR_REGISTER_CTRL2_G, 0b10001100);
+  delay(10);
+  gyro.gainX = gyro.gainY = gyro.gainZ = 0.07;
+  gyro.ADCmax = 32768;
+  gyro.timeBtwnSamp = 602;
+
+  return true;
+}//end begin
+
+void getLSM6DS3TR() {
+
+  //this routine uses the LSM6DS33 burst read to rapidly read 12 bytes from the sensors
+  #define LSM6DS3TR_REGISTER_OUTX_L_G (0x22)
+
+  //setup the bus
+  activeBus = &accelBus;
+  
+  //read the data
+  burstRead(LSM6DS3TR_REGISTER_OUTX_L_G, 12);
+
+  //assemble the data
+  gyro.rawX   = (int16_t)(rawData[0] | (rawData[1] << 8));
+  gyro.rawY   = (int16_t)(rawData[2] | (rawData[3] << 8));
+  gyro.rawZ   = (int16_t)(rawData[4] | (rawData[5] << 8));
+  accel.rawX  = (int16_t)(rawData[6] | (rawData[7] << 8));
+  accel.rawY  = (int16_t)(rawData[8] | (rawData[9] << 8));
+  accel.rawZ  = (int16_t)(rawData[10] | (rawData[11] << 8));}
+
+//***************************************************************************
 //LSM6DS33 Accelerometer & Gyroscope
 //***************************************************************************
 bool beginLSM6DS33() {
@@ -574,7 +653,7 @@ bool beginLSM6DSOX() {
   //check whoami
   byte id = read8(LSM6DSOX_WHOAMI);
   if (id != 0b01101100) {
-    Serial.println(F("LSM6DSOX not found!"));
+    Serial.print(F("LSM6DSOX not found! "));Serial.println(id, BIN);
     return false;}
   Serial.println(F("LSM6DSOX OK!"));
 
@@ -1076,7 +1155,7 @@ bool beginH3LIS331DL() {
       return false;}}
 
   //check whoami
-  byte id = 0x00;
+  uint8_t id = 0x00;
   id = read8(0x0F);
   if (id != 0x32) {
     Serial.print(F("H3LIS331 not found! "));

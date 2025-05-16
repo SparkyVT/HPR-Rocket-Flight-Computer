@@ -688,6 +688,10 @@ struct {
   bool configDefaults = false;
   bool configFlight = false;
   bool configPwrSave = false;
+  //GPS Global variables
+  uint8_t serialPosn = 0;
+  char serialBuffer[60] = "";
+  bool msgRX = false;
 } gnss;
 //-----------------------------------------
 //EEPROM useful unions
@@ -777,3 +781,24 @@ enum radioCodes{
   LowFrqMode    =  0x08, //LowFrq mode enables registers below 860MHz
   writeMask     =  0x80};
 uint8_t radioFnctn = SleepMode;
+//--------------------------------------------
+//Function Pointers
+//--------------------------------------------
+bool (*beginAccel)();
+bool (*beginGyro)();
+bool (*beginMag)();
+bool (*beginHighG)();
+bool (*beginBaro)();
+bool (*beginRadio)();
+void (*getAccel)();
+void (*getGyro)();
+void (*getMag)();
+void (*getHighG)();
+void (*getBaro)();
+void (*setRadioFreq)(float freq);
+void (*setRadioPWR)(uint16_t pwr);
+void (*radioSleep)();
+bool (*radioSendPkt)(uint8_t* data, uint8_t len);
+void (*GNSSrestorDefaults)();
+void (*GNSSconfig)();
+void (*GNSSpowerSave)();

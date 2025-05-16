@@ -3,6 +3,7 @@
 //Written by SparkyVT, TRA #12111, NAR #85720, L3
 //-----------Change Log--------------------------
 //19 Nov 23: Version 1 broken out from the previous Telemetry.ino file to enable other radios with external libraries
+//29 Sep 24: Updated to reduce some of the function calls
 //----------------------------
 //LIST OF FUNCTIONS & ROUTINES
 //----------------------------
@@ -11,9 +12,11 @@
 //sendPktSX127X(): sends the packet
 //setFreqSX127X(): sets the radio frequency
 //setModeSX127X(): sets the radio mode
+//sleepSX127X(): sets radio to sleep as an independent command
 //clearFlagsSX127X(): clears the interrupt flags
+//config70cmSX127X(): configures for 70cm frequency band
 
-bool beginSX127X(uint8_t radioRST){
+bool beginSX127X(){
 
   radioBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
   radioBus.cs = pins.radioCS;
@@ -23,7 +26,7 @@ bool beginSX127X(uint8_t radioRST){
   startSPI(&radioBus, sensors.radioBusNum);
 
   uint8_t debugVal;
-  boolean successFlag = true;
+  bool successFlag = true;
 
   //Set interrupts
   pinMode(pins.radioIRQ, INPUT);
@@ -31,11 +34,11 @@ bool beginSX127X(uint8_t radioRST){
   
   //reset radio
   digitalWrite(pins.radioCS, HIGH);
-  digitalWrite(radioRST, HIGH);
+  digitalWrite(pins.radioRST, HIGH);
   delay(10);
-  digitalWrite(radioRST, LOW);
+  digitalWrite(pins.radioRST, LOW);
   delayMicroseconds(100);
-  digitalWrite(radioRST, HIGH);
+  digitalWrite(pins.radioRST, HIGH);
   delay(10);
   
   #define RegOpMode       0x01
@@ -159,10 +162,16 @@ bool beginSX127X(uint8_t radioRST){
   write8(RegIrqFlagsMask, 0x00);
   write8(RegIrqFlags, 0xFF);  
 
+  //if the frequency band is 70cm, then we need to reconfigure the radio
+  if( settings.TXfreq > 400.000F && settings.TXfreq < 500.000F){
+    if(!config70cmSX127X()){successFlag = false;}}
+
   if(successFlag){Serial.println("SX127X Radio OK!");}
 
   return successFlag;}
- 
+
+void sleepSX127X(){setModeSX127X(SleepMode);}
+
 bool setPwrSX127X(int8_t pwr){
   
   #define regPaDac    0x4D
