@@ -1,4 +1,4 @@
-*NOTE: I get many messages expressing interest in this system.  I plan on offering an Arduino programmable filght computer with open source code by late-2024. You can contact me at https://www.rocketryforum.com/members/sparkyvt.810/
+*NOTE: I get many messages expressing interest in this system.  I plan on offering an Arduino programmable filght computer with open source code by late-2025. You can contact me at https://www.rocketryforum.com/members/sparkyvt.810/
 
 HPR Rocket Flight Computer
 Original sketch by SparkyVT
@@ -53,8 +53,8 @@ Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
 --Connect UBLOX GPS unit to any available HW Serial port
 
 --------FLIGHT COMPUTER COMPONENTS----------
-    Microprocessor: Teensy 4.1, 3.5, or 3.6 (compatible with provided PCB file) or Teensy 4.0/3.2 (no PCB file provided)
-               IMU: LSM6DSOX (recommended), LSM9DS1, LSM6DS33, MPU6050, or LSM303 & L3GD20H combo
+    Microprocessor: Teensy 4.1, 4.0, 3.5, or 3.6 (compatible with provided PCB file) or Teensy 4.0/3.2 (no PCB file provided)
+               IMU: LSM6DSOX (recommended), LSM9DS1, LSM6DS33, MPU6050, or LSM303 & L3GD20H combo, LSM6DS3TR
       Magnetometer: LIS3MDL (recommended), LSM9DS1, or LSM303
 100G Accelerometer: H3LIS331DL (recommended), ADXL377, or ADXL377 & ADS1115 combo
    Pressure Sensor: MS5611 (recommended), MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
