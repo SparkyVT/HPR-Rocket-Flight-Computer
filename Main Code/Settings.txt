@@ -1,5 +1,5 @@
 Flight Computer Settings File
-Not not delete or change the order of the settings
+Do not delete or change the order of the settings
 ***********************
 ----Flight Settings----
 ***********************
