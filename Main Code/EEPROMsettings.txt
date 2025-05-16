@@ -1,4 +1,4 @@
-EEPROM for version 4.4.1
+EEPROM for version 4.7.1
 Place this file into the root folder of the SD card
 At startup the flight computer will read it and update the EEPROM
 Once finished, the flight computer will delete this file
@@ -75,8 +75,8 @@ HWid = 401
 ________________________________
 Device ID Legend
 ________________________________
-Accel: LSM303 = 1, LSM9DS1 = 2, LSM6DS33 = 3, MPU6050 = 4, MPU9250 = 5, LSM6DSOX = 6, External Library = 7
-Gyro: none = 0, L3GD20H = 1, LSM9DS1 = 2, LSM6DS33 = 3, MPU6050 = 4, MPU9250 = 5, LSM6DSOX = 6, External Library = 7
+Accel: LSM303 = 1, LSM9DS1 = 2, LSM6DS33 = 3, MPU6050 = 4, MPU9250 = 5, LSM6DSOX = 6, External Library = 7, LSM6DS3TR = 8
+Gyro: none = 0, L3GD20H = 1, LSM9DS1 = 2, LSM6DS33 = 3, MPU6050 = 4, MPU9250 = 5, LSM6DSOX = 6, External Library = 7, LSM6DS3TR = 8
 Mag: none = 0, LSM303 = 1, LSM9DS1 = 2, LIS3MDL = 3, MPU9250 = 4, External Library = 5
 highG: none = 0, ADS1115/ADXL377 combo = 1, H3LIS331DL = 2, TeensyADC/ADXL377 combo = 3, External Library = 4
 baro: BMP180 = 1, MPL3115A2 = 2, BMP280 = 3, BMP388 = 4, MS5611 = 5, MS5607 = 6, LPS25H = 7, External Library = 8
