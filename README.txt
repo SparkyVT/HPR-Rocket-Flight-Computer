@@ -14,9 +14,9 @@ recommended.
 
 --------FEATURES----------
 Full-featured dual deploy/multi-stage/airstart rocket flight computer capable to 100,000ft or more
-Tilt-sensing lockout for ignition of second stages and/or airstarts
+Tilt-sensing safety lockout for ignition of second stages and/or airstarts
 Live telemetry over 433MHz or 915MHz LoRa (433MHz: USA amateur 70cm band, EUR licencse free) (915MHz: USA licence free) 
-4 high-current pyro outputs with continuity checks
+4 programmable high-current pyro outputs with continuity checks
 Advanced MEMS sensor package: GNSS, accelerometers, gyroscope, magnetometer, barometer, and LoRa radio
 High Data-Capture rate: approximately 50,000 samples per second recorded to SD card
 --1600Hz 3-axis digital 24G and 100G accelerometer data logging
@@ -34,38 +34,35 @@ High Data-Capture rate: approximately 50,000 samples per second recorded to SD c
 Simple, easy-to-use configuration interface through the SD card
 --User Selectable Flight Mode: Single-Stage, Two-Stage, Airstart, or Booster
 --Configurable Apogee delay
---Optional Audible Battery Voltage report at startup
 --Optional Magnetic Switch Startup & Shut-down
 --Preflight audible reporting options: Perfectflight or Marsa
 --User selectable telemetry frequency & power settings
---8 configurable servo outputs (4 powered, 4 un-powered)
+--8 configurable servo outputs
 --User selectable inflight brownout recovery
 Mach immune, sensor-fusion based apogee event
 Barometric based main deploy event
 Audible pre-flight continuity report
 Audible Post-flight max altitude & speed report
 Mount in any orientation, automatic orientation detection with built-in self calibration mode
-Bench-test mode activated w/ tactile button; user configurable status messages over USB Serial
+Bench-test mode activated w/ tactile button to simulate flight and test charges; user configurable status messages over USB Serial
 Report in SI or Metric units
 Compatible with Teensy 3.2, 3.5, 3.6, 4.0, 4.1
---Connect any sensor to any available I2C or SPI bus
+--Plug-and-play sensor package; connect any sensor to any available I2C or SPI bus, connect UBLOX GPS unit to any available HW Serial port
 --Create your own custom hardware setup with configurable pins for continuity, firing, and servos
---Connect UBLOX GPS unit to any available HW Serial port
 
 --------FLIGHT COMPUTER COMPONENTS----------
-    Microprocessor: Teensy 4.1, 4.0, 3.5, or 3.6 (compatible with provided PCB file) or Teensy 4.0/3.2 (no PCB file provided)
+    Microprocessor: Teensy 4.1 (recommended), 4.0, 3.5, or 3.6
                IMU: LSM6DSOX (recommended), LSM9DS1, LSM6DS33, MPU6050, or LSM303 & L3GD20H combo, LSM6DS3TR
       Magnetometer: LIS3MDL (recommended), LSM9DS1, or LSM303
 100G Accelerometer: H3LIS331DL (recommended), ADXL377, or ADXL377 & ADS1115 combo
    Pressure Sensor: MS5611 (recommended), MS5607, MPL3115A2, BMP180, BMP280, or BMP388 (Note: BMP280 & BMP388 incompatible with telemetry due to EMI)
-              GNSS: UBLOX M6, M7, M8, M9 (NEO footprint supported in PCB file) or Adafruit Ultimate GPS
+              GNSS: UBLOX M6, M7, M8, M9, M10 or Adafruit Ultimate GPS
     LoRa Telemetry: RFM96W or RFM95W, both capable of TX on 433MHz or 915MHz (433MHz USA: Amateur License Required, EUR: License Free)
 
 --------GROUND STATION COMPONENTS----------
-               MCU: Arduino Nano 33 BLE
+               MCU: Arduino Nano 33 BLE w/ IMU
          Telemetry: RFM96W 433MHz (USA: Ham License Required, EUR: License Free) or RFM95W 915MHz (USA: License Free)
                GPS: Ublox SAM-M8Q (optional)
-               IMU: Sparkfun LSM9DS1 breakout
                LCD: 20X4 Sparkfun LCD
            SD Card: Adafruit SD Card breakout board
            Antenna: 433Mhz 5-element Yagi (Ham Only) or 900Mhz (License Free)
