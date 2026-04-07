@@ -28,7 +28,7 @@ void getQuatRotn(double dx, double dy, double dz, double gyroGain){
   static double quatRollZ = 0;
   static double fullRollZ = 0;
 
-  const double rotn2rad = gyroGain * DEG_TO_RAD / 1000000;
+  const double rotn2rad = gyroGain * DEG_TO_RAD / 1000000; //divide by 1000000 since dx,dy,dz are millionths of a degree
 
 #else
 
@@ -47,7 +47,7 @@ void getQuatRotn(float dx, float dy, float dz, float gyroGain){
   static long quatRollZ = 0;
   static long fullRollZ = 0;
 
-  const float rotn2rad = gyroGain * DEG_TO_RAD / 1000000;
+  const float rotn2rad = gyroGain * DEG_TO_RAD / 1000000; //divide by 1000000 since dx,dy,dz are millionths of a degree
 
 #endif
 
@@ -379,7 +379,7 @@ void setCanards(){
 void setRTB(){
 
   const float rollTorqueArm = 0.046482;//1.83in = 0.0464m
-  const float bearingTorqueArm =  0.46482;//18in = 0.464m
+  //const float bearingTorqueArm =  0.46482;//18in = 0.464m
   float maxTorqueInput = 4.0;
   const float KpLandPoint = 0.03;
   const float KiLandPoint = 0.0;
@@ -421,7 +421,7 @@ void setRTB(){
 
   float bearingSetpoint = speedAtan2(x, y);
   float magBearing = speedAtan2(mag.y, mag.x);
-  float trackBearing = GPS.course.deg();
+  //float trackBearing = GPS.course.deg();
   float bearingError = bearingSetpoint - magBearing;
 
   //Update Integral Terms
@@ -492,7 +492,7 @@ void setRTB(){
   if(fabs(bearingError) > 20){throwServo1 = throwServo2 = 0;}
 
   //else estimate the landing point
-  float timeToLand = (gnss.alt - settings.mainDeployAlt) / fabs(gnss.vel);//subtract out the main deployment altitude because we want it back at the launch position when the mains come out
+  //float timeToLand = (gnss.alt - settings.mainDeployAlt) / fabs(gnss.vel);//subtract out the main deployment altitude because we want it back at the launch position when the mains come out
   float distanceToLandPoint = calcGPSdist(gnss.liftoff.longitude, gnss.liftoff.latitude, gnss.longitude, gnss.latitude);
   float gpsGroundSpeed = GPS.speed.mps();
   float landPointEst = distanceToLandPoint / gpsGroundSpeed;
@@ -522,20 +522,16 @@ float calcGPSdist(float Alon, float Alat, float Blon, float Blat){
   //calculate the difference between the points
   float diffLat = Alat - Blat;
   float diffLon = Alon - Blon;
+  //determine the maximum latitude for interpolation below
+  float absAlat = fabs(Alat);
+  float absBlat = fabs(Blat);
+  float maxLat = fabs(Alat)>fabs(Blat)?absAlat:absBlat;
 
   //convert latitude degrees to meters
   diffLat *= 111111.1;
+  diffLon *= (111111.1 * speedCos((int)(maxLat*10)));
 
-  //https://www.sco.wisc.edu/2022/01/21/how-big-is-a-degree/#:~:text=Therefore%20we%20can%20easily%20compute,further%20subdivisions%20of%20a%20degree.&text=circumference%20of%2025%2C000%20miles.
-  //convert longitude degrees to meters through a simple interpolation table
-  if     (fabs(diffLon) <= 15.0){ diffLon = fabs(diffLon) * 107325.1 + (15 - fabs(diffLon)) * 3786;}
-  else if(fabs(diffLon) <= 30.0){ diffLon = fabs(diffLon) *  96225.0 + (30 - fabs(diffLon)) * 11100.1;}
-  else if(fabs(diffLon) <= 45.0){ diffLon = fabs(diffLon) *  78567.4 + (45 - fabs(diffLon)) * 17657.6;}
-  else if(fabs(diffLon) <= 60.0){ diffLon = fabs(diffLon) *  55555.6 + (60 - fabs(diffLon)) * 23011.8;}
-  else if(fabs(diffLon) <= 75.0){ diffLon = fabs(diffLon) *  28757.7 + (75 - fabs(diffLon)) * 26797.9;}
-  else                          { diffLon =                            (90 - fabs(diffLon)) * 28757.7;}//why one would launch rockets at the north pole is beyond me       
-
-  return sqrt(diffLat * diffLat + diffLon * diffLon);}
+  return sqrtf(diffLat * diffLat + diffLon * diffLon);}
   
 void magRotn(){
 

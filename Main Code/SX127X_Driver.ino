@@ -3,17 +3,20 @@
 //Written by SparkyVT, TRA #12111, NAR #85720, L3
 //-----------Change Log--------------------------
 //19 Nov 23: Version 1 broken out from the previous Telemetry.ino file to enable other radios with external libraries
+//29 Sep 24: Updated to reduce some of the function calls
 //----------------------------
 //LIST OF FUNCTIONS & ROUTINES
 //----------------------------
 //beginSX127X(): starts the radio
-//setPwrSX127X(): sets the power in dDm
+//setPwrSX127X(): sets the power in dBm
 //sendPktSX127X(): sends the packet
 //setFreqSX127X(): sets the radio frequency
 //setModeSX127X(): sets the radio mode
+//sleepSX127X(): sets radio to sleep as an independent command
 //clearFlagsSX127X(): clears the interrupt flags
+//config70cmSX127X(): configures for 70cm frequency band
 
-bool beginSX127X(uint8_t radioRST){
+bool beginSX127X(){
 
   radioBus.spiSet = SPISettings(10000000, MSBFIRST, SPI_MODE0);
   radioBus.cs = pins.radioCS;
@@ -23,7 +26,7 @@ bool beginSX127X(uint8_t radioRST){
   startSPI(&radioBus, sensors.radioBusNum);
 
   uint8_t debugVal;
-  boolean successFlag = true;
+  bool successFlag = true;
 
   //Set interrupts
   pinMode(pins.radioIRQ, INPUT);
@@ -31,11 +34,11 @@ bool beginSX127X(uint8_t radioRST){
   
   //reset radio
   digitalWrite(pins.radioCS, HIGH);
-  digitalWrite(radioRST, HIGH);
+  digitalWrite(pins.radioRST, HIGH);
   delay(10);
-  digitalWrite(radioRST, LOW);
+  digitalWrite(pins.radioRST, LOW);
   delayMicroseconds(100);
-  digitalWrite(radioRST, HIGH);
+  digitalWrite(pins.radioRST, HIGH);
   delay(10);
   
   #define RegOpMode       0x01
@@ -159,17 +162,23 @@ bool beginSX127X(uint8_t radioRST){
   write8(RegIrqFlagsMask, 0x00);
   write8(RegIrqFlags, 0xFF);  
 
+  //if the frequency band is 70cm, then we need to reconfigure the radio
+  if( settings.TXfreq > 400.000F && settings.TXfreq < 500.000F){
+    if(!config70cmSX127X()){successFlag = false;}}
+
   if(successFlag){Serial.println("SX127X Radio OK!");}
 
   return successFlag;}
- 
+
+void sleepSX127X(){setModeSX127X(SleepMode);}
+
 bool setPwrSX127X(int8_t pwr){
   
   #define regPaDac    0x4D
   #define regPaConfig 0x09
   
   boolean successFlag = true;
-  int8_t debugVal;
+  uint8_t debugVal;
   
   //set bus
   activeBus = &radioBus;
@@ -179,25 +188,36 @@ bool setPwrSX127X(int8_t pwr){
   if(pwr > 20){pwr = 20;}
   if(pwr < 2){pwr = 2;}
   
-  //enable PA_DAC if power is above 17
+  //enable PA_DAC if power is above 17 
   if(pwr > 17){
-    write8(regPaDac, 0b01010111);
+    //write8(regPaDac, 0b01010111);
+    write8(regPaDac, 0x07);
     pwr -= 3;
     delay(10);
     debugVal = read8(regPaDac);
-    if(debugVal != 0b01010111){
+    if(debugVal != 0x07){
       successFlag = false;
       Serial.print("Set RegPaDac Failed: ");Serial.println(debugVal, HEX);}}
 
-    //write to the power config register
-    int8_t radioPwr = (0x80 | (pwr-2));
-    if(settings.testMode){Serial.print("Power Set: ");Serial.println(radioPwr, HEX);}
-    write8(regPaConfig, radioPwr);
+  //disable PA_DAC if power is below 17
+  else{
+    write8(regPaDac,0x04);
     delay(10);
-    debugVal = read8(regPaConfig);
-    if(debugVal != radioPwr){
+    debugVal = read8(regPaDac);
+    if(debugVal != 0x04){
       successFlag = false;
-      Serial.print("Set RegPaConfig Failed: ");Serial.println(debugVal, HEX);}
+      Serial.print("Set RegPaDac Failed: ");Serial.println(debugVal, HEX);}}
+
+  //write to the power config register, 0x80 ensures that the PA_Boost pin is selected
+  uint8_t radioPwr = (0x80 | (pwr-2));
+  //uint8_t radioPwr = 0b10001101;
+  if(settings.testMode){Serial.print("Power Set: ");Serial.println(radioPwr, HEX);}
+  write8(regPaConfig, radioPwr);
+  delay(10);
+  debugVal = read8(regPaConfig);
+  if(debugVal != radioPwr){
+    successFlag = false;
+    Serial.print("Set RegPaConfig Failed: ");Serial.println(debugVal, HEX);}
   
   return successFlag;}
 
@@ -253,8 +273,8 @@ bool config70cmSX127X(){
   activeBus = &radioBus;
   bool successFlag = true;
 
-  //configure the modem to 62.5kHz bw, 4/5 cr, implicit header
-  uint8_t modemConfig = 0b01100011;
+  //configure the modem to 62.5kHz bw, 4/6 cr, implicit header
+  uint8_t modemConfig = 0b01100101;
   write8(RegModemConfig1, modemConfig);
   delay(10);
   uint8_t debugVal = read8(RegModemConfig1);

@@ -24,9 +24,12 @@ void checkEvents(){
     gnss.touchdown.second = GPS.time.second();
     gnss.touchdown.mili = GPS.time.centisecond();}
 
-  //Check false trigger until the flight time has passed the minimum check-time
+  //Check false trigger until:
+  //the flight time has passed the minimum check-time 
+  //or the integrated speed is greater than the liftoff detection threshold 
+  //or the integrated altitude is greater than the liftoff detection threshold
   if (events.falseLiftoffCheck) {
-    if (fltTime.timeCurrent > fltTime.detectLiftoffTime) {events.falseLiftoffCheck = false;}
+    if (fltTime.timeCurrent > fltTime.detectLiftoffTime || accelVel > thresholdVel || accelAlt > thresholdAlt) {events.falseLiftoffCheck = false;}
     //if the acceleration drops below the trigger threshold
     //and the flight time is greater than 0.25 seconds but less than 0.5 seconds
     //and the integrated velocity inidicates the rocket will not go 100 feet
@@ -36,7 +39,7 @@ void checkEvents(){
     //this increases the chance of a successful deployment if the motor CATOs after a short boost
     //0.25 seconds is the typical time to depart the rail so that transient negative accelerations cannot reset the system
     if (accel.z < gTrigger && accelVel < thresholdVel && fltTime.timeCurrent > clearRailTime) {
-      if(settings.testMode){Serial.println("False Trigger Reset");}
+      if(settings.testMode){Serial.println("False Trigger Reset");} 
       //reset the key triggers
       events = resetEvents;
       fltTime.timeCurrent = 0UL;
@@ -67,7 +70,7 @@ void checkEvents(){
     events.boosterBurnoutCheck = true;
     fltTime.boosterBurnout = fltTime.timeCurrent;}
     
-  //check for booster motor burp for 1 second after burnout is detected
+  //check for booster motor burp for 0.1 second after burnout is detected
   if (events.boosterBurnoutCheck){
     if(fltTime.timeCurrent - fltTime.boosterBurnout > boosterBurpTime){events.boosterBurnoutCheck = false;}
     else if (events.boosterBurnout && !settings.testMode && accel.z > 0){
@@ -255,13 +258,13 @@ void checkEvents(){
   }//End Airstart Flight Mode
 
   //Accelerometer based apogee detection
-  boolean accelApogee = (accelVel < -10) ? true : false;
-  //Barometric based apogee detection: rocket must be below 9000m and barometric velocity < 0 and accelometer velocity < 70 (needed for Mach proofing)
-  boolean baroApogee = (baro.Vel < -10 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 9000) ? true : false;
+  bool accelApogee = (accelVel < -10) ? true : false;
+  //Barometric based apogee detection: rocket must be below 9000m and barometric velocity < 0 and motor burnout is detected and accelometer velocity < 70 (needed for Mach proofing)
+  bool baroApogee = (baro.Vel < -10 && accelVel < 70 && (baro.Alt + baro.baseAlt) < 9000) ? true : false;
   //Sensor fusion based apogee detection
-  boolean fusionApogee = (fusionVel < 0) ? true : false;
+  bool fusionApogee = (fusionVel < 0) ? true : false;
   //Check for apogee event
-  if (!events.apogee && events.boosterBurnout && !events.boosterBurnoutCheck && !pyroFire && (accelApogee || baroApogee || fusionApogee)) {
+  if (!events.apogee && !pyroFire && events.boosterBurnout && !events.boosterBurnoutCheck && !events.falseLiftoffCheck && (accelApogee || baroApogee || fusionApogee)) {
     events.apogee = true;
     fltTime.apogee = fltTime.timeCurrent;
     radio.event = Apogee;

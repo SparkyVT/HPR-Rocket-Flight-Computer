@@ -248,24 +248,24 @@ bool rapidReset(){
   if(!pyro4.contStatus && pyro4.func != 'N'){cont.error = true;}
 
   //variables to assess before we enter the sample loop
-  uint32_t monoAltUp = sampleStart;//timestamp of first increasing altitude
+  //uint32_t monoAltUp = sampleStart;//timestamp of first increasing altitude
   uint32_t monoAltDwn = sampleStart;//timestamp of first decreasing altitude
-  boolean altRange10 = false;//altitude observed range within 10ft
+  bool altRange10 = false;//altitude observed range within 10ft
   uint32_t allAccelNeg = sampleStart;//timestamp of first negative acceleration
-  boolean altAbove100m = true;
+  bool altAbove100m = true;
   uint32_t altBelow100m = sampleStart;//timestamp of last altitude sample above 300m
   float minAltSamp = 0.0F;
   float maxAltSamp = 0.0F;
   float altSamp[300];
-  byte currentSamp = 0;
-  byte lastSamp = 0;
-  boolean cone20deg = true;
+  uint8_t currentSamp = 0;
+  //uint8_t lastSamp = 0;
+  bool cone20deg = true;
   float lastAlt = 0;
   float maxRotnSpeed = 0.0F;
-  boolean altDelta50 = false;
-  boolean altDelta100 = false;
-  boolean accel1G = false;
-  boolean bufferFull = false;
+  bool altDelta50 = false;
+  bool altDelta100 = false;
+  bool accel1G = false;
+  bool bufferFull = false;
   int maxAccel = -32000;
   int minAccel = 32000;
   uint32_t axialAccel = sampleStart;//timestamp of last axial acceleration above 0.25G
@@ -277,20 +277,23 @@ bool rapidReset(){
     settings.pyro3Func = 'N';
     settings.pyro4Func = 'N';}
 
+  //set the alttitude samples to zero so the compiler doesnt get confused
+  for(uint16_t i = 0; i < sizeof(altSamp)/sizeof(altSamp[1]); i++){altSamp[i] = 0.0;}
+
   //start 8 seconds of sampling
   while(micros() - sampleStart > 8000000UL){
 
     //---------------------------
     //sound alarm
     //---------------------------
-    if(!beep && micros() - timeLastBeep > alarmBeepDelay){
+    if(!beep && micros() - timeLastBeepEnd > alarmBeepDelay){
       digitalWrite(pins.beep, HIGH);
       beep = true;
       timeBeepStart = micros();}
     if(beep && micros() - timeBeepStart > alarmBeepLen){
       digitalWrite(pins.beep, LOW);
       beep = false;
-      timeLastBeep = micros();}
+      timeLastBeepEnd = micros();}
 
     //---------------------------
     //sample sensors
@@ -321,7 +324,7 @@ bool rapidReset(){
         if(currentSamp > 96 && fabs(altSamp[currentSamp] - altSamp[currentSamp-96]) > -30.0F){altDelta100 = true;}
 
         //monotonically increasing altitude
-        if(baro.Alt + 5 < lastAlt){monoAltUp = micros();}
+        //if(baro.Alt + 5 < lastAlt){monoAltUp = micros();}
 
         //monotonically decreasing altitude
         if(baro.Alt - 5 > lastAlt){monoAltDwn = micros();}

@@ -482,8 +482,9 @@ struct{
   int16_t maxGPSalt = 0;
   int16_t maxG = 0;
   int16_t GPSalt = 0;
-  int16_t satNum = 0;
+  uint8_t satNum = 0;
   bool pktCallsign = false;  
+  uint32_t lastSampTime = 0UL;
 } radio;
 //-----------------------------------------
 //continuity Booleans
@@ -508,7 +509,7 @@ bool altOK = false;
 bool beep = false;
 bool pyroFire = false;
 bool fileClose = false;
-unsigned long boosterBurpTime = 1000000UL;
+unsigned long boosterBurpTime = 100000UL;
 float unitConvert = 3.2808F;
 //-----------------------------------------
 //digital accelerometer variables
@@ -599,28 +600,30 @@ float accelAlt = 0.0F;
 float maxVelocity = 0.0F;
 float fusionVel = 0.0F;
 float fusionAlt = 0.0F;
-float thresholdVel = 44.3F;
+float thresholdVel = 35.0F;
+float thresholdAlt = 61.0F;
 uint32_t clearRailTime = 250000UL;
 //-----------------------------------------
 //beeper variables
 //-----------------------------------------
 uint8_t beep_counter = 0;
 uint8_t beepPosn = 0;
-unsigned long beep_delay = 100000UL;
-int beepCode = 0;
-unsigned long beep_len = 100000UL;
-unsigned long timeBeepStart;
-unsigned long timeLastBeep;
+uint32_t beep_delay = 100000UL;
+uint8_t beepCode = 0;
+uint32_t beep_len = 100000UL;
+uint32_t timeBeepStart = 0UL;
+uint32_t timeLastBeepEnd = 0UL;
 bool beepAlt = false;
 bool beepVel = false;
 bool beepCont = true;
 bool beepAlarm = false;
-const unsigned long short_beep_delay = 100000UL;
-const unsigned long long_beep_delay = 800000UL;
-const unsigned long alarmBeepDelay = 10000UL;
-const unsigned long alarmBeepLen = 10000UL;
-const unsigned long medBeepLen = 100000UL;
-const unsigned long shortBeepLen = 10000UL;
+bool livePyroAlarm = false;
+const uint32_t short_beep_delay = 100000UL;
+const uint32_t long_beep_delay = 800000UL;
+const uint32_t alarmBeepDelay = 10000UL;
+const uint32_t alarmBeepLen = 10000UL;
+const uint32_t medBeepLen = 100000UL;
+const uint32_t shortBeepLen = 10000UL;
 //-----------------------------------------
 //SD card writing variables
 //-----------------------------------------
@@ -635,9 +638,9 @@ bool syncMains = false;
 const byte decPts = 2;
 const byte base = 10;
 char dataString[1024];
-uint8_t maxAltDigits[6];
-uint8_t maxVelDigits[4];
-uint8_t voltageDigits[2];
+uint8_t maxAltDigits[6] = {0,0,0,0,0,0};
+uint8_t maxVelDigits[4] = {0,0,0,0};
+uint8_t voltageDigits[2] = {0,0};
 uint8_t altDigits = 6;
 uint8_t velDigits = 4;
 uint8_t n = 1;
@@ -688,6 +691,10 @@ struct {
   bool configDefaults = false;
   bool configFlight = false;
   bool configPwrSave = false;
+  //GPS Global variables
+  uint8_t serialPosn = 0;
+  char serialBuffer[60] = "";
+  bool msgRX = false;
 } gnss;
 //-----------------------------------------
 //EEPROM useful unions
@@ -777,3 +784,24 @@ enum radioCodes{
   LowFrqMode    =  0x08, //LowFrq mode enables registers below 860MHz
   writeMask     =  0x80};
 uint8_t radioFnctn = SleepMode;
+//--------------------------------------------
+//Function Pointers
+//--------------------------------------------
+bool (*beginAccel)();
+bool (*beginGyro)();
+bool (*beginMag)();
+bool (*beginHighG)();
+bool (*beginBaro)();
+bool (*beginRadio)();
+void (*getAccel)();
+void (*getGyro)();
+void (*getMag)();
+void (*getHighG)();
+void (*getBaro)();
+bool (*setRadioFreq)(float freq);
+bool (*setRadioPWR)(int8_t pwr);
+void (*radioSleep)();
+bool (*radioSendPkt)(uint8_t* data, uint8_t len);
+void (*GNSSrestorDefaults)();
+void (*GNSSconfig)();
+void (*GNSSpowerSave)();

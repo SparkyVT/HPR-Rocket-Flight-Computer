@@ -30,19 +30,20 @@
 //03 JAN 22: added hardware compatibility macros for Teensy 3.2, 4.0, 4.1, and moved in functions from the main file
 //21 JUN 22: minor bug fixes and tweaks
 //27 NOV 22: adds an optional GPS output file containing the NMEA strings
+//28 FEB 26: adds rename capability for more unique filenames
 //---------------------------------
-#if defined (__MK66FX1M0__) || defined (__MK64FX512__)
-  //Teensy 3.5 and 3.6
+#if defined (__MK66FX1M0__) || defined (__MK64FX512__) || defined (ARDUINO_TEENSY41)
+  //Teensy 3.5, 3.6, 4.0, 4.1
   #include <SdFat.h>
    
-  //SDIO Setup: v2.X now works after fixing the RadioHead ISR problem
+  //SDIO Setup
   SdFs SD;
   FsFile outputFile;
   FsFile settingsFile;
   FsFile gpsFile;
   
 #else
-  //Teensy 4.X and 3.2
+  //Teensy 3.2 or 4.0
   #include <SD.h>
   
   File outputFile;
@@ -55,27 +56,15 @@ char GPSlog[1024];
 
 void beginSD(){
 
-  //Built-in SDIO on Teensy3.5 or 3.6
-  #if defined (__MK66FX1M0__) || defined (__MK64FX512__) 
+  //Built-in SDIO on Teensy3.5 or 3.6 or Teensy4.1
+  #if defined (__MK66FX1M0__) || defined (__MK64FX512__) || defined (ARDUINO_TEENSY41)
   
     //Use SDFat library with Built-in SDIO
     if(!SD.begin(SdioConfig(FIFO_SDIO))){Serial.println(F("SD card failed!"));}
     else{Serial.println(F("SD Card OK!"));}
-
-  //Teensy4.1 or Teensy4.0
-  #elif defined (__IMXRT1062__)
-
-    //Use the TeensyDuino modification of the SDFat library for SDIO
-    if(!SD.begin(BUILTIN_SDCARD)){Serial.println(F("SD card failed!"));}
-    else{Serial.println(F("SD Card OK!"));}
-
-    //Uncomment this section if using the Teensy4.0 with the SPI bus
-    /*if(pins.SD_CS != pins.nullFire){
-      if(!SD.begin(pins.SD_CS)){Serial.println(F("SD card failed!"));}
-      else{Serial.println(F("SD Card OK!"));}}*/
      
-  //Teensy 3.2
-  #elif defined (__MK20DX256__)
+  //Teensy 3.2 or 4.0
+  #else
     
     //Use the SDFat library
     if(pins.SD_CS != pins.nullFire){
@@ -87,12 +76,12 @@ void beginSD(){
 
 void restartSD(){
   
-  //Teensy3.5 or 3.6 with built-in SDIO
-  #if defined (__MK66FX1M0__) || defined (__MK64FX512__)
+  //Teensy with built-in SDIO
+  #if defined (__MK66FX1M0__) || defined (__MK64FX512__) || defined (ARDUINO_TEENSY41)
 
     SD.begin(SdioConfig(FIFO_SDIO));//SDFat V2.1 still not working
 
-  //Teensy 3.2, 4.0, and 4.1
+  //Teensy 3.2 or 4.0
   #else
 
     //if the SD Chip Select pin is set to the nullpin, then it must be a Teensy4.1 or Teensy4.0 using a builtin SDIO port
@@ -241,10 +230,7 @@ void createNextFileSD(){
     fileName[8]='.';}
   outputFile = SD.open(fileName, FILE_WRITE);
   //Print header
-  outputFile.print(settings.rocketName);
-  outputFile.print(F(" Code V"));
-  outputFile.print(codeVersion);
-  outputFile.print(F(",accelX,accelY,accelZ,gyroX,gyroY,gyroZ,highGx,highGy,highGz,"));
+  outputFile.print(F("timeStamp,accelX,accelY,accelZ,gyroX,gyroY,gyroZ,highGx,highGy,highGz,"));
   if(settings.testMode){outputFile.print(F("cyclesBtwn,writeFlags,sampleTime,writeTime,"));}
   outputFile.println(F("smoothHighGz,rollZ,yawY,pitchX,offVert,intVel,intAlt,fusionVel,fusionAlt,fltEvents,radioCode,pyroCont,pyroFire,pyroPin,baroAlt,altMoveAvg,baroVel,baroPress,baroTemp,battVolt,magX,magY,magZ,gnssLat,gnssLon,gnssSpeed,gnssAlt,gnssAngle,gnssSatellites,radioPacketNum"));
   outputFile.flush();
@@ -271,9 +257,9 @@ void createNextFileSD(){
     else{Serial.println(n);}}
 }//end createNextFileSD
 
+char fileName[20] = "FLIGHT01.txt";
 void reOpenSD(){
   n = 1;
-  char fileName[20] = "FLIGHT01.txt";
   while (SD.exists(fileName)){
     n++;
     if(n<10){itoa(n, fileName + 7,10);}
@@ -473,12 +459,12 @@ void writeSDflightData(){
   strPosn = 0;
 }//end write SD data
 
-void writeSDfooter(){
+void writeSDfooterClose(){
   //Print the initial conditions
   outputFile.println(F("Max Baro Alt,Max GPS Alt,Max Speed,Max Gs,baseAlt,padTime,initial Y ang,initial X ang,accelX0,accelY0,accelZ0,highGz0,magX0,magY0,magZ0,gyroBiasX,gyroBiasY,gyroBiasZ,accelBiasX,accelBiasY,accelBiasZ,highGbiasX,highGbiasY,highGbiasZ,magBiasX,magBiasY,magBiasZ,baroPressureOffset,baroTempOffset"));
-  writeULongData((unsigned long)(baro.maxAlt*unitConvert));
-  writeULongData((unsigned long)(gnss.maxAlt*unitConvert));
-  writeULongData((unsigned long)(maxVelocity*unitConvert));
+  writeULongData((uint32_t)(baro.maxAlt*unitConvert));
+  writeULongData((uint32_t)(gnss.maxAlt*unitConvert));
+  writeULongData((uint32_t)(maxVelocity*unitConvert));
   writeFloatData(maxG/9.80665, 2);
   writeFloatData(baro.baseAlt, 2);
   writeFloatData(((float)fltTime.padTime/(float)1000000), 2);
@@ -545,13 +531,14 @@ void writeSDfooter(){
   outputFile.write(dataString, strPosn);
   
   //write out the settings for the flight
-  outputFile.print(F("Rocket Name, callsign, HWid, flightProfile, units, inflightRecover, pyro4func, pyro3func, pyro2func, pyro1func, apogeeDelay, mainDeployAlt, setupTime, rcdTime, fireTime, TXenable, TXpwr, TXfreq, FHSS, seaLevelPressure"));
+  outputFile.print(F("Rocket Name, callsign, HWid, codeVersion, flightProfile, units, inflightRecover, pyro4func, pyro3func, pyro2func, pyro1func, apogeeDelay, mainDeployAlt, setupTime, rcdTime, fireTime, TXenable, TXpwr, TXfreq, FHSS, seaLevelPressure"));
   if(settings.fltProfile == '2'){outputFile.println("ignitionDelay, sepDelay, altThreshold, maxAng");}
   else if(settings.fltProfile == 'A'){outputFile.println("aistart1event, airstart1delay, airstart2event, airstart2delay, altThreshold, maxAng");}
   else{outputFile.println(' ');}
   outputFile.print(settings.rocketName);outputFile.print(cs);
   outputFile.print(settings.callSign);outputFile.print(cs);
   outputFile.print(settings.HWid);outputFile.print(cs);
+  outputFile.print(codeVersion,2);outputFile.print(cs);
   outputFile.print((char)settings.fltProfile);outputFile.print(cs);
   outputFile.print(settings.units);outputFile.print(cs);
   outputFile.print(settings.inflightRecover);outputFile.print(cs);
@@ -590,11 +577,37 @@ void writeSDfooter(){
   dataString[strPosn] = '\0';
   outputFile.write(dataString, strPosn);    
   strPosn=0;
-  
+
   //close the file
   outputFile.close();
   if(settings.GPSlog){gpsFile.close();}
-  fileClose = true;}//end SD footer
+}//end SD footer and close
+
+void renameFileSD(){
+  dataString[0] = '2';
+  dataString[1] = '0';
+  strPosn = 2;
+  writeIntData(gnss.liftoff.year);
+  strPosn--;
+  writeIntData(gnss.liftoff.month);
+  strPosn--;
+  writeIntData(gnss.liftoff.day);
+  strPosn--;
+  writeIntData(gnss.liftoff.minute);
+  strPosn--;
+  dataString[strPosn] = ' ';
+  strPosn++;
+  uint8_t i = 0;
+  while(settings.rocketName[i] != '\0' && i < sizeof(settings.rocketName)){
+    dataString[strPosn] = settings.rocketName[i];
+    i++;
+    strPosn++;}
+  dataString[strPosn] = '.';strPosn++;
+  dataString[strPosn] = 'c';strPosn++;
+  dataString[strPosn] = 's';strPosn++;
+  dataString[strPosn] = 'v';
+  //outputFile.rename(dataString);
+  }
 
 void writeIntData(int dataValue) {
   itoa(dataValue, dataString + strPosn, base);
@@ -614,12 +627,12 @@ void writeLongData(long dataValue){
   dataString[strPosn] = cs;
   strPosn++;}//end void
 
-void writeFloatData2(float dataValue, byte decimals) {
+void writeFloatData2(float dataValue, uint8_t decimals) {
   dtostrf(dataValue, 2, decimals, dataString + strPosn);
   updateStrPosn();}//end void
 
-void writeFloatData(float dataValue, byte decimals){
-  long fracInt;
+void writeFloatData(float dataValue, uint8_t decimals){
+  int32_t fracInt;
   float partial;
 
   //sign portion
@@ -629,13 +642,13 @@ void writeFloatData(float dataValue, byte decimals){
     dataValue *= -1;}
   
   //integer portion
-  itoa((int)dataValue, dataString + strPosn, base);
+  itoa((int16_t)dataValue, dataString + strPosn, base);
   while(dataString[strPosn]!= '\0'){strPosn++;}
   dataString[strPosn]='.'; strPosn++;
   
   //fractional portion
-  partial = dataValue - (int)(dataValue);
-  fracInt = (long)(partial*powf(10,decimals));
+  partial = dataValue - (int16_t)(dataValue);
+  fracInt = (int32_t)(partial*powf(10,decimals));
   if(fracInt == 0){dataString[strPosn] = '0'; strPosn++; dataString[strPosn] = cs; strPosn++;}
   else{
     decimals--;
@@ -644,7 +657,7 @@ void writeFloatData(float dataValue, byte decimals){
     while(dataString[strPosn]!= '\0'){strPosn++;}
     dataString[strPosn]=','; strPosn++;}}
     
-void writeBoolData(boolean dataBool) { 
+void writeBoolData(bool dataBool) { 
   dataString[strPosn] = (dataBool) ? '1' : '0';
   strPosn ++;}//end void
 
@@ -653,8 +666,8 @@ void updateStrPosn(){
   dataString[strPosn] = cs;
   strPosn++;}
 
-float parseNextVariable(boolean flag){
-  byte n=0;
+float parseNextVariable(bool flag){
+  uint8_t n=0;
   float dataValue;
   char c;
   n=0;

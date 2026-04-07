@@ -61,6 +61,7 @@ bool beginExternalAccel(){
 void getExternalAccel(){
 
   int16_t accelX, accelY, accelZ;
+  accelX = accelY = accelZ = 0;
 
   //read the data, this must be the raw data for the system to work properly
   //getAccelData();
@@ -86,8 +87,8 @@ bool beginExternalGyro(){
   //setMySensorGain(2000DPS);
 
   //tell the system what the gain value is from the data sheet
-  float degrees_per_LSB;
-  //degrees_per_LSB = 0.07;
+  float degrees_per_LSB = 0.07;
+  
   gyro.gainX = gyro.gainY = gyro.gainZ = degrees_per_LSB;
 
   //set the output data rate to at least 1000Hz
@@ -102,6 +103,7 @@ bool beginExternalGyro(){
 void getExternalGyro(){
 
   int16_t gyroX, gyroY, gyroZ;
+  gyroX = gyroY = gyroZ = 0;
 
   //read the data, this must be the raw data for the system to work properly
   //getGyroData();
@@ -126,7 +128,8 @@ bool beginExternalMag(){
   else{Serial.println("Magnetometer not found!");}
 
   //set the range of the magnetometer to 4Gauss or 8 Gauss if the magnetic switch is enabled
-  float gauss_per_LSB;
+  float gauss_per_LSB = 0.0;
+
   if(settings.magSwitchEnable){
     //setGain(8GAUSS);
     //gauss_per_LSB = 0.008;
@@ -151,6 +154,7 @@ bool beginExternalMag(){
  void getExternalMag(){
 
   int16_t magX, magY, magZ;
+  magX = magY = magZ = 0;
 
   //read the data, this must be the raw data for the system to work properly
   //getAccelData();
@@ -177,7 +181,7 @@ bool beginExternalHighG(){
   //setRange(100G);
 
   //tell the system the G's per LSB from the data sheet
-  float Sensor_G_per_LSB;
+  float Sensor_G_per_LSB = 0.0;
   //Sensor_G_per_LSB = 0.049;
   highG.gainX = highG.gainY = highG.gainZ = Sensor_G_per_LSB;
 
@@ -196,6 +200,7 @@ bool beginExternalHighG(){
 void getExternalHighG(){
 
   int16_t highG_X, highG_Y, highG_Z;
+  highG_X = highG_Y = highG_Z = 0;
 
   //read the data, this must be the raw data for the system to work properly
   //getAccelData();
@@ -303,16 +308,17 @@ bool beginExternalRadio(){
 
   return response;}
 
-void setExternalRadioFreq(float freq){
+bool setExternalRadioFreq(float freq){
 
   //external library commands to set the frequency (MHz)
-
+  return true;
 }
 
-void setExternalRadioPwr(uint8_t pwr){
+bool setExternalRadioPwr(int8_t pwr){
 
   //external library commands to set the power level (dBm)
 
+ return true;
 }
 
 bool sendExternalRadioDataPkt(uint8_t* data, uint8_t len){
@@ -325,20 +331,6 @@ bool sendExternalRadioDataPkt(uint8_t* data, uint8_t len){
   //if you use the provided routines, the data is in dataPacket[77]
 
   return response;}
-
-bool configExternalRadio70cm(){
-
-  bool response = false;
-  
-  //add external library commands here to configure the radio for 70cm
-  
-  return response;}
-
-void clearFlagsExternalRadio(){
-
-  //if there are interrupts or flags that need to be cleared, put the code in this section
-  //otherwise just leave it blank
-}
 
 void externalRadioSleep(){
   //write the commands to send the radio to sleep mode

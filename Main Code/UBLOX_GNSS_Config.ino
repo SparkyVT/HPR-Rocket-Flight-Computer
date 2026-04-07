@@ -10,23 +10,27 @@
 //----------------------------
 //UBLOX configuration modified from https://playground.arduino.cc/UBlox/GPS
 
-void UBLOXrestorDefaults(bool serialOutput){
+void UBLOXrestorDefaults(){
 
-  byte gpsSetSuccess = 0;
-  if(serialOutput){Serial.println("Configuring u-Blox GPS initial state...");}
+  uint8_t gpsSetSuccess = 0;
+  if(settings.testMode){Serial.println("Configuring u-Blox GPS initial state...");}
   
    //Generate the configuration string for Factory Default Settings
-  byte setDefaults[] = {0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x17, 0x2F, 0xAE};
+  uint8_t setDefaults[] = {0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x17, 0x2F, 0xAE};
   
    //Restore Factory Defaults
   while(gpsSetSuccess < 3) {
-    if(serialOutput){Serial.print("Restoring Factory Defaults... ");}
+    if(settings.testMode){Serial.print("Restoring Factory Defaults... ");}
     sendUBX(&setDefaults[0], sizeof(setDefaults));  //Send UBX Packet
     gpsSetSuccess += getUBX_ACK(&setDefaults[2]);}
-  if (gpsSetSuccess == 3 && serialOutput){Serial.println("Restore factory defaults failed!");}}
+  if (gpsSetSuccess == 3 && settings.testMode){Serial.println("Restore factory defaults failed!");}}
 
-void UBLOXconfig(byte gpsVersion, bool serialOutput, bool VTGoption) {
+void UBLOXconfig() {
   
+  uint8_t gpsVersion = sensors.GNSS;
+  bool serialOutput = settings.testMode;
+  bool VTGoption = settings.flyBack;
+
   byte gpsSetSuccess = 0;
 
   if(serialOutput){Serial.println("Configuring u-Blox GPS ...");}
@@ -152,7 +156,10 @@ void UBLOXconfig(byte gpsVersion, bool serialOutput, bool VTGoption) {
   
   }//end configGPS
 
-void UBLOXpowerSave(byte gpsVersion, bool serialOutput){
+void UBLOXpowerSave(){
+
+  bool serialOutput = settings.testMode;
+  uint8_t gpsVersion = sensors.GNSS;
 
   //configure UBLOX chips
   if(gpsVersion < 4){

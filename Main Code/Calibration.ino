@@ -20,7 +20,7 @@ void accelCalibrate(){
       
   Serial.println(F("Accelerometer Calibration Mode Confirmed. Ensure the altimeter is pointed vertical and held steady on a level surface"));
   
-  for (byte i = 1; i < 20; i++){
+  for (uint8_t i = 1; i < 20; i++){
     digitalWrite(pins.beep, HIGH);
     delay(250);
     digitalWrite(pins.beep, LOW);
@@ -101,9 +101,9 @@ void accelCalibrate(){
       gyroSamps++;}
 
     if(accelSamps%100 == 0 && samplePrint){
-      Serial.print("Accel: ");Serial.print(accel.x);Serial.print(',');Serial.print(accel.y);Serial.print(',');Serial.println(accel.z);
-      Serial.print("HighG: ");Serial.print(highG.x);Serial.print(',');Serial.print(highG.y);Serial.print(',');Serial.println(highG.z);
-      Serial.print("Gyro: ");Serial.print(gyro.x);Serial.print(',');Serial.print(gyro.y);Serial.print(',');Serial.println(gyro.z);
+      Serial.print("Accel: ");Serial.print(accel.rawX);Serial.print(',');Serial.print(accel.rawY);Serial.print(',');Serial.println(accel.rawZ);
+      Serial.print("HighG: ");Serial.print(highG.rawX);Serial.print(',');Serial.print(highG.rawY);Serial.print(',');Serial.println(highG.rawZ);
+      Serial.print("Gyro: ");Serial.print(gyro.rawX);Serial.print(',');Serial.print(gyro.rawY);Serial.print(',');Serial.println(gyro.rawZ);
       samplePrint = false;}
   }//end sample period
       
@@ -166,21 +166,21 @@ void magCalibrate(){
     
     Serial.println(F("Magnetometer Calibration Mode"));
     //give a 20 second audible warning
-    for(byte i = 0; i < 20; i++){
+    for(uint8_t i = 0; i < 20; i++){
       digitalWrite(pins.beep, HIGH);
       delay(250);
       digitalWrite(pins.beep, LOW);
       delay(750);}
 
     //initialize the offsets
-    int maxMagX, maxMagY, maxMagZ;
-    int minMagX, minMagY, minMagZ;
-    boolean initMag = true;
+    int16_t maxMagX, maxMagY, maxMagZ;
+    int16_t minMagX, minMagY, minMagZ;
+    bool initMag = true;
     mag.biasX = mag.biasY = mag.biasZ = 0;
     
     Serial.println(F("Sampling Magnetometer"));    
     //sample at 10Hz for 30seconds
-    for(int i = 0; i < 300; i++){
+    for(int16_t i = 0; i < 300; i++){
       getMag();
       Serial.print(mag.rawX);Serial.print(',');Serial.print(mag.rawY);Serial.print(',');Serial.println(mag.rawZ);
       if(initMag){

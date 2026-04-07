@@ -15,25 +15,27 @@
  */
 //-----------CHANGE LOG------------
 //17 JUL 21: initial breakout created
-//18 AUG 22: eliminated RadioHead library and wrote my own drivers
+//18 AUG 22: eliminated RadioHead library and wrote independent drivers
 //20 NOV 22: added in the callsign to the ham radio packet
+//14 FEB 26: changed the FHSS hopping strategy to pass the hopSequence location in the sync packet, added mandatory callsign verification
 //---------------------------------
 
 /*900MHz FHSS Strategy
 
+all flight phases: reject any packet that doesn't match the system callsign
+
 preflight: 
-- send packet every 600ms
-- sync packet sent on common hailing freq once per 1800ms
--- use one common channel, send sync packet after every 3rd data packet
--- data in sync packet transmits the channel for the next data packet and the sequence number
-- data packet sent on the frequency from the hailing packet
+- send ground packet every 1000ms
+- sync packet sent on common hailing freq once per 2400ms plus a random delay between 0ms and 800ms after the last ground packet finishes transmitting
+-- use one common hailing frequency, send sync packet after every 4th data packet
+-- data in sync packet transmits the hop-sequence location known to both the transmitter and receiver
+- ground packet sent on the frequency at the hop-sequence location from the sync packet
 
 inflight:
-- shift frequencies every 600ms
+- shift frequencies every 600ms, requivalently every 3rd packet
 - Flight computer:
--- Force a sync packet on the current channel at liftoff
 -- send 3 packets on one freq, sent then shift freq
--- every third shift (once per 1.8s) send sync packet on hailing frequency
+-- every 4th shift (once per 2.4s) send sync packet on hailing frequency
 - Ground Station
 -- Shift frequency after 3rd consecutive packet
 -- If 600ms passes and no packet is recieved, shift frequency anyway
@@ -46,137 +48,130 @@ postflight:
 - sync packet stays on until system is turned off*/
 
 //This is a pseudo-random sequence of channels for the inflight packets that will stay within the FCC regulations 
-const int8_t hopSequence[2000] = {
-  49,   41,    4,  31,   56,   21,   16,   58,    7,   50,   39,    9,   24,   35,   54,   52,   36,   34,   11,   
-  19,   23,   38,  27,    5,   28,    6,   40,   32,   17,   30,   20,   10,   43,   51,   12,   22,   63,   26,   
-  57,   49,   29,  45,   61,   21,   42,    2,   47,   55,   56,   46,   48,    4,   18,   60,   11,   16,   50,   
-   0,   24,   15,  38,   35,   27,   54,    1,   62,   44,   25,   31,   41,   12,   13,   37,   53,   20,    7,  
-   33,   58,   51,   30,   8,  36,   6,  45,   49,   34,   29,   52,   26,   48,   18,   40,   55,   47,   60,   
-   21,   9,  50,   17,   15,   23,   61,   44,   35,   22,   0,  12,   24,   4,  19,   25,   63,   2,  31,   38,   
-   14,   56,   54,   37,   42,   58,   28,   7,  8,  46,   57,   20,   10,   40,   26,   52,   53,   51,   49,   
-   55,   29,   59,   30,   34,   32,   17,   23,   11,   47,   33,   36,   4,  41,   61,   31,   18,   14,   15,   
-   38,   25,   50,   9,  2,  16,   8,  37,   0,  60,   27,   19,   39,   58,   35,   1,  51,   10,   5,  45,   54,   
-   57,   52,   22,   20,   48,   40,   62,   24,   13,   26,   53,   63,   29,   61,   49,   30,   7,  55,   33,   
-   3,  4,  16,   32,   38,   15,   36,   41,   50,   56,   25,   27,   8,  42,   47,   6,  1,  12,   39,   23,   
-   45,   21,   35,   43,   44,   52,   26,   28,   9,  20,   58,   22,   18,   57,   11,   46,   3,  53,   13,   
-   7,  60,   34,   37,   38,   14,   17,   59,   10,   29,   5,  32,   54,   40,   6,  15,   16,   48,   42,   45,
-   62,   31,   2,  21,   47,   0,  8,  25,   44,   19,   50,   30,   24,   20,   26,   35,   51,   61,   27,   49,
-   53,   37,   41,   34,   43,   11,   60,   32,   13,   10,   39,   6,  52,   12,   38,   16,   55,   7,  29,   
-   21,   15,   1,  4,  42,   22,   48,   2,  56,   31,   57,   44,   36,   26,   8,  45,   58,   5,  50,   20,   
-   34,   61,   33,   24,   27,   46,   18,   59,   25,   32,   60,   0,  40,   19,   35,   30,   6,  62,   63,   
-   55,   14,   9,  51,   49,   47,   53,   12,   7,  28,   57,   38,   36,   56,   11,   17,   52,   39,   61,   
-   4,  42,   41,   31,   15,   44,   24,   20,   33,   23,   16,   46,   21,   29,   34,   8,  26,   37,   22,   
-   45,   1,  18,   54,   62,   43,   49,   12,   59,   19,   28,   35,   53,   58,   11,   27,   2,  3,  7,  13,   
-   47,   55,   50,   31,   14,   60,   52,   42,   23,   41,   25,   30,   36,   51,   5,  39,   44,   33,   18,   
-   8,  0,  38,   40,   32,   6,  16,   29,   49,   53,   34,   20,   56,   1,  63,   62,   35,   48,   26,   9,  
-   10,   61,   22,   12,   47,   15,   23,   4,  11,   3,  28,   21,   45,   59,   44,   37,   25,   50,   41,   2,  
-   46,   36,   52,   39,   51,   27,   58,   17,   60,   43,   55,   32,   14,   53,   54,   8,  48,   33,   7,  
-   35,   56,   19,   20,   30,   23,   38,   57,   21,   63,   9,  15,   11,   28,   44,   0,  25,   62,   5,  22,   
-   2,  45,   50,   18,   31,   42,   10,   52,   51,   32,   36,   54,   13,   47,   41,   53,   48,   24,   43,   
-   39,   14,   7,  1,  57,   26,   58,   20,   35,   40,   60,   8,  4,  44,   15,   9,  3,  6,  37,   49,   30,   
-   56,   18,   0,  12,   42,   16,   55,   27,   38,   62,   25,   41,   28,   2,  24,   48,   43,   14,   36,   45,   
-   11,   23,   53,   46,   51,   5,  63,   58,   47,   34,   35,   32,   8,  19,   44,   54,   37,   15,   49,   17,   
-   59,   29,   40,   13,   21,   22,   52,   18,   10,   7,  61,   55,   31,   3,  39,   12,   16,   25,   14,   62,   
-   41,   48,   50,   28,   4,  11,   38,   43,   0,  9,  30,   33,   19,   27,   56,   20,   53,   54,   45,   57,   
-   59,   37,   8,  36,   22,   42,   21,   55,   29,   2,  23,   47,   51,   26,   63,   24,   15,   49,   18,   3,  
-   41,   58,   48,   25,   14,   60,   30,   40,   19,   6,  46,   10,   11,   9,  43,   54,   35,   28,   1,  44,   
-   39,   27,   38,   20,   34,   12,   36,   50,   42,   2,  61,   53,   26,   23,   5,  13,   22,   57,   21,   45,   
-   52,   0,  30,   31,   40,   47,   17,   41,   60,   9,  3,  14,   35,   18,   11,   59,   49,   32,   63,   8,  54,   
-   24,   27,   33,   37,   56,   15,   53,   62,   28,   43,   12,   13,   51,   38,   44,   61,   58,   4,  31,   52,   
-   42,   22,   29,   6,  50,   1,  23,   16,   46,   36,   25,   21,   48,   2,  32,   60,   10,   3,  55,   34,   57,   
-   24,   26,   30,   35,   11,   41,   8,  53,   7,  20,   63,   5,  28,   61,   19,   15,   9,  13,   38,   56,   37,   
-   6,  40,   17,   44,   29,   50,   62,   21,   36,   2,  10,   51,   1,  52,   23,   47,   27,   32,   24,   39,   
-   49,   26,   41,   12,   20,   55,   4,  30,   60,   28,   22,   19,   45,   53,   9,  3,  8,  5,  15,   44,   17,   
-   63,   46,   18,   37,   56,   0,  43,   21,   50,   48,   2,  40,   47,   13,   10,   27,   62,   51,   11,   39,  
-   61,   6,  29,   16,   31,   49,   55,   45,   34,   32,   52,   12,   3,  14,   35,   20,   9,  1,  24,   23,   63,   
-   58,   0,  42,   28,   38,   48,   53,   50,   33,   36,   7,  5,  62,   4,  54,   13,   41,   57,   44,   25,   6,  
-   60,   10,   26,   45,   17,   18,   55,   46,   8,  2,  59,   30,   11,   47,   9,  1,  27,   56,   14,   40,   3,  
-   29,   38,   20,   0,  61,   43,   52,   42,   50,   39,   23,   41,   54,   4,  5,  48,   63,   32,   16,   31,   
-   13,   15,   12,   55,   34,   17,   35,   8,  49,   47,   9,  45,   56,   6,  26,   22,   62,   36,   10,   53,   
-   33,   18,   30,   60,   20,   0,  59,   19,   29,   43,   25,   52,   54,   27,   37,   28,   2,  24,   39,   32,   
-   55,   4,  3,  46,   50,   31,   38,   14,   45,   51,   57,   61,   47,   5,  49,   21,   33,   6,  16,   7,  12,   
-   56,   23,   19,   18,   63,   40,   30,   59,   44,   9,  15,   20,   34,   48,   36,   17,   26,   27,   41,   46,   
-   37,   0,  54,   52,   55,   32,   24,   2,  22,   43,   28,   47,   33,   58,   39,   6,  25,   23,   21,   19,   
-   35,   38,   30,   53,   45,   57,   44,   50,   40,   1,  59,   14,   7,  5,  26,   16,   3,  20,   42,   36,   9,  
-   12,   17,   37,   15,   61,   4,  54,   34,   22,   39,   11,   46,   52,   48,   31,   55,   43,   30,   29,   19,   
-   23,   45,   47,   21,   49,   38,   57,   40,   10,   41,   1,  8,  51,   24,   33,   63,   7,  6,  2,  25,   32,   
-   17,   26,   58,   14,   39,   20,   56,   42,   22,   54,   48,   5,  61,   43,   37,   16,   53,   18,   12,   35,   
-   60,   57,   19,   40,   11,   34,   27,   52,   13,   1,  47,   30,   10,   23,   29,   38,   24,   8,  15,   32,   
-   55,   26,   39,   17,   25,   44,   31,   49,   62,   0,  43,   20,   42,   54,   53,   6,  61,   14,   56,   3,  
-   18,   22,   45,   46,   58,   21,   16,   60,   47,   30,   51,   4,  24,   12,   11,   7,  2,  9,  1,  19,   55,   
-   37,   57,   28,   31,   41,   34,   5,  50,   26,   63,   52,   44,   17,   29,   49,   10,   39,   25,   36,   15,   
-   13,   27,   43,   6,  35,   32,   48,   14,   42,   45,   21,   2,  18,   24,   3,  30,   62,   59,   1,  9,  22,   
-   11,   19,   5,  34,   58,   28,   47,   17,   51,   38,   56,   16,   23,   37,   54,   33,   63,   31,   39,   25,   
-   49,   7,  43,   44,   13,   29,   14,   53,   32,   2,  50,   26,   24,   15,   20,   59,   8,  19,   3,  9,  35,   
-   55,   5,  40,   12,   21,   46,   27,   42,   41,   16,   52,   23,   31,   38,   22,   36,   54,   10,   60,   45,   
-   43,   0,  39,   13,   14,   48,   6,  33,   63,   32,   24,   44,   49,   8,  3,  34,   25,   9,  26,   4,  5,  35,   
-   61,   12,   1,  7,  51,   37,   53,   2,  20,   62,   15,   31,   22,   42,   52,   45,   58,   13,   21,   60,   17,   
-   48,   29,   54,   59,   57,   39,   63,   10,   33,   23,   9,  55,   47,   3,  27,   61,   26,   34,   44,   25,   
-   18,   37,   36,   11,   6,  32,   31,   46,   49,   42,   62,   30,   12,   50,   15,   45,   19,   1,  52,   41,   
-   53,   7,  56,   14,   57,   39,   8,  2,  10,   5,  51,   47,   58,   9,  54,   16,   23,   44,   43,   48,   27,   
-   40,   38,   0,  21,   17,   63,   62,   20,   35,   11,   34,   50,   61,   55,   33,   24,   12,   6,  19,   26,   
-   45,   36,   30,   22,   31,   1,  46,   13,   51,   29,   41,   14,   9,  3,  48,   5,  10,   49,   39,   0,  32,   
-   2,  37,   28,   43,   54,   34,   44,   59,   62,   55,   61,   18,   23,   58,   15,   53,   52,   8,  27,   26,   
-   38,   7,  20,   11,   45,   1,  6,  31,   22,   19,   5,  47,   4,  3,  10,   14,   42,   2,  33,   24,   9,  39,   
-   34,   51,   56,   35,   29,   59,   17,   40,   13,   44,   37,   12,   25,   62,   53,   15,   54,   38,   41,   48,   
-   58,   52,   7,  46,   31,   47,   32,   43,   63,   3,  1,  60,   23,   27,   42,   21,   8,  4,  9,  18,   55,   50,   
-   17,   11,   40,   20,   6,  26,   25,   36,   14,   29,   12,   24,   49,   16,   56,   34,   51,   22,   53,   41,   
-   38,   44,   32,   15,   2,  61,   54,   35,   30,   27,   42,   19,   59,   52,   8,  62,   48,   1,  21,   10,   50,   
-   45,   18,   31,   7,  55,   28,   46,   57,   16,   40,   4,  43,   0,  63,   53,   14,   33,   37,   17,   5,  25,   
-   13,   44,   49,   29,   36,   11,   32,   12,   54,   47,   52,   23,   42,   48,   34,   20,   56,   51,   8,  10,   
-   2,  21,   1,  9,  30,   61,   38,   58,   45,   43,   0,  50,   24,   60,   6,  14,   35,   53,   46,   19,   25,   41,   
-   63,   7,  39,   17,   5,  3,  12,   4,  52,   36,   31,   59,   26,   27,   42,   57,   51,   1,  11,   8,  10,   20,   
-   9,  54,   32,   28,   18,   56,   0,  15,   44,   35,   37,   62,   25,   58,   49,   40,   22,   55,   53,   48,   46,   
-   34,   39,   17,   52,   12,   2,  33,   19,   23,   29,   31,   14,   59,   38,   7,  57,   26,   63,   1,  11,   18,   
-   51,   43,   21,   16,   30,   44,   5,  58,   49,   10,   40,   6,  41,   55,   56,   9,  28,   48,   4,  36,   25,   
-   47,   24,   46,   53,   32,   31,   54,   37,   61,   13,   17,   22,   1,  62,   12,   23,   63,   52,   45,   14,   
-   39,   34,   27,   2,  18,   26,   33,   29,   40,   3,  8,  16,   42,   55,   44,   0,  20,   10,   43,   38,   58,   
-   28,   6,  57,   11,   24,   7,  35,   53,   61,   54,   50,   48,   32,   62,   22,   5,  34,   25,   31,   56,   23,   
-   41,   17,   30,   13,   26,   3,  47,   8,  12,   51,   4,  9,  10,   52,   44,   28,   63,   40,   6,  20,   27,   0,  
-   59,   16,   21,   50,   33,   46,   1,  14,   5,  19,   38,   48,   7,  58,   57,   37,   56,   13,   55,   45,   39,   
-   43,   26,   3,  22,   25,   36,   18,   10,   29,   54,   35,   44,   60,   34,   51,   6,  12,   28,   49,   42,   53,   
-   31,   15,   24,   17,   8,  62,   50,   14,   58,   57,   9,  23,   16,   38,   19,   32,   33,   63,   56,   2,  41,   
-   61,   27,   43,   39,   26,   4,  22,   25,   18,   3,  47,   0,  36,   42,   55,   40,   60,   20,   37,   53,   62,   
-   24,   51,   13,   45,   54,   49,   21,   31,   50,   48,   9,  19,   16,   56,   59,   7,  57,   11,   46,   63,   29,   
-   6,  5,  32,   28,   14,   58,   38,   34,   22,   17,   36,   0,  52,   35,   41,   23,   61,   25,   45,   24,   43,   
-   26,   39,   55,   31,   33,   4,  21,   50,   30,   49,   13,   10,   40,   44,   42,   48,   8,  62,   9,  54,   46,   
-   18,   5,  37,   32,   38,   27,   12,   47,   3,  36,   61,   63,   53,   45,   56,   41,   60,   35,   52,   19,   17,   
-   25,   7,  21,   43,   1,  33,   40,   2,  50,   55,   51,   10,   8,  28,   30,   20,   16,   44,   11,   31,   6,  0,  
-   9,  34,   54,   57,   39,   23,   15,   26,   18,   47,   63,   58,   46,   60,   29,   37,   5,  13,   1,  38,   4,  25,  
-   53,   2,  7,  3,  12,   59,   49,   30,   41,   21,   22,   33,   8,  20,   51,   36,   42,   62,   9,  31,   11,   6,  57,  
-   0,  14,   56,   35,   54,   17,   28,   40,   32,   13,   29,   10,   1,  38,   45,   48,   27,   15,   63,   2,  30,   25,   4,  19};
+const uint8_t hopSequence[2000] = {
+  76, 117, 14, 63, 68, 7, 22, 114, 82, 55, 10, 3, 59, 83, 47, 40, 105, 49, 103, 45, 126, 95, 41, 51, 67, 
+  24, 85, 121, 75, 31, 124, 50, 92, 37, 104, 29, 58, 110, 102, 106, 113, 36, 19, 111, 80, 8, 69, 7, 54, 
+  63, 123, 119, 98, 22, 105, 118, 34, 88, 108, 15, 14, 94, 77, 68, 76, 91, 128, 2, 44, 64, 0, 4, 95, 58, 
+  42, 38, 50, 100, 37, 99, 106, 55, 8, 61, 102, 32, 112, 41, 110, 122, 87, 127, 62, 97, 16, 27, 39, 49, 
+  93, 22, 24, 71, 3, 56, 85, 29, 33, 90, 78, 73, 103, 117, 116, 28, 69, 64, 21, 108, 99, 77, 101, 7, 80, 
+  100, 10, 31, 128, 109, 115, 112, 79, 48, 95, 41, 74, 110, 20, 86, 67, 2, 45, 23, 47, 29, 118, 66, 65, 
+  59, 4, 70, 57, 54, 125, 9, 46, 50, 121, 96, 51, 15, 37, 55, 61, 82, 94, 56, 80, 75, 126, 98, 31, 106, 
+  107, 103, 78, 113, 14, 124, 62, 67, 26, 115, 66, 71, 24, 21, 88, 128, 36, 117, 40, 105, 44, 111, 99, 
+  32, 38, 77, 83, 84, 17, 18, 114, 104, 30, 8, 72, 87, 0, 74, 93, 116, 103, 57, 85, 29, 49, 27, 42, 3, 
+  39, 25, 69, 71, 115, 108, 28, 54, 34, 10, 50, 13, 21, 100, 4, 20, 52, 105, 89, 43, 79, 98, 102, 1, 94, 
+  56, 110, 96, 48, 44, 125, 107, 32, 83, 12, 49, 93, 124, 88, 120, 22, 77, 6, 101, 57, 58, 66, 18, 80, 
+  15, 3, 27, 63, 24, 128, 92, 20, 23, 75, 95, 119, 2, 127, 45, 65, 43, 70, 118, 126, 73, 121, 5, 116, 
+  98, 108, 25, 10, 64, 100, 11, 26, 91, 38, 32, 110, 114, 46, 56, 87, 81, 115, 34, 24, 68, 96, 85, 82, 
+  37, 51, 127, 31, 1, 12, 16, 77, 86, 7, 94, 122, 103, 33, 15, 58, 9, 66, 36, 39, 20, 69, 3, 100, 101, 
+  110, 65, 116, 2, 124, 92, 45, 72, 71, 42, 91, 70, 6, 55, 8, 13, 76, 73, 108, 75, 119, 7, 90, 122, 123, 
+  49, 99, 56, 63, 12, 21, 28, 44, 86, 4, 98, 87, 120, 129, 39, 54, 32, 40, 29, 113, 46, 78, 107, 102, 
+  112, 124, 18, 59, 116, 121, 5, 66, 42, 75, 53, 22, 20, 89, 91, 110, 104, 35, 57, 67, 10, 11, 31, 0, 
+  108, 128, 7, 71, 76, 118, 98, 26, 17, 41, 114, 127, 28, 74, 6, 122, 3, 13, 56, 90, 112, 1, 94, 80, 75, 
+  88, 66, 58, 93, 103, 85, 27, 61, 119, 64, 34, 44, 63, 102, 124, 16, 107, 82, 95, 49, 116, 36, 39, 19, 
+  111, 128, 37, 127, 20, 109, 62, 114, 112, 70, 108, 23, 1, 22, 94, 26, 52, 67, 9, 91, 98, 0, 96, 77, 
+  12, 113, 106, 65, 18, 8, 57, 54, 69, 29, 3, 102, 123, 100, 128, 38, 129, 44, 120, 45, 73, 11, 14, 74, 
+  39, 68, 83, 53, 117, 114, 109, 97, 112, 118, 90, 82, 4, 28, 24, 25, 98, 61, 36, 84, 27, 59, 42, 8, 57, 
+  115, 65, 79, 23, 102, 124, 35, 72, 12, 81, 37, 94, 75, 116, 93, 21, 40, 69, 73, 55, 46, 31, 117, 22, 
+  82, 34, 13, 52, 17, 71, 56, 112, 38, 36, 7, 105, 68, 16, 58, 60, 63, 48, 104, 33, 77, 107, 41, 5, 99, 
+  90, 126, 15, 24, 124, 35, 118, 53, 127, 100, 92, 80, 55, 31, 84, 42, 64, 8, 62, 57, 71, 27, 102, 39, 
+  36, 94, 76, 123, 95, 50, 18, 112, 125, 28, 120, 109, 83, 110, 68, 99, 121, 104, 24, 89, 16, 114, 87, 
+  14, 32, 45, 9, 10, 7, 26, 81, 5, 77, 105, 103, 6, 27, 108, 111, 118, 123, 41, 78, 69, 53, 106, 22, 64, 
+  15, 38, 55, 101, 95, 12, 31, 97, 109, 50, 40, 28, 126, 71, 42, 2, 52, 35, 85, 129, 14, 68, 5, 45, 84, 
+  72, 61, 26, 67, 62, 18, 29, 8, 93, 59, 13, 54, 119, 22, 0, 56, 6, 113, 81, 65, 92, 12, 99, 90, 91, 
+  110, 77, 101, 82, 74, 76, 107, 66, 111, 57, 102, 96, 5, 16, 39, 34, 117, 124, 100, 2, 51, 72, 9, 89, 
+  87, 23, 121, 73, 30, 105, 129, 127, 125, 68, 62, 61, 65, 53, 126, 63, 43, 47, 120, 84, 85, 80, 40, 78, 
+  99, 45, 5, 76, 10, 22, 64, 117, 122, 83, 27, 52, 33, 94, 48, 110, 67, 57, 92, 46, 25, 42, 56, 36, 55, 
+  82, 28, 32, 0, 91, 35, 62, 120, 16, 101, 90, 60, 102, 11, 112, 119, 73, 116, 20, 106, 14, 2, 45, 118, 
+  40, 69, 51, 23, 47, 111, 8, 104, 57, 41, 30, 9, 100, 65, 113, 52, 21, 4, 54, 29, 62, 27, 93, 82, 53, 
+  42, 127, 86, 58, 10, 84, 77, 126, 17, 26, 128, 18, 122, 129, 48, 7, 73, 0, 34, 103, 14, 13, 39, 81, 5, 
+  28, 85, 20, 59, 108, 43, 46, 90, 79, 76, 29, 54, 121, 123, 104, 66, 42, 75, 78, 3, 69, 65, 74, 95, 11, 
+  24, 33, 114, 53, 64, 105, 103, 41, 82, 113, 86, 25, 71, 97, 2, 17, 72, 98, 106, 119, 94, 56, 93, 39, 
+  70, 91, 20, 40, 6, 66, 55, 5, 37, 83, 4, 87, 65, 99, 46, 24, 18, 42, 122, 121, 0, 31, 68, 126, 82, 105, 
+  61, 58, 63, 75, 90, 120, 72, 106, 27, 96, 95, 52, 119, 80, 110, 8, 88, 81, 112, 79, 5, 44, 125, 128, 53, 
+  116, 89, 51, 43, 17, 16, 107, 47, 111, 15, 34, 69, 24, 122, 25, 100, 121, 68, 127, 7, 41, 38, 77, 118, 
+  6, 76, 85, 96, 101, 26, 112, 37, 93, 102, 70, 120, 28, 19, 11, 46, 126, 78, 2, 59, 103, 18, 27, 13, 56, 
+  60, 42, 21, 43, 64, 122, 88, 109, 0, 123, 20, 73, 65, 90, 10, 118, 101, 57, 94, 111, 49, 34, 71, 92, 66, 
+  116, 61, 100, 77, 33, 38, 112, 12, 93, 125, 31, 8, 114, 5, 63, 127, 67, 86, 78, 124, 96, 44, 45, 18, 19, 
+  56, 0, 52, 30, 62, 16, 40, 28, 13, 108, 76, 48, 83, 109, 64, 75, 1, 58, 39, 97, 21, 117, 110, 17, 26, 23, 
+  90, 22, 91, 50, 123, 51, 125, 121, 45, 46, 41, 63, 54, 2, 105, 67, 81, 43, 4, 102, 38, 122, 88, 16, 72, 
+  87, 34, 8, 36, 37, 115, 11, 33, 89, 84, 68, 1, 52, 5, 53, 85, 71, 123, 59, 64, 127, 118, 12, 35, 110, 
+  119, 62, 3, 49, 21, 25, 124, 112, 86, 96, 26, 109, 77, 129, 125, 126, 22, 114, 97, 39, 4, 67, 31, 33, 70, 
+  32, 74, 29, 82, 46, 2, 30, 94, 51, 100, 104, 128, 102, 35, 13, 121, 81, 3, 37, 18, 86, 12, 112, 20, 63, 
+  66, 44, 43, 15, 129, 23, 105, 40, 84, 97, 78, 124, 71, 5, 118, 114, 45, 106, 89, 103, 31, 65, 69, 32, 24, 
+  119, 109, 2, 96, 4, 99, 56, 92, 91, 86, 29, 50, 111, 121, 82, 52, 90, 110, 27, 87, 49, 94, 22, 107, 0, 
+  75, 28, 59, 108, 128, 122, 9, 36, 76, 125, 127, 105, 46, 7, 103, 89, 55, 78, 4, 109, 101, 113, 83, 57, 
+  25, 115, 67, 121, 100, 117, 27, 32, 6, 85, 18, 95, 99, 71, 62, 79, 111, 90, 31, 110, 128, 102, 52, 24, 13, 
+  23, 127, 72, 54, 73, 88, 28, 112, 12, 3, 118, 129, 45, 35, 56, 68, 21, 105, 19, 50, 89, 120, 103, 114, 69, 
+  51, 99, 64, 126, 93, 100, 1, 77, 8, 94, 86, 74, 106, 14, 41, 18, 117, 16, 0, 72, 47, 26, 42, 5, 20, 31, 
+  48, 71, 66, 45, 95, 12, 56, 87, 98, 59, 90, 73, 21, 24, 40, 23, 32, 114, 91, 119, 81, 85, 123, 74, 54, 52, 
+  37, 129, 110, 53, 60, 4, 9, 115, 69, 50, 124, 26, 2, 6, 66, 71, 12, 38, 121, 8, 77, 63, 92, 30, 117, 35, 
+  86, 103, 67, 10, 72, 73, 45, 32, 39, 17, 24, 80, 87, 0, 82, 41, 120, 116, 31, 15, 37, 69, 21, 114, 22, 
+  100, 55, 1, 78, 6, 85, 79, 66, 94, 5, 20, 30, 47, 107, 98, 50, 106, 63, 48, 23, 97, 4, 27, 53, 34, 122, 
+  68, 119, 61, 112, 51, 64, 71, 96, 56, 21, 33, 104, 81, 36, 86, 45, 78, 32, 126, 105, 37, 69, 100, 73, 38, 
+  57, 92, 123, 125, 16, 0, 24, 30, 59, 88, 116, 103, 108, 17, 10, 102, 117, 76, 65, 54, 60, 122, 118, 68, 
+  85, 29, 72, 61, 109, 55, 18, 66, 119, 124, 11, 127, 15, 8, 44, 77, 91, 38, 56, 99, 30, 21, 27, 88, 48, 45, 
+  79, 74, 47, 87, 26, 121, 57, 98, 49, 110, 73, 28, 53, 118, 78, 100, 120, 13, 35, 3, 46, 86, 80, 5, 54, 33, 
+  104, 66, 89, 60, 84, 61, 67, 113, 96, 65, 112, 32, 30, 7, 37, 129, 87, 69, 57, 25, 101, 117, 102, 83, 14, 
+  95, 2, 92, 79, 28, 127, 42, 77, 19, 31, 46, 3, 122, 33, 116, 8, 68, 20, 81, 109, 5, 48, 34, 11, 90, 24, 
+  119, 76, 108, 52, 80, 61, 64, 73, 13, 111, 36, 17, 107, 32, 118, 121, 91, 6, 88, 128, 103, 14, 29, 31, 4, 
+  127, 70, 38, 79, 87, 30, 85, 89, 123, 97, 92, 1, 16, 45, 56, 51, 27, 95, 43, 46, 65, 124, 7, 8, 39, 82, 
+  104, 23, 61, 13, 37, 53, 72, 42, 91, 0, 2, 80, 73, 102, 24, 52, 77, 87, 59, 62, 60, 17, 38, 115, 105, 96, 
+  57, 3, 16, 125, 63, 106, 43, 7, 95, 68, 36, 64, 6, 82, 18, 48, 66, 71, 129, 121, 122, 40, 74, 47, 30, 54, 
+  80, 114, 5, 29, 46, 100, 59, 104, 42, 55, 128, 88, 116, 34, 27, 15, 57, 44, 58, 0, 45, 36, 81, 112, 52, 
+  96, 117, 8, 97, 2, 113, 43, 91, 41, 33, 63, 39, 72, 7, 16, 38, 127, 114, 85, 107, 71, 77, 59, 49, 108, 
+  111, 65, 46, 19, 83, 13, 61, 44, 32, 53, 110, 125, 86, 100, 4, 92, 104, 70, 101, 3, 84, 42, 68, 33, 117, 
+  28, 7, 78, 99, 63, 27, 73, 21, 54, 80, 107, 89, 127, 15, 97, 20, 9, 46, 22, 47, 6, 87, 11, 43, 61, 19, 13, 
+  30, 123, 56, 65, 88, 118, 76, 67, 3, 49, 24, 108, 115, 122, 71, 32, 64, 35, 86, 2, 80, 126, 28, 60, 51, 
+  102, 117, 55, 62, 20, 8, 47, 116, 45, 95, 104, 27, 22, 113, 83, 72, 92, 53, 59, 17, 46, 127, 38, 58, 125, 
+  18, 52, 110, 94, 124, 32, 21, 89, 63, 76, 44, 101, 81, 30, 29, 67, 99, 31, 51, 118, 105, 71, 96, 68, 104, 
+  74, 93, 0, 73, 78, 117, 36, 24, 86, 91, 128, 12, 15, 10, 65, 113, 28, 33, 54, 21, 109, 83, 6, 116, 82, 79, 
+  69, 5, 16, 122, 23, 62, 80, 76, 108, 29, 19, 74, 81, 89, 63, 88, 32, 93, 101, 43, 112, 87, 123, 18, 42, 
+  115, 10, 125, 70, 11, 61, 100, 102, 68, 55, 48, 104, 49, 73, 21, 33, 59, 118, 98, 25, 79, 27, 22, 41, 47, 
+  15, 67, 57, 71, 108, 113, 56, 72, 85, 122, 0, 111, 88, 14, 38, 6, 28, 87, 120, 78, 58, 1, 60, 101, 76, 96, 
+  106, 128, 90, 100, 30, 52, 8, 51, 34, 59, 103, 22, 39, 35, 41, 108, 10, 31, 98, 46, 29, 105, 121, 43, 67, 
+  50, 74, 17, 33, 32, 62, 63, 6};
 
-const float freqList915[64] = {
-  902.3,  902.5,  902.7,  902.9,  903.1,  903.3,  903.5,  903.7,  903.9,  904.1,
-  904.3,  904.5,  904.7,  904.9,  905.1,  905.3,  905.5,  905.7,  905.9,  906.1,  
-  906.3,  906.5,  906.7,  906.9,  907.1,  907.3,  907.5,  907.7,  907.9,  908.1,  
-  908.3,  908.5,  908.7,  908.9,  909.1,  909.3,  909.5,  909.7,  909.9,  910.1,  
-  910.3,  910.5,  910.7,  910.9,  911.1,  911.3,  911.5,  911.7,  911.9,  912.1,  
-  912.3,  912.5,  912.7,  912.9,  913.1,  913.3,  913.5,  913.7,  913.9,  914.1,
-  914.3,  914.5,  914.7,  914.9};
+const float freqList915[130] = {
+  902.1,  902.3,  902.5,  902.7,  902.9,  903.1,  903.3,  903.5,  903.7,  903.9,  
+  904.1,  904.3,  904.5,  904.7,  904.9,  905.1,  905.3,  905.5,  905.7,  905.9,
+  906.1,  906.3,  906.5,  906.7,  906.9,  907.1,  907.3,  907.5,  907.7,  907.9,  
+  908.1,  908.3,  908.5,  908.7,  908.9,  909.1,  909.3,  909.5,  909.7,  909.9,  
+  910.1,  910.3,  910.5,  910.7,  910.9,  911.1,  911.3,  911.5,  911.7,  911.9,  
+  912.1,  912.3,  912.5,  912.7,  912.9,  913.1,  913.3,  913.5,  913.7,  913.9,
+  914.1,  914.3,  914.5,  914.7,  914.9,  915.1,  915.3,  915.5,  915.7,  915.9,
+  916.1,  916.3,  916.5,  916.7,  916.9,  917.1,  917.3,  917.5,  917.7,  917.9,
+  918.1,  918.3,  918.5,  918.7,  918.9,  919.1,  919.3,  919.5,  919.7,  919.9,
+  920.1,  920.3,  920.5,  920.7,  920.9,  921.1,  921.3,  921.5,  921.7,  921.9,
+  922.1,  922.3,  922.5,  922.7,  922.9,  923.1,  923.3,  923.5,  923.7,  923.9,
+  924.1,  924.3,  924.5,  924.7,  924.9,  925.1,  925.3,  925.5,  925.7,  925.9,
+  926.1,  926.3,  926.5,  926.7,  926.9,  927.1,  927.3,  927.5,  927.7,  927.9};
 
-boolean hopFreq = true;
-byte currentChnl = 0;
-int16_t hopNum = 0;
-int16_t nextHop;
-int16_t nextHop2;
-byte nextChnl;
-byte nextChnl2;
-int16_t pktNum = 0;
-int16_t gndPktNum = 0;
-byte hailChnl = 0;
+struct {
+  bool hopNow = true;
+  int16_t hopNum = 0;
+  int16_t nextHop = 1;
+  uint8_t currentChnl = 0;
+  uint8_t nextChnl;
+  int16_t pktNum = 0;
+  int16_t gndPktNum = 0;
+  uint8_t hailChnl = 0;
+} FHSS;
 float freq;
+union{
+    uint32_t val = 0;
+    uint8_t Byte[4];
+  } idUnion; 
 
 void beginTelemetry(){
 
   //set the hailing frequency channel
   if(settings.FHSS){
-    hailChnl = (uint8_t)(5*(settings.TXfreq - 902.300F));
+    FHSS.hailChnl = (uint8_t)(5*(settings.TXfreq - 902.300F));
     //we need to reset the user defined frequency to be the closest LoRa channel
-    settings.TXfreq = freqList915[hailChnl];}
+    settings.TXfreq = freqList915[FHSS.hailChnl];}
 
-  //set the flag to add the callsign to the radio packet if needed
-  if(settings.TXfreq >400.00 && settings.TXfreq < 500.00){radio.pktCallsign = true; settings.FHSS = false;}
+  //set the packet header to the callsign
+  for(uint8_t i = 0; i<6; i++){dataPacket[i] = settings.callSign[i];}
 }
 
 void buildTelmetryPkt(){
@@ -184,174 +179,147 @@ void buildTelmetryPkt(){
 //------------------------------------------------------------------
 //                  PRE-FLIGHT PACKET
 //------------------------------------------------------------------
-  //send the preflight packet, 37 bytes
+  //send the preflight packet, 42 bytes
   if(events.preLiftoff){
     
     //hop frequency
     if(settings.FHSS){hopTXfreq();}
     
-    pktPosn = 0;
-    //start packet build
-    dataPacket[pktPosn]=radio.event; pktPosn++;//1
-    dataPacket[pktPosn]=gnss.fix; pktPosn++;//2
-    dataPacket[pktPosn]=cont.reportCode; pktPosn++;//3
-    for (byte j = 0; j < sizeof(settings.rocketName); j++){
-      dataPacket[pktPosn] = settings.rocketName[j];
-      pktPosn++;}//23
-    dataPacket[pktPosn]=lowByte(radio.baseAlt); pktPosn++;//24
-    dataPacket[pktPosn]=highByte(radio.baseAlt); pktPosn++;//25
-    dataPacket[pktPosn]=lowByte(radio.GPSalt); pktPosn++;//26
-    dataPacket[pktPosn]=highByte(radio.GPSalt); pktPosn++;//27
+    //start data packet build after the static callsign header
+    dataPacket[6]=radio.event;//7
+    dataPacket[7]=gnss.fix;//8
+    dataPacket[8]=cont.reportCode;//9
+    for (uint8_t j = 0; j < sizeof(settings.rocketName); j++){dataPacket[9+j] = settings.rocketName[j];}//23
+    dataPacket[29]=lowByte(radio.baseAlt);//24
+    dataPacket[30]=highByte(radio.baseAlt);//25
+    dataPacket[31]=lowByte(radio.GPSalt);//26
+    dataPacket[32]=highByte(radio.GPSalt);//27
     floatUnion.val = GPS.location.lat();
-    for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i]; pktPosn++;}//31
+    for(byte i = 0; i < 4; i++){dataPacket[33+i]=floatUnion.Byte[i];}//31
     floatUnion.val = GPS.location.lng();
-    for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i]; pktPosn++;}//35
-    dataPacket[pktPosn]=lowByte(radio.satNum); pktPosn++;//36
-    dataPacket[pktPosn]=highByte(radio.satNum); pktPosn++;//37
-    //if FHSS, send the next channel
-    if(settings.FHSS){
-      dataPacket[pktPosn]=nextChnl; pktPosn++;
-      dataPacket[pktPosn]=nextChnl2; pktPosn++;}
-    //add in the callsign if needed
-    if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
+    for(byte i = 0; i < 4; i++){dataPacket[37+i]=floatUnion.Byte[i];}//35
+    dataPacket[41]=radio.satNum;//36
+
     //send the packet
     sendPkt = true;
-    pktSize = pktPosn;
-    if(implicitHdr){pktSize = 70;}
-    pktPosn = 0;
+    pktSize = 42;
     if(radioDebug && settings.testMode){if(settings.serialDebug==3){Serial.println("");} Serial.print(F("PreFlight Packet Sent"));}
+
+    //set the FHSS flags
     if(settings.FHSS){
-      hopNum = nextHop;
-      hopFreq = true;
-      gndPktNum++;
-      if(gndPktNum%3==0 && hopSequence[nextHop] != hailChnl){syncFreq = true;gndPktNum = 0;}}}
+      FHSS.gndPktNum++;
+      if(FHSS.gndPktNum%4==0){
+        syncFreq = true;
+        FHSS.gndPktNum = 0;}}}
     
 //------------------------------------------------------------------
 //                  IN-FLIGHT PACKET
 //------------------------------------------------------------------
   //build and send inflight packet 
-  //packet requirements: 13 bytes per sample, 12 bytes GPS & pktnum, 6 bytes Callsign, 2 bytes for FHSS
-  //70cm default: 13 x 4 + 12 + 6 = 70 bytes per packet
-  //915MHz default no FHSS: 13 x 4 + 12 = 64 bytes per packet
-  //915MHz default w/ FHSS: 13 x 4 + 12 + 2 = 66 bytes per packet
+  //packet structure: 6 bytes callsign, 11 bytes per sample, 4 samples per packet, 12 bytes GPS & pktnum
+  //packet requirements: 11 x 4 + 12 + 6 = 62 bytes per packet
   else if(events.inFlight){  
+
+    //check to see if an SD card latency made us miss a sample
+    uint32_t sampleTime = 0UL;
+    sampleTime = micros();
+    if(sampNum > 0 && sampleTime - radio.lastSampTime > 100000UL){Serial.println("Sample Missed");}
+
+    radio.lastSampTime = sampleTime;
 
     //update sample number
     sampNum++;
+    pktPosn = (sampNum -1) * 11 + 6;
     
     //hop frequency if needed
-    if(settings.FHSS && hopFreq && sampNum >= packetSamples){hopTXfreq();}
+    if(settings.FHSS && FHSS.hopNow && sampNum >= packetSamples){hopTXfreq();}
 
     //event
-    dataPacket[pktPosn] = radio.event; pktPosn++;//1
-    //set the packet time, applying corrections for differences in the exact packet timing
-    uint32_t sampleInterval = pktInterval.inflight/pktInterval.samplesPerPkt;
-    uint32_t radioTime = radio.packetnum * pktInterval.inflight + (sampNum-1) * sampleInterval; 
-    int32_t timeDiff = (int32_t)radioTime - (int32_t)fltTime.timeCurrent;
-    if(abs(timeDiff) < sampleInterval){radio.fltTime = (uint16_t)(radioTime/(sampleInterval/5));}
-    else{radio.fltTime = (uint16_t)(fltTime.timeCurrent/(sampleInterval/5));}
-    dataPacket[pktPosn] = lowByte(radio.fltTime);pktPosn++;//2
-    dataPacket[pktPosn] = highByte(radio.fltTime);pktPosn++;//3 
+    dataPacket[pktPosn] = radio.event;//1
     //velocity
-    dataPacket[pktPosn] = lowByte(radio.vel);pktPosn++;//4
-    dataPacket[pktPosn] = highByte(radio.vel);pktPosn++;//5
+    dataPacket[pktPosn + 1] = lowByte(radio.vel);//2
+    dataPacket[pktPosn + 2] = highByte(radio.vel);//3
     //altitude
-    dataPacket[pktPosn] = lowByte(radio.alt);pktPosn++;//6
-    dataPacket[pktPosn] = highByte(radio.alt);pktPosn++;//7
+    dataPacket[pktPosn + 3] = lowByte(radio.alt);//4
+    dataPacket[pktPosn + 4] = highByte(radio.alt);//5
     //Roll data
     radio.roll = rollZ;
-    dataPacket[pktPosn] = lowByte(radio.roll);pktPosn++;//8
-    dataPacket[pktPosn] = highByte(radio.roll);pktPosn++;//9
+    dataPacket[pktPosn + 5] = lowByte(radio.roll);//6
+    dataPacket[pktPosn + 6] = highByte(radio.roll);//7
     //Off Vertical data
     radio.offVert = offVert;
-    dataPacket[pktPosn] = lowByte(radio.offVert);pktPosn++;//10
-    dataPacket[pktPosn] = highByte(radio.offVert);pktPosn++;//11
+    dataPacket[pktPosn + 7] = lowByte(radio.offVert);//8
+    dataPacket[pktPosn + 8] = highByte(radio.offVert);//9
     //Acceleration
     radio.accel = (int16_t)(accelNow * 33.41406087); //33.41406087 = 32768 / 9.80665 / 100
-    dataPacket[pktPosn] = lowByte(radio.accel);pktPosn++;//12
-    dataPacket[pktPosn] = highByte(radio.accel);pktPosn++;//13
+    dataPacket[pktPosn + 9] = lowByte(radio.accel);//10
+    dataPacket[pktPosn + 10] = highByte(radio.accel);//11
       
-    //GPS & packet data collected once per packet
+    //GPS & packet data collected once per packet at 12 bytes
     if(sampNum >= packetSamples){
+
+      //reset the sample number
+      sampNum = 0;
 
       //update packet number
       radio.packetnum++;
-      dataPacket[pktPosn] = lowByte(radio.packetnum); pktPosn++;//53
-      dataPacket[pktPosn] = highByte(radio.packetnum); pktPosn++;//54
-
-      //add next set of channels if FHSS
-      if(settings.FHSS){
-        dataPacket[pktPosn]=nextChnl; pktPosn++;
-        dataPacket[pktPosn]=nextChnl2; pktPosn++;}
-      
+      dataPacket[50] = lowByte(radio.packetnum);//51
+      dataPacket[51] = highByte(radio.packetnum);//52
       //GPS Data
-      dataPacket[pktPosn] = lowByte(radio.GPSalt);pktPosn++;//55
-      dataPacket[pktPosn] = highByte(radio.GPSalt);pktPosn++;//56
+      dataPacket[52] = lowByte(radio.GPSalt);//53
+      dataPacket[53] = highByte(radio.GPSalt);//54
       floatUnion.val = GPS.location.lat();
-      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i];pktPosn++;}//60
+      for(uint8_t i = 0; i < 4; i++){dataPacket[54 + i]=floatUnion.Byte[i];}//58
       floatUnion.val = GPS.location.lng();
-      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i];pktPosn++;}//64
-            
-      //add in the callsign if needed
-      if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}//70
+      for(uint8_t i = 0; i < 4; i++){dataPacket[58 + i]=floatUnion.Byte[i];}//62
 
       //send packet
       sendPkt = true;
+      pktSize = 62;
       //debug output
       if(radioDebug && settings.testMode){
         if(settings.serialDebug==3){Serial.println("");}
         Serial.print(F("InFlight Packet Sent "));Serial.print(radio.packetnum);}
 
-      //reset counting variables
-      sampNum = 0;
-      pktSize = pktPosn;
-      pktPosn = 0;
+      //set FHSS flags      
       if(settings.FHSS){
-        hopNum = nextHop;
-        if(radio.packetnum%3==0){hopFreq = true;}
-        if(radio.packetnum%9==0){syncFreq = true;}}
+        if(radio.packetnum%3==0){FHSS.hopNow = true;}
+        if(radio.packetnum%12==0){syncFreq = true;}}
     }}
     
 //------------------------------------------------------------------
 //                  POST-FLIGHT PACKET
 //------------------------------------------------------------------
-  //send post flight packet, default 28 bytes or 30 bytes if FHSS
+  //send post flight packet: 26 bytes per packet
   else if(events.postFlight){
 
       //hop frequency
       if(settings.FHSS){hopTXfreq();}
     
-      pktPosn=0;
-      dataPacket[pktPosn]=radio.event; pktPosn++;//7 bytes
-      dataPacket[pktPosn]=lowByte(radio.maxAlt); pktPosn++;//8 bytes
-      dataPacket[pktPosn]=highByte(radio.maxAlt); pktPosn++;//9 bytes
-      dataPacket[pktPosn]=lowByte(radio.maxVel); pktPosn++;//10 bytes
-      dataPacket[pktPosn]=highByte(radio.maxVel); pktPosn++;//11 bytes
-      dataPacket[pktPosn]=lowByte(radio.maxG); pktPosn++;//12 bytes
-      dataPacket[pktPosn]=highByte(radio.maxG); pktPosn++;//13 bytes
-      dataPacket[pktPosn]=lowByte(radio.maxGPSalt); pktPosn++;//14 bytes
-      dataPacket[pktPosn]=highByte(radio.maxGPSalt); pktPosn++;//15 bytes
-      dataPacket[pktPosn]=gnss.fix; pktPosn++;//16 bytes
-      dataPacket[pktPosn]=lowByte(radio.GPSalt); pktPosn++;//17 bytes
-      dataPacket[pktPosn]=highByte(radio.GPSalt); pktPosn++;//18 bytes
+      dataPacket[6]=radio.event;//7 bytes
+      dataPacket[7]=lowByte(radio.maxAlt);//8 bytes
+      dataPacket[8]=highByte(radio.maxAlt);//9 bytes
+      dataPacket[9]=lowByte(radio.maxVel);//10 bytes
+      dataPacket[10]=highByte(radio.maxVel);//11 bytes
+      dataPacket[11]=lowByte(radio.maxG);//12 bytes
+      dataPacket[12]=highByte(radio.maxG);//13 bytes
+      dataPacket[13]=lowByte(radio.maxGPSalt);//14 bytes
+      dataPacket[14]=highByte(radio.maxGPSalt);//15 bytes
+      dataPacket[15]=gnss.fix;//16 bytes
+      dataPacket[16]=lowByte(radio.GPSalt);//17 bytes
+      dataPacket[17]=highByte(radio.GPSalt);//18 bytes
       floatUnion.val = GPS.location.lat();
-      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i]; pktPosn++;}//22 bytes
+      for(uint8_t i = 0; i < 4; i++){dataPacket[18+i]=floatUnion.Byte[i];}//22 bytes
       floatUnion.val = GPS.location.lng();
-      for(byte i = 0; i < 4; i++){dataPacket[pktPosn]=floatUnion.Byte[i];pktPosn++;}//26 bytes
-      if(settings.FHSS){
-        dataPacket[pktPosn]=hailChnl; pktPosn++;
-        dataPacket[pktPosn]=hailChnl; pktPosn++;}
-      //add in the callsign if needed
-      if(radio.pktCallsign){for(uint8_t i = 0; i<6; i++){dataPacket[pktPosn] = settings.callSign[i]; pktPosn++;}}
+      for(uint8_t i = 0; i < 4; i++){dataPacket[22+i]=floatUnion.Byte[i];}//26 bytes
+
       //send the packet
       sendPkt = true;
-      pktSize = pktPosn;
-      if(implicitHdr){pktSize = 70;}
+      pktSize = 26;
+      if(settings.FHSS){syncFreq = true;}
        //debug output
       if(radioDebug && settings.testMode){if(settings.serialDebug==3){Serial.println("");}Serial.print(F("Post Flight Packet Sent"));}
 
-      //reset counting variables
-      if(settings.FHSS){hopNum = nextHop;}
     }//end postFlight packet
 
   //turn off the flag now that we've processed the packet command
@@ -363,7 +331,7 @@ void sendTelemetryPkt(){
 
   TX = radioSendPkt(dataPacket, pktSize);
   TXstartTime = micros();
-  if(TX){SDradioTX = true;}
+  if(events.liftoff && TX){SDradioTX = true;}
   //Serial debug
   if(radioDebug && settings.testMode){
     if(TX){Serial.print(F("...Success! Packet size "));Serial.print(pktSize);}
@@ -374,69 +342,55 @@ void sendTelemetryPkt(){
   sendPkt = false;}
 
 void hopTXfreq(){
-  
-  int nextHop2;
 
   //Serial debug
   if(radioDebug && settings.testMode){
     if(settings.serialDebug==3){Serial.println("");}
-    Serial.print("Hopping Freq: ");Serial.print(freqList915[nextChnl], 3);
-    Serial.print(", HopNum: ");Serial.print(nextHop);Serial.print(", time; ");Serial.print(micros());}
+    Serial.print("Hopping Freq: ");Serial.print(freqList915[FHSS.nextChnl], 3);
+    Serial.print(", HopNum: ");Serial.print(FHSS.nextHop);Serial.print(", timeStamp; ");Serial.print(micros());}
 
   //set the radio to the new frequency
-  setRadioFreq(freqList915[nextChnl]);
+  setRadioFreq(freqList915[FHSS.nextChnl]);
+  FHSS.currentChnl = FHSS.nextChnl;
 
   //identify the next channel in the hop sequence
-  hopNum = nextHop;
-  nextHop = hopNum + 1;
-  if(nextHop >= 2000){nextHop = 0;}
-  //don't use the hail channel, move to the next one in the sequence
-  while(hopSequence[nextHop] == hailChnl){
-    nextHop++;
-    if(nextHop >= 2000){nextHop = 0;}}
+  FHSS.hopNum = FHSS.nextHop;
+  FHSS.nextHop++;
+  uint16_t hopLimit = sizeof(hopSequence)/sizeof(hopSequence[0]);
+  if(FHSS.nextHop >= hopLimit){FHSS.nextHop = 0;}
+  //move again if the next channel is the hail channel
+  if(hopSequence[FHSS.nextHop] == FHSS.hailChnl){
+    FHSS.nextHop++;
+    if(FHSS.nextHop >= hopLimit){FHSS.nextHop = 0;}}
 
-  //set the channel nunbers to include in the packets
-  currentChnl = hopSequence[hopNum];
-  nextChnl = hopSequence[nextHop];
-
-  //identify the channel 2 hops forward in the sequence
-  nextHop2 = nextHop + 1;
-  if(nextHop2 >= 2000){nextHop2 = 0;}
-  //don't use the hail channel, move to the next one in the sequence
-  while(hopSequence[nextHop2] == hailChnl){
-    nextHop2++;
-    if(nextHop2 >= 2000){nextHop2 = 0;}}
-  
-  //set the channel number to include in the packets
-  nextChnl2 = hopSequence[nextHop2];
+  //set the next channel nunber
+  FHSS.nextChnl = hopSequence[FHSS.nextHop];
 
   //reset the flag hopFreq
-  hopFreq = false;}
+  FHSS.hopNow = false;}
 
 void syncPkt(){
-  
-  float freq;
-  uint8_t syncPacket[4];
+
+  //get the hailing frequency
+  float freq = freqList915[FHSS.hailChnl];
+
   //hop to the hailing channel
-  freq = freqList915[hailChnl];
-  //at liftoff we perform an immediate sync packet on the current channel to get the ground station in sync with the higher update rate
-  if(liftoffSync){freq = freqList915[currentChnl];}
-  if(!liftoffSync){setRadioFreq(freqList915[hailChnl]);}
-  liftoffSync = false;
+  setRadioFreq(freq);
 
   //Serial debug
   if(radioDebug && settings.testMode){
     Serial.print("---Sending Sync Packet: "); Serial.println(freq, 3);
-    Serial.print("---Sync nextChnl: ");Serial.print(nextChnl);Serial.print(", Freq: ");Serial.print(freqList915[nextChnl]);
-    Serial.print(", time; ");Serial.print(micros());}
+    Serial.print("---Sync nextHop: ");Serial.print(FHSS.nextHop);Serial.print(", nextChnl: ");Serial.print(FHSS.nextChnl);
+    Serial.print(", timeStamp; ");Serial.print(micros());}
     
-  //define packet
-  syncPacket[0] = 255;//1
-  syncPacket[1] = currentChnl;//2
-  syncPacket[2] = nextChnl;//3
-  syncPacket[3] = nextChnl2;//4
-  //send packet
-  radioSendPkt(syncPacket, 4);
+  //define packet of 10 bytes
+  dataPacket[6] = 255;//7
+  dataPacket[7] = FHSS.currentChnl;//8
+  dataPacket[8] = lowByte(FHSS.nextHop);//9
+  dataPacket[9] = highByte(FHSS.nextHop);//10
+
+  //send packet if the current or next channel are not the hail channel
+  radioSendPkt(dataPacket, 10);
   syncFreq = false;
   noInterrupts();
   syncFlag = false;
