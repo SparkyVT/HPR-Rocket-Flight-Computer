@@ -4,17 +4,19 @@ use embedded_hal::spi::{Operation, SpiDevice};
 pub trait DeviceBus {
     type Error;
 
-    fn read_regs<const N: usize>(&mut self, reg: u8) -> Result<[u8; N], Self::Error>;
+    fn read_bytes<const N: usize>(&mut self, reg: u8) -> Result<[u8; N], Self::Error>;
 
     fn write_reg(&mut self, reg: u8, val: u8) -> Result<(), Self::Error>;
 
-    fn read_reg(&mut self, reg: u8) -> Result<u8, Self::Error> {
-        self.read_regs::<1>(reg).map(|bytes| bytes[0])
+    fn write_cmd(&mut self, cmd: u8) -> Result<(), Self::Error>;
+
+    fn read_byte(&mut self, reg: u8) -> Result<u8, Self::Error> {
+        self.read_bytes::<1>(reg).map(|bytes| bytes[0])
     }
 
     fn write_then_read_reg(&mut self, reg: u8, val: u8) -> Result<u8, Self::Error> {
         self.write_reg(reg, val)?;
-        self.read_reg(reg)
+        self.read_byte(reg)
     }
 }
 
@@ -42,7 +44,7 @@ impl<I: I2c> I2cBus<I> {
 impl<I: I2c> DeviceBus for I2cBus<I> {
     type Error = I::Error;
 
-    fn read_regs<const N: usize>(&mut self, reg: u8) -> Result<[u8; N], Self::Error> {
+    fn read_bytes<const N: usize>(&mut self, reg: u8) -> Result<[u8; N], Self::Error> {
 
         let mut buf = [0u8; N];
 
@@ -59,6 +61,10 @@ impl<I: I2c> DeviceBus for I2cBus<I> {
 
     fn write_reg(&mut self, reg: u8, val: u8) -> Result<(), Self::Error> {
         self.i2c.write(self.addr, &[reg, val])
+    }
+
+    fn write_cmd(&mut self, cmd: u8) -> Result<(), Self::Error> {
+        self.i2c.write(self.addr, &[cmd])
     }
 }
 
@@ -87,7 +93,7 @@ impl<S: SpiDevice> SpiBus<S> {
 impl<S: SpiDevice> DeviceBus for SpiBus<S> {
     type Error = S::Error;
 
-    fn read_regs<const N: usize>(&mut self, reg: u8) -> Result<[u8; N], Self::Error> {
+    fn read_bytes<const N: usize>(&mut self, reg: u8) -> Result<[u8; N], Self::Error> {
         let mut buf = [0u8; N];
         if N == 0 {
             return Ok(buf);
@@ -105,6 +111,10 @@ impl<S: SpiDevice> DeviceBus for SpiBus<S> {
 
     fn write_reg(&mut self, reg: u8, val: u8) -> Result<(), Self::Error> {
         self.spi.write(&[reg | self.masks.write, val])
+    }
+
+    fn write_cmd(&mut self, cmd: u8) -> Result<(), Self::Error> {
+        self.spi.write(&[cmd])
     }
 }
 
@@ -124,7 +134,7 @@ mod tests {
         ];
         let mut bus = I2cBus::new(I2cMock::new(&expected), ADDR);
 
-        assert_eq!(bus.read_reg(0x0F).unwrap(), 0x6C);
+        assert_eq!(bus.read_byte(0x0F).unwrap(), 0x6C);
         bus.write_reg(0x10, 0x84).unwrap();
         bus.release().done();
     }
@@ -137,9 +147,9 @@ mod tests {
         ];
         let mut bus = I2cBus::new(I2cMock::new(&expected), ADDR).with_inc(0x80);
 
-        let data: [u8; 6] = bus.read_regs(0x28).unwrap();
+        let data: [u8; 6] = bus.read_bytes(0x28).unwrap();
         assert_eq!(data, [1, 2, 3, 4, 5, 6]);
-        assert_eq!(bus.read_reg(0x0F).unwrap(), 0x32);
+        assert_eq!(bus.read_byte(0x0F).unwrap(), 0x32);
         bus.release().done();
     }
 
@@ -154,7 +164,7 @@ mod tests {
         let masks = SpiMasks { read: 0x80, write: 0x00, inc: 0x40 };
         let mut bus = SpiBus::new(SpiMock::new(&expected), masks);
 
-        let data: [u8; 6] = bus.read_regs(0x28).unwrap();
+        let data: [u8; 6] = bus.read_bytes(0x28).unwrap();
         assert_eq!(data, [1, 2, 3, 4, 5, 6]);
         bus.release().done();
     }

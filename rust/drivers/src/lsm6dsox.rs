@@ -58,7 +58,7 @@ impl<B: DeviceBus> Lsm6dsoxDriver<B> {
         let mut driver = Self { bus };
 
         // ensure correct chip with who am i
-        let i_am = driver.bus.read_reg(WHO_AM_I_ADDR)?;
+        let i_am = driver.bus.read_byte(WHO_AM_I_ADDR)?;
         if i_am != WHO_AM_I_VAL {
             return Err(Error::WrongId { expected: WHO_AM_I_VAL, found: i_am });
         }
@@ -84,7 +84,7 @@ impl<B: DeviceBus> Lsm6dsoxDriver<B> {
     }
 
     pub fn read(&mut self) -> Result<Sample, Error<B::Error>> {
-        let bytes = self.bus.read_regs::<12>(OUTX_L_G)?;
+        let bytes = self.bus.read_bytes::<12>(OUTX_L_G)?;
         Ok(parse(&bytes))
     }
 
