@@ -14,9 +14,9 @@ const CONFIG: &[(u8, u8)] = &[
     (CTRL1_ADDR, CTRL1_VAL),
 ];
 
-const ACCEL_SCALE: f32 = 0.049;
-const ACCEL_SATURATION: i16 = 2007;
-const SAMPLE_PERIOD_US: u32 = 1000;
+pub const ACCEL_SCALE: f32 = 0.049;
+pub const ACCEL_SATURATION: i16 = 2007;
+pub const SAMPLE_PERIOD_US: u32 = 1000;
 
 pub struct H3lis331dlDriver<R> {
     reg_ctrl: R,

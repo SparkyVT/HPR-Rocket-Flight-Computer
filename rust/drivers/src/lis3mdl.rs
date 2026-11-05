@@ -13,16 +13,16 @@ const CTRL2_VAL: u8 = 0x00;
 const CTRL3_VAL: u8 = 0x00;
 const CTRL4_VAL: u8 = 0b00001100;
 
-const MAG_SCALE: f32 = 1.0 / 6842.0;  
-const MAG_SATURATION: i16 = 32112;   
-const SAMPLE_PERIOD_US: u32 = 25000; 
-
 const CONFIG: &[(u8, u8)] = &[
     (CTRL1_ADDR, CTRL1_VAL),
     (CTRL2_ADDR, CTRL2_VAL),
     (CTRL4_ADDR, CTRL4_VAL),
     (CTRL3_ADDR, CTRL3_VAL), 
 ];
+
+pub const MAG_SCALE: f32 = 1.0 / 6842.0;  
+pub const MAG_SATURATION: i16 = 32112;   
+pub const SAMPLE_PERIOD_US: u32 = 25000; 
 
 pub struct Lis3mdlDriver<R> {
     reg_ctrl: R,

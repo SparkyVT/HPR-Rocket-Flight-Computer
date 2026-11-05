@@ -22,11 +22,11 @@ const CONFIG: &[(u8, u8)] = &[
 const WHO_AM_I_VAL: u8 = 0x6C;
 
 // chip constants
-const ACCEL_SCALE: f32 = 0.000488;      // g per count
-const ACCEL_SATURATION: i16 = 32112;    // 98% of full scale
-const GYRO_SCALE: f32 = 0.07;           // °/s per count
-const GYRO_SATURATION: i16 = 32112;     // 98% of full scale
-const SAMPLE_PERIOD_US: u32 = 602;      // 1660 Hz
+pub const ACCEL_SCALE: f32 = 0.000488;      // g per count
+pub const ACCEL_SATURATION: i16 = 32112;    // 98% of full scale
+pub const GYRO_SCALE: f32 = 0.07;           // °/s per count
+pub const GYRO_SATURATION: i16 = 32112;     // 98% of full scale
+pub const SAMPLE_PERIOD_US: u32 = 602;      // 1660 Hz
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Sample {

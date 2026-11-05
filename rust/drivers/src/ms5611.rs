@@ -9,9 +9,9 @@ const TEMP_START_CMD: u8 = 0x58; // command to begin temperature measurement
 const PRESSURE_START_CMD: u8 = 0x48; // command to begin new pressure measurement
 const READING_ADDR: u8 = 0x00; // measurement read address
 
-const SAMPLE_PERIOD_US: u32 = 9090; // main loop period between samples
-const READING_WAIT_US: u32 = 9040; // wait time to read measurement after requesting it
-const SAMPLES_BETWEEN_TEMP: u8 = 10; // number of pressure readings between each temp reading
+pub const SAMPLE_PERIOD_US: u32 = 9090; // main loop period between samples
+pub const READING_WAIT_US: u32 = 9040; // wait time to read measurement after requesting it
+pub const SAMPLES_BETWEEN_TEMP: u8 = 10; // number of pressure readings between each temp reading
 
 #[derive(Debug)]
 pub enum Error<E> {
