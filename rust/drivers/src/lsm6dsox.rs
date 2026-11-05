@@ -1,12 +1,22 @@
 use crate::types::Raw3;
-use crate::bus::DeviceBus;
+use crate::register::{Error, RegisterController};
 
 // chip addresses
 const WHO_AM_I_ADDR: u8 = 0x0F;
-const CTRL1_XL: u8 = 0x10;
-const CTRL2_G: u8 = 0x11;
-const CTRL3_C: u8 = 0x12;
+const CTRL1_XL_ADDR: u8 = 0x10;
+const CTRL2_G_ADDR: u8 = 0x11;
+const CTRL3_C_ADDR: u8 = 0x12;
 const OUTX_L_G: u8 = 0x22;
+
+const CTRL1_XL_VAL: u8 = 0b10000100;
+const CTRL2_G_VAL: u8 = 0b10001100;
+const CTRL3_C_VAL: u8 = 0x44;
+
+const CONFIG: &[(u8, u8)] = &[
+    (CTRL3_C_ADDR, CTRL3_C_VAL),
+    (CTRL2_G_ADDR, CTRL2_G_VAL),
+    (CTRL1_XL_ADDR, CTRL1_XL_VAL),
+];
 
 // who am i expected value
 const WHO_AM_I_VAL: u8 = 0x6C;
@@ -17,19 +27,6 @@ const ACCEL_SATURATION: i16 = 32112;    // 98% of full scale
 const GYRO_SCALE: f32 = 0.07;           // °/s per count
 const GYRO_SATURATION: i16 = 32112;     // 98% of full scale
 const SAMPLE_PERIOD_US: u32 = 602;      // 1660 Hz
-
-#[derive(Debug)]
-pub enum Error<E> {
-    Bus(E),
-    WrongId { expected: u8, found: u8 },
-    UnverifiedWrite { reg: u8, expected: u8, found: u8 },
-}
-
-impl<E> From<E> for Error<E> {
-    fn from(e: E) -> Self {
-        Error::Bus(e)
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Sample {
@@ -48,43 +45,21 @@ impl Sample {
     pub fn accel(&self) -> Raw3 { self.accel }
 }
 
-pub struct Lsm6dsoxDriver<B> {
-    bus: B,
+pub struct Lsm6dsoxDriver<R> {
+    reg_ctrl: R,
 }
 
-impl<B: DeviceBus> Lsm6dsoxDriver<B> {
-    pub fn new(bus: B) -> Result<Self, Error<B::Error>> {
-        
-        let mut driver = Self { bus };
+impl<R: RegisterController> Lsm6dsoxDriver<R> {
+    pub fn new(mut reg_ctrl: R) -> Result<Self, Error<R::Error>> {
+        reg_ctrl.check_id(WHO_AM_I_ADDR, WHO_AM_I_VAL)?;
 
-        // ensure correct chip with who am i
-        let i_am = driver.bus.read_byte(WHO_AM_I_ADDR)?;
-        if i_am != WHO_AM_I_VAL {
-            return Err(Error::WrongId { expected: WHO_AM_I_VAL, found: i_am });
-        }
+        reg_ctrl.configure(CONFIG)?; 
 
-        // set auto-increment on, block data update on with 0x44
-        driver.write_verified(CTRL3_C, 0x44)?;
-
-        // gyroscope set 2000dps Range, 1.66kHz ODR = 0b10001100
-        driver.write_verified(CTRL2_G, 0b10001100)?;
-
-        // accelerometer set 16G Range, 1.66kHz ODR, 400Hz BW = 0b10000100
-        driver.write_verified(CTRL1_XL, 0b10000100)?;
-
-        Ok(driver)
+        Ok(Self { reg_ctrl })
     }
 
-    fn write_verified(&mut self, reg: u8, val: u8) -> Result<(), Error<B::Error>> {
-        let read_back = self.bus.write_then_read_reg(reg, val)?;
-        if read_back != val {
-            return Err(Error::UnverifiedWrite { reg, expected: val, found: read_back });
-        }
-        Ok(())
-    }
-
-    pub fn read(&mut self) -> Result<Sample, Error<B::Error>> {
-        let bytes = self.bus.read_bytes::<12>(OUTX_L_G)?;
+    pub fn read(&mut self) -> Result<Sample, Error<R::Error>> {
+        let bytes = self.reg_ctrl.read_bytes::<12>(OUTX_L_G)?;
         Ok(parse(&bytes))
     }
 
@@ -118,12 +93,12 @@ mod tests {
     fn init_expectations() -> Vec<Transaction> {
         vec![
             Transaction::write_read(ADDR, vec![WHO_AM_I_ADDR], vec![WHO_AM_I_VAL]),
-            Transaction::write(ADDR, vec![CTRL3_C, 0x44]),
-            Transaction::write_read(ADDR, vec![CTRL3_C], vec![0x44]),
-            Transaction::write(ADDR, vec![CTRL2_G, 0b10001100]),
-            Transaction::write_read(ADDR, vec![CTRL2_G], vec![0b10001100]),
-            Transaction::write(ADDR, vec![CTRL1_XL, 0b10000100]),
-            Transaction::write_read(ADDR, vec![CTRL1_XL], vec![0b10000100]),
+            Transaction::write(ADDR, vec![CTRL3_C_ADDR, CTRL3_C_VAL]),
+            Transaction::write_read(ADDR, vec![CTRL3_C_ADDR], vec![CTRL3_C_VAL]),
+            Transaction::write(ADDR, vec![CTRL2_G_ADDR, CTRL2_G_VAL]),
+            Transaction::write_read(ADDR, vec![CTRL2_G_ADDR], vec![CTRL2_G_VAL]),
+            Transaction::write(ADDR, vec![CTRL1_XL_ADDR, CTRL1_XL_VAL]),
+            Transaction::write_read(ADDR, vec![CTRL1_XL_ADDR], vec![CTRL1_XL_VAL]),
         ]
     }
 
@@ -144,7 +119,7 @@ mod tests {
 
         let result = Lsm6dsoxDriver::new(I2cBus::new(mock.clone(), ADDR));
 
-        assert!(matches!(result, Err(Error::WrongId { expected: 0x6C, found: 0x69 })));
+        assert!(matches!(result, Err(Error::WrongId { expected: WHO_AM_I_VAL, found: 0x69 })));
         mock.done();
     }
 
@@ -152,8 +127,8 @@ mod tests {
     fn new_fails_when_first_setting_does_not_stick() {
         let expectations = [
             Transaction::write_read(ADDR, vec![WHO_AM_I_ADDR], vec![WHO_AM_I_VAL]),
-            Transaction::write(ADDR, vec![CTRL3_C, 0x44]),
-            Transaction::write_read(ADDR, vec![CTRL3_C], vec![0x00]), // chip ignored the write
+            Transaction::write(ADDR, vec![CTRL3_C_ADDR, CTRL3_C_VAL]),
+            Transaction::write_read(ADDR, vec![CTRL3_C_ADDR], vec![0x00]), // chip ignored the write
         ];
         let mut mock = Mock::new(&expectations);
 
@@ -161,7 +136,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(Error::UnverifiedWrite { reg: CTRL3_C, expected: 0x44, found: 0x00 })
+            Err(Error::UnverifiedWrite { reg: CTRL3_C_ADDR, expected: CTRL3_C_VAL, found: 0x00 })
         ));
         mock.done();
     }
@@ -170,7 +145,7 @@ mod tests {
     fn new_fails_when_last_setting_does_not_stick() {
         let mut expectations = init_expectations();
         expectations.pop(); // drop the good CTRL1_XL read-back...
-        expectations.push(Transaction::write_read(ADDR, vec![CTRL1_XL], vec![0x00])); // ...use a bad one
+        expectations.push(Transaction::write_read(ADDR, vec![CTRL1_XL_ADDR], vec![0x00])); // ...use a bad one
 
         let mut mock = Mock::new(&expectations);
 
@@ -178,7 +153,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(Error::UnverifiedWrite { reg: CTRL1_XL, expected: 0b10000100, found: 0x00 })
+            Err(Error::UnverifiedWrite { reg: CTRL1_XL_ADDR, expected: CTRL1_XL_VAL, found: 0x00 })
         ));
         mock.done();
     }
