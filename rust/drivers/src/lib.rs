@@ -9,3 +9,4 @@ pub mod lsm6dsox;
 pub mod ms5611;
 pub mod h3lis331dl;
 pub mod lis3mdl;
+pub mod pyro;
